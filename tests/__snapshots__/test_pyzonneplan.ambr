@@ -91,7 +91,7 @@
     ]),
     'user_account': dict({
       'email': 'user@example.com',
-      'first_name': None,
+      'first_name': 'None',
       'full_name': 'Jane Doe',
       'initials': '',
       'is_representative': False,
