@@ -1,12 +1,10 @@
 """Constants for the Zonneplan API client."""
 
-from __future__ import annotations
-
 from decimal import Decimal
 from typing import Final
 
 API_SCHEME: Final = "https"
-API_HOST: Final = "app-api.zonneplan.nl"
+API_URL: Final = "app-api.zonneplan.nl"
 
 AUTHORIZE_CHALLENGE_PATH: Final = "oauth/authorize-challenge"
 TOKEN_PATH: Final = "oauth/token"  # noqa: S105 (a URL path, not a credential)
