@@ -1,6 +1,6 @@
 """Asynchronous Python client for the Zonneplan API."""
 
-from .auth import OtpChallenge, Token, ZonneplanAuth, generate_pkce_pair
+from .auth import OtpChallenge, Token, generate_pkce_pair
 from .exceptions import (
     ZonneplanAuthenticationError,
     ZonneplanConnectionError,
@@ -20,12 +20,24 @@ from .models import (
     ChargePointSession,
     ChargeSchedule,
     Connection,
+    ConsumerPrices,
     Contract,
     DynamicChargingConstraints,
+    ElectricityDelivered,
+    ElectricityMeasurementGroup,
+    Gas,
+    GasMeasurementGroup,
+    Money,
+    PriceChartData,
+    PricePoint,
+    PriceRange,
+    PriceSeries,
     PvInverter,
     PvTotals,
+    SustainabilityScore,
     UserAccount,
 )
+from .pyzonneplan import Zonneplan
 
 __all__ = [
     "Account",
@@ -39,14 +51,25 @@ __all__ = [
     "ChargePointSession",
     "ChargeSchedule",
     "Connection",
+    "ConsumerPrices",
     "Contract",
     "DynamicChargingConstraints",
+    "ElectricityDelivered",
+    "ElectricityMeasurementGroup",
+    "Gas",
+    "GasMeasurementGroup",
+    "Money",
     "OtpChallenge",
+    "PriceChartData",
+    "PricePoint",
+    "PriceRange",
+    "PriceSeries",
     "PvInverter",
     "PvTotals",
+    "SustainabilityScore",
     "Token",
     "UserAccount",
-    "ZonneplanAuth",
+    "Zonneplan",
     "ZonneplanAuthenticationError",
     "ZonneplanConnectionError",
     "ZonneplanError",

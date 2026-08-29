@@ -1,0 +1,53 @@
+{
+  "data": {
+    "measurement_groups": [
+      {
+        "date": "2026-08-29",
+        "totals": {
+          "d": 12500,
+          "p": 3200
+        },
+        "meta": {
+          "delivery_costs_incl_tax": 3125000,
+          "delivery_costs_excl_tax": 1875000,
+          "delivery_price_per_unit_incl_tax": 2500000,
+          "delivery_price_per_unit_excl_tax": 1500000,
+          "production_costs_incl_tax": 800000,
+          "production_costs_excl_tax": 480000,
+          "production_price_per_unit_incl_tax": 2500000,
+          "production_price_per_unit_excl_tax": 1500000
+        }
+      },
+      {
+        "date": "2026-08-28",
+        "totals": {
+          "d": 11800,
+          "p": 2900
+        },
+        "meta": {}
+      },
+      {
+        "date": "2026-08-01",
+        "totals": {
+          "d": 342000,
+          "p": 89000
+        },
+        "meta": {
+          "delivery_costs_incl_tax": 85500000,
+          "delivery_costs_excl_tax": 51300000
+        }
+      },
+      {
+        "date": "2026-01-01",
+        "totals": {
+          "d": 3120000,
+          "p": 780000
+        },
+        "meta": {
+          "delivery_costs_incl_tax": 780000000,
+          "delivery_costs_excl_tax": 468000000
+        }
+      }
+    ]
+  }
+}

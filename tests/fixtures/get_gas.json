@@ -1,0 +1,35 @@
+{
+  "data": {
+    "measurement_groups": [
+      {
+        "date": "2026-08-29",
+        "total": 1250,
+        "meta": {
+          "delivery_costs_incl_tax": 2187500,
+          "delivery_costs_excl_tax": 1187500
+        }
+      },
+      {
+        "date": "2026-08-28",
+        "total": 1180,
+        "meta": {}
+      },
+      {
+        "date": "2026-08-01",
+        "total": 34200,
+        "meta": {
+          "delivery_costs_incl_tax": 59850000,
+          "delivery_costs_excl_tax": 32490000
+        }
+      },
+      {
+        "date": "2026-01-01",
+        "total": 312000,
+        "meta": {
+          "delivery_costs_incl_tax": 546000000,
+          "delivery_costs_excl_tax": 296400000
+        }
+      }
+    ]
+  }
+}
