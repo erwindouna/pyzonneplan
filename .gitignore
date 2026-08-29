@@ -216,3 +216,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Local dev copy of example.py containing real credentials, and its raw API dumps
+example_dev.py
+examples/.dumps/
