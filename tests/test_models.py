@@ -7,12 +7,24 @@ from decimal import Decimal
 from typing import Any
 
 from pyzonneplan.const import ContractType
-from pyzonneplan.models.account import Account, AddressGroup, Connection, Contract, UserAccount
+from pyzonneplan.models.account import Account, Address, AddressGroup, Connection, Contract, UserAccount
 from pyzonneplan.models.devices import Battery, ChargePoint, ChargeSchedule, PvInverter, PvTotals
 
 
 def _contract(contract_type: str, *, end_date: datetime | None = None, meta: dict[str, Any] | None = None) -> Contract:
     return Contract(uuid="c-1", type=contract_type, end_date=end_date, meta=meta or {})
+
+
+def _address() -> Address:
+    return Address(
+        id="addr-1",
+        street="Teststraat",
+        number="1",
+        zipcode="1234AB",
+        city="Amsterdam",
+        sunrise=datetime.now(UTC),
+        sunset=datetime.now(UTC),
+    )
 
 
 def test_contract_is_active_without_end_date() -> None:
@@ -92,10 +104,16 @@ def test_account_connections_flattens_address_groups() -> None:
     connection_a = Connection(uuid="conn-a")
     connection_b = Connection(uuid="conn-b")
     account = Account(
-        user_account=UserAccount(uuid="user-1"),
+        user_account=UserAccount(
+            uuid="user-1",
+            email="user@example.com",
+            first_name="Test",
+            full_name="Test User",
+            initials="TU",
+        ),
         address_groups=[
-            AddressGroup(uuid="ag-1", connections=[connection_a]),
-            AddressGroup(uuid="ag-2", connections=[connection_b]),
+            AddressGroup(uuid="ag-1", address=_address(), connections=[connection_a]),
+            AddressGroup(uuid="ag-2", address=_address(), connections=[connection_b]),
         ],
     )
 
