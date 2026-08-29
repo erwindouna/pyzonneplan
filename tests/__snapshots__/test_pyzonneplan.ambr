@@ -1,0 +1,1029 @@
+# serializer version: 1
+# name: test_async_get_account
+  dict({
+    'address_groups': list([
+      dict({
+        'address': dict({
+          'addition': '',
+          'city': 'Voorbeeldstad',
+          'id': '1234AB1',
+          'number': '1',
+          'street': 'Teststraat',
+          'sunrise': datetime.datetime(2026, 8, 29, 4, 39, 24, tzinfo=datetime.timezone.utc),
+          'sunset': datetime.datetime(2026, 8, 29, 18, 30, 23, tzinfo=datetime.timezone.utc),
+          'zipcode': '1234 AB',
+        }),
+        'connections': list([
+          dict({
+            'contracts': list([
+              dict({
+                'end_date': None,
+                'label': 'Stroom tegen uurprijzen',
+                'meta': dict({
+                  'agreement_date': '2026-08-29',
+                  'contract_type': 'smart',
+                  'deposit_type': 'fixed',
+                  'end_reason': None,
+                  'expected_delivery': 4470,
+                  'expected_production': 2520,
+                  'external_contract_id': '00000000-0000-4000-8000-000000000005',
+                  'gas_price_ceiling_contract_end_date': None,
+                  'gas_price_ceiling_contract_start_date': None,
+                  'monthly_advanced_deposit_amount': 930000000,
+                  'original_end_date': None,
+                  'proposition_reference': 'vast-voorschot-e-2025-12-kwart',
+                  'show_in_contract_screen': True,
+                  'start_reason': None,
+                }),
+                'start_date': datetime.datetime(2026, 9, 17, 22, 0, tzinfo=datetime.timezone.utc),
+                'type': 'electricity',
+                'uuid': '00000000-0000-4000-8000-000000000004',
+              }),
+            ]),
+            'ean': '871000000000000001',
+            'features': list([
+              dict({
+                'code': 'E004',
+                'label': 'Verbruikshistorie',
+                'start_date': '2026-08-29',
+              }),
+            ]),
+            'market_segment': 'electricity',
+            'uuid': '00000000-0000-4000-8000-000000000002',
+          }),
+          dict({
+            'contracts': list([
+              dict({
+                'end_date': None,
+                'label': 'Gas tegen dagprijzen',
+                'meta': dict({
+                  'agreement_date': '2026-08-29',
+                  'contract_type': 'smart',
+                  'deposit_type': 'fixed',
+                  'end_reason': None,
+                  'expected_delivery': 2171,
+                  'expected_production': None,
+                  'external_contract_id': '00000000-0000-4000-8000-000000000007',
+                  'gas_price_ceiling_contract_end_date': None,
+                  'gas_price_ceiling_contract_start_date': None,
+                  'monthly_advanced_deposit_amount': 3500000000,
+                  'original_end_date': None,
+                  'proposition_reference': 'vast-voorschot-g-2024-11',
+                  'show_in_contract_screen': True,
+                  'start_reason': None,
+                }),
+                'start_date': datetime.datetime(2026, 9, 17, 22, 0, tzinfo=datetime.timezone.utc),
+                'type': 'gas',
+                'uuid': '00000000-0000-4000-8000-000000000006',
+              }),
+            ]),
+            'ean': '871000000000000002',
+            'features': list([
+            ]),
+            'market_segment': 'gas',
+            'uuid': '00000000-0000-4000-8000-000000000003',
+          }),
+        ]),
+        'is_representative': True,
+        'organization_uuid': '00000000-0000-4000-8000-000000000008',
+        'uuid': '00000000-0000-4000-8000-000000000002',
+      }),
+    ]),
+    'user_account': dict({
+      'email': 'user@example.com',
+      'first_name': None,
+      'full_name': 'Jane Doe',
+      'initials': '',
+      'is_representative': False,
+      'uuid': '00000000-0000-4000-8000-000000000001',
+    }),
+  })
+# ---
+# name: test_async_get_consumer_prices
+  dict({
+    'chart': dict({
+      'range': dict({
+        'end_date': datetime.datetime(2026, 8, 30, 23, 59, 59, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+        'start_date': datetime.datetime(2026, 8, 28, 15, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+      }),
+      'series': dict({
+        'prices': list([
+          dict({
+            'end_date': datetime.datetime(2026, 8, 28, 14, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1496060,
+            }),
+            'price_tax_included': dict({
+              'amount': 2604541,
+            }),
+            'start_date': datetime.datetime(2026, 8, 28, 13, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 28, 15, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1544823,
+            }),
+            'price_tax_included': dict({
+              'amount': 2653304,
+            }),
+            'start_date': datetime.datetime(2026, 8, 28, 14, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 28, 16, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1850016,
+            }),
+            'price_tax_included': dict({
+              'amount': 2958497,
+            }),
+            'start_date': datetime.datetime(2026, 8, 28, 15, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 28, 17, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2123385,
+            }),
+            'price_tax_included': dict({
+              'amount': 3231866,
+            }),
+            'start_date': datetime.datetime(2026, 8, 28, 16, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 28, 18, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2281199,
+            }),
+            'price_tax_included': dict({
+              'amount': 3389680,
+            }),
+            'start_date': datetime.datetime(2026, 8, 28, 17, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 896,
+            }),
+            'tariff_group': 'high',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 28, 19, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2335679,
+            }),
+            'price_tax_included': dict({
+              'amount': 3444160,
+            }),
+            'start_date': datetime.datetime(2026, 8, 28, 18, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 747,
+            }),
+            'tariff_group': 'high',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 28, 20, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2210867,
+            }),
+            'price_tax_included': dict({
+              'amount': 3319348,
+            }),
+            'start_date': datetime.datetime(2026, 8, 28, 19, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 633,
+            }),
+            'tariff_group': 'high',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 28, 21, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2156509,
+            }),
+            'price_tax_included': dict({
+              'amount': 3264990,
+            }),
+            'start_date': datetime.datetime(2026, 8, 28, 20, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 689,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 28, 22, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1922253,
+            }),
+            'price_tax_included': dict({
+              'amount': 3030734,
+            }),
+            'start_date': datetime.datetime(2026, 8, 28, 21, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 712,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 28, 23, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1753819,
+            }),
+            'price_tax_included': dict({
+              'amount': 2862300,
+            }),
+            'start_date': datetime.datetime(2026, 8, 28, 22, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 729,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 0, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1551176,
+            }),
+            'price_tax_included': dict({
+              'amount': 2659657,
+            }),
+            'start_date': datetime.datetime(2026, 8, 28, 23, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 781,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 1, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1409061,
+            }),
+            'price_tax_included': dict({
+              'amount': 2517542,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 0, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 776,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 2, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1320550,
+            }),
+            'price_tax_included': dict({
+              'amount': 2429031,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 1, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 776,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 3, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1314863,
+            }),
+            'price_tax_included': dict({
+              'amount': 2423344,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 2, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 672,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 4, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1358635,
+            }),
+            'price_tax_included': dict({
+              'amount': 2467116,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 3, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 675,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 5, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1380899,
+            }),
+            'price_tax_included': dict({
+              'amount': 2489380,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 4, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 678,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 6, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1425215,
+            }),
+            'price_tax_included': dict({
+              'amount': 2533696,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 5, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 674,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 7, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 934530,
+            }),
+            'price_tax_included': dict({
+              'amount': 2043011,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 6, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 748,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 8, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 263010,
+            }),
+            'price_tax_included': dict({
+              'amount': 1371491,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 7, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 993,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 9, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 201571,
+            }),
+            'price_tax_included': dict({
+              'amount': 1310052,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 8, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 10, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 192921,
+            }),
+            'price_tax_included': dict({
+              'amount': 1301402,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 9, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 11, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 184481,
+            }),
+            'price_tax_included': dict({
+              'amount': 1292962,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 10, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 12, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 180760,
+            }),
+            'price_tax_included': dict({
+              'amount': 1289241,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 11, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 13, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 193737,
+            }),
+            'price_tax_included': dict({
+              'amount': 1302218,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 12, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 14, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 235664,
+            }),
+            'price_tax_included': dict({
+              'amount': 1344145,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 13, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 15, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 483442,
+            }),
+            'price_tax_included': dict({
+              'amount': 1591923,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 14, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 16, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1434290,
+            }),
+            'price_tax_included': dict({
+              'amount': 2542771,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 15, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 17, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2031334,
+            }),
+            'price_tax_included': dict({
+              'amount': 3139815,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 16, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 18, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2450386,
+            }),
+            'price_tax_included': dict({
+              'amount': 3558867,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 17, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 815,
+            }),
+            'tariff_group': 'high',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 19, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2473105,
+            }),
+            'price_tax_included': dict({
+              'amount': 3581586,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 18, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 681,
+            }),
+            'tariff_group': 'high',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 20, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2279566,
+            }),
+            'price_tax_included': dict({
+              'amount': 3388047,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 19, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 612,
+            }),
+            'tariff_group': 'high',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 21, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2118696,
+            }),
+            'price_tax_included': dict({
+              'amount': 3227177,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 20, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 614,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 22, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1934685,
+            }),
+            'price_tax_included': dict({
+              'amount': 3043166,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 21, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 648,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 29, 23, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1617181,
+            }),
+            'price_tax_included': dict({
+              'amount': 2725662,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 22, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 677,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 0, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1442064,
+            }),
+            'price_tax_included': dict({
+              'amount': 2550545,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 23, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 756,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 1, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1243382,
+            }),
+            'price_tax_included': dict({
+              'amount': 2351863,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 0, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 780,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 2, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1125377,
+            }),
+            'price_tax_included': dict({
+              'amount': 2233858,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 1, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 824,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 3, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1022527,
+            }),
+            'price_tax_included': dict({
+              'amount': 2131008,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 2, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 835,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 4, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1064363,
+            }),
+            'price_tax_included': dict({
+              'amount': 2172844,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 3, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 846,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 5, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 1064695,
+            }),
+            'price_tax_included': dict({
+              'amount': 2173176,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 4, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 860,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 6, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 915775,
+            }),
+            'price_tax_included': dict({
+              'amount': 2024256,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 5, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 853,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 7, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 395443,
+            }),
+            'price_tax_included': dict({
+              'amount': 1503924,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 6, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 889,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 8, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 203296,
+            }),
+            'price_tax_included': dict({
+              'amount': 1311777,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 7, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 9, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 198910,
+            }),
+            'price_tax_included': dict({
+              'amount': 1307391,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 8, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 10, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 198185,
+            }),
+            'price_tax_included': dict({
+              'amount': 1306666,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 9, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 11, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 190622,
+            }),
+            'price_tax_included': dict({
+              'amount': 1299103,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 10, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 12, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 187415,
+            }),
+            'price_tax_included': dict({
+              'amount': 1295896,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 11, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 13, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 187627,
+            }),
+            'price_tax_included': dict({
+              'amount': 1296108,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 12, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 14, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 198547,
+            }),
+            'price_tax_included': dict({
+              'amount': 1307028,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 13, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 15, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 205777,
+            }),
+            'price_tax_included': dict({
+              'amount': 1314258,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 14, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 16, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 886251,
+            }),
+            'price_tax_included': dict({
+              'amount': 1994732,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 15, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 1000,
+            }),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 17, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2100213,
+            }),
+            'price_tax_included': dict({
+              'amount': 3208694,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 16, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 898,
+            }),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 18, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2427095,
+            }),
+            'price_tax_included': dict({
+              'amount': 3535576,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 17, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 584,
+            }),
+            'tariff_group': 'high',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 19, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2539080,
+            }),
+            'price_tax_included': dict({
+              'amount': 3647561,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 18, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 409,
+            }),
+            'tariff_group': 'high',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 20, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2536055,
+            }),
+            'price_tax_included': dict({
+              'amount': 3644536,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 19, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 314,
+            }),
+            'tariff_group': 'high',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 21, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2396089,
+            }),
+            'price_tax_included': dict({
+              'amount': 3504570,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 20, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 348,
+            }),
+            'tariff_group': 'high',
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 22, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2233071,
+            }),
+            'price_tax_included': dict({
+              'amount': 3341552,
+            }),
+            'start_date': datetime.datetime(2026, 8, 30, 21, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 374,
+            }),
+            'tariff_group': 'high',
+          }),
+        ]),
+      }),
+    }),
+  })
+# ---
+# name: test_async_get_consumer_prices_gas_daily
+  dict({
+    'chart': dict({
+      'range': dict({
+        'end_date': datetime.datetime(2026, 8, 30, 23, 59, 59, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+        'start_date': datetime.datetime(2026, 8, 28, 19, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+      }),
+      'series': dict({
+        'prices': list([
+          dict({
+            'end_date': datetime.datetime(2026, 8, 30, 4, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 8761816,
+            }),
+            'price_tax_included': dict({
+              'amount': 16029802,
+            }),
+            'start_date': datetime.datetime(2026, 8, 29, 4, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': None,
+            'tariff_group': None,
+          }),
+        ]),
+      }),
+    }),
+  })
+# ---
+# name: test_async_get_electricity_delivered
+  dict({
+    'measurement_groups': list([
+      dict({
+        'date': '2026-08-29',
+        'meta': dict({
+          'delivery_costs_excl_tax': 1875000,
+          'delivery_costs_incl_tax': 3125000,
+          'delivery_price_per_unit_excl_tax': 1500000,
+          'delivery_price_per_unit_incl_tax': 2500000,
+          'production_costs_excl_tax': 480000,
+          'production_costs_incl_tax': 800000,
+          'production_price_per_unit_excl_tax': 1500000,
+          'production_price_per_unit_incl_tax': 2500000,
+        }),
+        'totals': dict({
+          'd': 12500,
+          'p': 3200,
+        }),
+      }),
+      dict({
+        'date': '2026-08-28',
+        'meta': dict({
+        }),
+        'totals': dict({
+          'd': 11800,
+          'p': 2900,
+        }),
+      }),
+      dict({
+        'date': '2026-08-01',
+        'meta': dict({
+          'delivery_costs_excl_tax': 51300000,
+          'delivery_costs_incl_tax': 85500000,
+        }),
+        'totals': dict({
+          'd': 342000,
+          'p': 89000,
+        }),
+      }),
+      dict({
+        'date': '2026-01-01',
+        'meta': dict({
+          'delivery_costs_excl_tax': 468000000,
+          'delivery_costs_incl_tax': 780000000,
+        }),
+        'totals': dict({
+          'd': 3120000,
+          'p': 780000,
+        }),
+      }),
+    ]),
+  })
+# ---
+# name: test_async_get_gas
+  dict({
+    'measurement_groups': list([
+      dict({
+        'date': '2026-08-29',
+        'meta': dict({
+          'delivery_costs_excl_tax': 1187500,
+          'delivery_costs_incl_tax': 2187500,
+        }),
+        'total': 1250,
+      }),
+      dict({
+        'date': '2026-08-28',
+        'meta': dict({
+        }),
+        'total': 1180,
+      }),
+      dict({
+        'date': '2026-08-01',
+        'meta': dict({
+          'delivery_costs_excl_tax': 32490000,
+          'delivery_costs_incl_tax': 59850000,
+        }),
+        'total': 34200,
+      }),
+      dict({
+        'date': '2026-01-01',
+        'meta': dict({
+          'delivery_costs_excl_tax': 296400000,
+          'delivery_costs_incl_tax': 546000000,
+        }),
+        'total': 312000,
+      }),
+    ]),
+  })
+# ---

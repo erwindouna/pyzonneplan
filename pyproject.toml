@@ -33,6 +33,7 @@ dependencies = [
     "yarl>=1.6.0",
     "mashumaro>=3.17,<4",
     "orjson>=3.10.16,<4",
+    "tenacity>=9.0.0",
 ]
 
 [project.urls]
@@ -131,6 +132,7 @@ disable = [
     "too-many-public-methods",
     "too-few-public-methods",
     "too-many-instance-attributes",
+    "too-many-arguments",
 ]
 
 [tool.pylint.SIMILARITIES]
@@ -185,3 +187,4 @@ max-complexity = 25
 # typing.get_type_hints(); moving these imports into `if TYPE_CHECKING:` blocks
 # (as TC001-TC003 suggest) raises mashumaro.exceptions.UnresolvedTypeReferenceError.
 "src/pyzonneplan/models/*.py" = ["TC001", "TC002", "TC003"]
+"src/pyzonneplan/pyzonneplan.py" = ["ASYNC109"]

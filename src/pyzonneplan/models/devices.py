@@ -1,12 +1,4 @@
-"""Models for the PV, battery and charge point endpoints.
-
-Note that most *static* device metadata (inverter model, panel count, firmware,
-DSMR version, last measured values) does not come from these endpoints at all:
-it lives in ``contract.meta`` on /user-accounts/me. The typed views below sit on
-top of that dict so callers do not have to know that.
-"""
-
-from __future__ import annotations
+"""Models for the PV, battery and charge point endpoints."""
 
 from dataclasses import dataclass, field
 from datetime import datetime
