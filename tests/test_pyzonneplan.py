@@ -220,7 +220,15 @@ async def test_request_refreshes_expired_token_before_use(aresponses: ResponsesM
         HOST,
         "/user-accounts/me",
         "GET",
-        aresponses.Response(text=orjson.dumps({"data": {"user_account": {"uuid": "u-1"}}}).decode()),
+        aresponses.Response(
+            text=orjson.dumps(
+                {
+                    "data": {
+                        "user_account": {"uuid": "u-1", "email": "user@example.com", "first_name": "Test", "full_name": "Test User", "initials": "TU"}
+                    }
+                }
+            ).decode()
+        ),
     )
 
     zonneplan_client._token = Token(
@@ -245,7 +253,15 @@ async def test_seeded_token_is_used_without_login(aresponses: ResponsesMockServe
         HOST,
         "/user-accounts/me",
         "GET",
-        aresponses.Response(text=orjson.dumps({"data": {"user_account": {"uuid": "u-1"}}}).decode()),
+        aresponses.Response(
+            text=orjson.dumps(
+                {
+                    "data": {
+                        "user_account": {"uuid": "u-1", "email": "user@example.com", "first_name": "Test", "full_name": "Test User", "initials": "TU"}
+                    }
+                }
+            ).decode()
+        ),
     )
 
     account = await client.async_get_account()

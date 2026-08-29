@@ -84,14 +84,14 @@ class Connection(DataClassORJSONMixin):
 class Address(DataClassORJSONMixin):
     """Postal address of an address group."""
 
-    id: str | None = None
-    street: str | None = None
-    number: str | None = None
+    id: str
+    street: str
+    number: str
+    zipcode: str
+    city: str
+    sunrise: datetime
+    sunset: datetime
     addition: str | None = None
-    zipcode: str | None = None
-    city: str | None = None
-    sunrise: datetime | None = None
-    sunset: datetime | None = None
 
 
 @dataclass
@@ -99,8 +99,8 @@ class AddressGroup(DataClassORJSONMixin):
     """One address, with one or more connections."""
 
     uuid: str
+    address: Address
     connections: list[Connection] = field(default_factory=list)
-    address: Address | None = None
     is_representative: bool = False
     organization_uuid: str | None = None
 
@@ -110,10 +110,10 @@ class UserAccount(DataClassORJSONMixin):
     """The authenticated Zonneplan account."""
 
     uuid: str
-    email: str | None = None
-    first_name: str | None = None
-    full_name: str | None = None
-    initials: str | None = None
+    email: str
+    first_name: str
+    full_name: str
+    initials: str
     is_representative: bool = False
 
 
