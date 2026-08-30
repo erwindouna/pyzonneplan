@@ -1,7 +1,7 @@
 """Models for the consumer price chart endpoint."""
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime, tzinfo
 from decimal import Decimal
 
 from mashumaro.mixins.orjson import DataClassORJSONMixin
@@ -82,3 +82,40 @@ class ConsumerPrices(DataClassORJSONMixin):
     def prices(self) -> list[PricePoint]:
         """Return the price points, flattened out of the nested chart/series structure."""
         return self.chart.series.prices
+
+    def prices_for_day(self, day: date, tz: tzinfo) -> list[PricePoint]:
+        """Return the price points that start on the given local day."""
+        return [point for point in self.prices if point.start_date.astimezone(tz).date() == day]
+
+    def extreme_price(self, day: date, tz: tzinfo, *, lowest: bool) -> PricePoint | None:
+        """Return the cheapest (``lowest=True``) or most expensive price point for a local day."""
+        prices = self.prices_for_day(day, tz)
+        if not prices:
+            return None
+
+        def _amount(point: PricePoint) -> int:
+            return point.price_tax_included.amount
+
+        return min(prices, key=_amount) if lowest else max(prices, key=_amount)
+
+    def price_block(self, day: date, tz: tzinfo, *, lowest: bool, deviation: Decimal = Decimal("0.05")) -> tuple[PricePoint, PricePoint] | None:
+        """Return the bounds of the contiguous block of hours around the day's extreme price."""
+        extreme = self.extreme_price(day, tz, lowest=lowest)
+        if extreme is None:
+            return None
+
+        prices = sorted(self.prices_for_day(day, tz), key=lambda point: point.start_date)
+        extreme_amount = extreme.price_tax_included.amount
+        max_deviation = abs(extreme_amount) * deviation
+
+        def _in_block(point: PricePoint) -> bool:
+            return abs(point.price_tax_included.amount - extreme_amount) <= max_deviation
+
+        index = prices.index(extreme)
+        start = end = index
+        while start > 0 and _in_block(prices[start - 1]):
+            start -= 1
+        while end < len(prices) - 1 and _in_block(prices[end + 1]):
+            end += 1
+
+        return prices[start], prices[end]
