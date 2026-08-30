@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from pyzonneplan.const import ContractType
 from pyzonneplan.models.account import Account, Address, AddressGroup, Connection, Contract, UserAccount
 from pyzonneplan.models.devices import Battery, ChargePoint, ChargeSchedule, PvInverter, PvTotals
+from pyzonneplan.models.prices import ConsumerPrices, Money, PriceChartData, PricePoint, PriceRange, PriceSeries
 
 
 def _contract(contract_type: str, *, end_date: datetime | None = None, meta: dict[str, Any] | None = None) -> Contract:
@@ -170,3 +172,66 @@ def test_charge_point_session_cost() -> None:
     """session_cost converts the raw 1e-7 EUR session total."""
     assert ChargePoint(session_charging_cost_total=20_000_000).session_cost == Decimal(2)
     assert ChargePoint().session_cost is None
+
+
+def _price_point(start: datetime, amount: int) -> PricePoint:
+    return PricePoint(
+        start_date=start,
+        end_date=start + timedelta(hours=1),
+        price_tax_included=Money(amount=amount),
+        price_tax_excluded=Money(amount=amount),
+    )
+
+
+def _consumer_prices(points: list[PricePoint]) -> ConsumerPrices:
+    return ConsumerPrices(
+        chart=PriceChartData(
+            range=PriceRange(start_date=points[0].start_date, end_date=points[-1].end_date),
+            series=PriceSeries(prices=points),
+        )
+    )
+
+
+def test_consumer_prices_prices_for_day_filters_by_local_day() -> None:
+    """prices_for_day buckets points by their local (not UTC) calendar day."""
+    tz = ZoneInfo("Europe/Amsterdam")
+    before_midnight = _price_point(datetime(2024, 1, 14, 23, 0, tzinfo=UTC), 1)  # 00:00 local on the 15th
+    late_in_day = _price_point(datetime(2024, 1, 15, 22, 0, tzinfo=UTC), 2)  # 23:00 local on the 15th
+    next_day = _price_point(datetime(2024, 1, 15, 23, 0, tzinfo=UTC), 3)  # 00:00 local on the 16th
+    prices = _consumer_prices([before_midnight, late_in_day, next_day])
+
+    assert prices.prices_for_day(date(2024, 1, 15), tz) == [before_midnight, late_in_day]
+    assert prices.prices_for_day(date(2024, 1, 16), tz) == [next_day]
+    assert prices.prices_for_day(date(2024, 1, 13), tz) == []
+
+
+def test_consumer_prices_extreme_price() -> None:
+    """extreme_price returns the cheapest or most expensive point for a day, or None."""
+    tz = UTC
+    day = date(2024, 6, 1)
+    cheap = _price_point(datetime(2024, 6, 1, 0, tzinfo=UTC), 100)
+    mid = _price_point(datetime(2024, 6, 1, 1, tzinfo=UTC), 500)
+    expensive = _price_point(datetime(2024, 6, 1, 2, tzinfo=UTC), 900)
+    prices = _consumer_prices([cheap, mid, expensive])
+
+    assert prices.extreme_price(day, tz, lowest=True) is cheap
+    assert prices.extreme_price(day, tz, lowest=False) is expensive
+    assert prices.extreme_price(date(2024, 6, 2), tz, lowest=True) is None
+
+
+def test_consumer_prices_price_block() -> None:
+    """price_block grows outward from the day's extreme price while staying within 5%."""
+    tz = UTC
+    day = date(2024, 6, 1)
+    points = [
+        _price_point(datetime(2024, 6, 1, 0, tzinfo=UTC), 5000),
+        _price_point(datetime(2024, 6, 1, 1, tzinfo=UTC), 1020),
+        _price_point(datetime(2024, 6, 1, 2, tzinfo=UTC), 1000),
+        _price_point(datetime(2024, 6, 1, 3, tzinfo=UTC), 1010),
+        _price_point(datetime(2024, 6, 1, 4, tzinfo=UTC), 1200),
+        _price_point(datetime(2024, 6, 1, 5, tzinfo=UTC), 6000),
+    ]
+    prices = _consumer_prices(points)
+
+    assert prices.price_block(day, tz, lowest=True) == (points[1], points[3])
+    assert prices.price_block(date(2024, 6, 2), tz, lowest=True) is None
