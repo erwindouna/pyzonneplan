@@ -937,6 +937,338 @@
     }),
   })
 # ---
+# name: test_async_get_electricity_chart[days-get_electricity_chart_days.json]
+  dict({
+    'measurement_groups': list([
+      dict({
+        'measurements': list([
+          dict({
+            'delivered': 0,
+            'produced': 0,
+            'start': datetime.datetime(2026, 9, 16, 22, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': None,
+          }),
+          dict({
+            'delivered': 17486,
+            'produced': 3234,
+            'start': datetime.datetime(2026, 9, 17, 22, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': None,
+          }),
+          dict({
+            'delivered': 23557,
+            'produced': 1067,
+            'start': datetime.datetime(2026, 9, 18, 22, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': None,
+          }),
+          dict({
+            'delivered': 9537,
+            'produced': 6246,
+            'start': datetime.datetime(2026, 9, 19, 22, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': None,
+          }),
+          dict({
+            'delivered': 9243,
+            'produced': 7145,
+            'start': datetime.datetime(2026, 9, 20, 22, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': None,
+          }),
+          dict({
+            'delivered': 9519,
+            'produced': 2328,
+            'start': datetime.datetime(2026, 9, 21, 22, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': None,
+          }),
+          dict({
+            'delivered': 7304,
+            'produced': 5356,
+            'start': datetime.datetime(2026, 9, 22, 22, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': None,
+          }),
+          dict({
+            'delivered': 4987,
+            'produced': 11498,
+            'start': datetime.datetime(2026, 9, 23, 22, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': None,
+          }),
+          dict({
+            'delivered': 0,
+            'produced': 0,
+            'start': datetime.datetime(2026, 9, 25, 22, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': None,
+          }),
+        ]),
+        'meta': dict({
+          'delivery_costs_excl_tax': 144314070,
+          'delivery_costs_incl_tax': 234802700,
+          'delivery_price_per_unit_excl_tax': 1767839.8,
+          'delivery_price_per_unit_incl_tax': 2876320.9,
+          'energy_delivered_sum': 81633,
+          'energy_produced_sum': 36874,
+          'has_supply_contract': True,
+          'over_capacity_kwh': None,
+          'production_costs_excl_tax': 51289246.00000001,
+          'production_costs_incl_tax': 92163377,
+          'production_price_per_unit_excl_tax': 1390932.5,
+          'production_price_per_unit_incl_tax': 2499413.5999999996,
+          'result_tax_excluded': 195603316,
+          'result_tax_included': 326966077,
+        }),
+        'start': datetime.datetime(2026, 8, 31, 22, 0, tzinfo=datetime.timezone.utc),
+        'totals': dict({
+          'd': 81633,
+          'p': 36874,
+        }),
+        'type': 'days',
+      }),
+    ]),
+  })
+# ---
+# name: test_async_get_electricity_chart[hours-get_electricity_chart_hours.json]
+  dict({
+    'measurement_groups': list([
+      dict({
+        'measurements': list([
+          dict({
+            'delivered': 733,
+            'produced': 0,
+            'start': datetime.datetime(2026, 9, 23, 22, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'delivered': 289,
+            'produced': 0,
+            'start': datetime.datetime(2026, 9, 23, 23, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'delivered': 270,
+            'produced': 0,
+            'start': datetime.datetime(2026, 9, 24, 0, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'delivered': 313,
+            'produced': 0,
+            'start': datetime.datetime(2026, 9, 24, 1, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'delivered': 274,
+            'produced': 0,
+            'start': datetime.datetime(2026, 9, 24, 2, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'delivered': 266,
+            'produced': 0,
+            'start': datetime.datetime(2026, 9, 24, 3, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'delivered': 350,
+            'produced': 0,
+            'start': datetime.datetime(2026, 9, 24, 4, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'delivered': 440,
+            'produced': 0,
+            'start': datetime.datetime(2026, 9, 24, 5, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'delivered': 1,
+            'produced': 992,
+            'start': datetime.datetime(2026, 9, 24, 6, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'delivered': 0,
+            'produced': 1765,
+            'start': datetime.datetime(2026, 9, 24, 7, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'delivered': 0,
+            'produced': 1209,
+            'start': datetime.datetime(2026, 9, 24, 8, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'delivered': 0,
+            'produced': 580,
+            'start': datetime.datetime(2026, 9, 24, 9, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'delivered': 0,
+            'produced': 954,
+            'start': datetime.datetime(2026, 9, 24, 10, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'delivered': 0,
+            'produced': 1393,
+            'start': datetime.datetime(2026, 9, 24, 11, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'delivered': 0,
+            'produced': 1810,
+            'start': datetime.datetime(2026, 9, 24, 12, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'delivered': 0,
+            'produced': 1132,
+            'start': datetime.datetime(2026, 9, 24, 13, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'delivered': 0,
+            'produced': 874,
+            'start': datetime.datetime(2026, 9, 24, 14, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'low',
+          }),
+          dict({
+            'delivered': 0,
+            'produced': 729,
+            'start': datetime.datetime(2026, 9, 24, 15, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'delivered': 133,
+            'produced': 60,
+            'start': datetime.datetime(2026, 9, 24, 16, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'delivered': 333,
+            'produced': 0,
+            'start': datetime.datetime(2026, 9, 24, 17, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'high',
+          }),
+          dict({
+            'delivered': 510,
+            'produced': 0,
+            'start': datetime.datetime(2026, 9, 24, 18, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'high',
+          }),
+          dict({
+            'delivered': 477,
+            'produced': 0,
+            'start': datetime.datetime(2026, 9, 24, 19, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'delivered': 412,
+            'produced': 0,
+            'start': datetime.datetime(2026, 9, 24, 20, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'normal',
+          }),
+          dict({
+            'delivered': 186,
+            'produced': 0,
+            'start': datetime.datetime(2026, 9, 24, 21, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': 'normal',
+          }),
+        ]),
+        'meta': dict({
+          'delivery_costs_excl_tax': 12665979.999999998,
+          'delivery_costs_incl_tax': 18193974,
+          'delivery_price_per_unit_excl_tax': 2539799.5,
+          'delivery_price_per_unit_incl_tax': 3648280.3,
+          'energy_delivered_sum': 4987,
+          'energy_produced_sum': 11498,
+          'has_supply_contract': True,
+          'over_capacity_kwh': None,
+          'production_costs_excl_tax': 18206134,
+          'production_costs_incl_tax': 30951449.000000004,
+          'production_price_per_unit_excl_tax': 1583417.5,
+          'production_price_per_unit_incl_tax': 2691898.4999999995,
+          'result_tax_excluded': 30872114,
+          'result_tax_included': 49145423,
+        }),
+        'start': datetime.datetime(2026, 9, 23, 22, 0, tzinfo=datetime.timezone.utc),
+        'totals': dict({
+          'd': 4987,
+          'p': 11498,
+        }),
+        'type': 'hours',
+      }),
+    ]),
+  })
+# ---
+# name: test_async_get_electricity_chart[hours-get_electricity_chart_hours_pending.json]
+  dict({
+    'measurement_groups': list([
+      dict({
+        'measurements': list([
+        ]),
+        'meta': dict({
+          'delivery_costs_excl_tax': None,
+          'delivery_costs_incl_tax': None,
+          'delivery_price_per_unit_excl_tax': None,
+          'delivery_price_per_unit_incl_tax': None,
+          'energy_delivered_sum': None,
+          'energy_produced_sum': None,
+          'has_supply_contract': False,
+          'over_capacity_kwh': None,
+          'production_costs_excl_tax': None,
+          'production_costs_incl_tax': None,
+          'production_price_per_unit_excl_tax': None,
+          'production_price_per_unit_incl_tax': None,
+          'result_tax_excluded': None,
+          'result_tax_included': None,
+        }),
+        'start': datetime.datetime(2026, 9, 24, 22, 0, tzinfo=datetime.timezone.utc),
+        'totals': dict({
+          'd': 0,
+          'p': 0,
+        }),
+        'type': 'hours',
+      }),
+    ]),
+  })
+# ---
+# name: test_async_get_electricity_chart[months-get_electricity_chart_months.json]
+  dict({
+    'measurement_groups': list([
+      dict({
+        'measurements': list([
+          dict({
+            'delivered': 81633,
+            'produced': 36874,
+            'start': datetime.datetime(2026, 8, 31, 22, 0, tzinfo=datetime.timezone.utc),
+            'tariff_group': None,
+          }),
+        ]),
+        'meta': dict({
+          'delivery_costs_excl_tax': 144314070,
+          'delivery_costs_incl_tax': 234802700,
+          'delivery_price_per_unit_excl_tax': 1767839.8,
+          'delivery_price_per_unit_incl_tax': 2876320.9,
+          'energy_delivered_sum': 81633,
+          'energy_produced_sum': 36874,
+          'has_supply_contract': True,
+          'over_capacity_kwh': None,
+          'production_costs_excl_tax': 51289246.00000001,
+          'production_costs_incl_tax': 92163377,
+          'production_price_per_unit_excl_tax': 1390932.5,
+          'production_price_per_unit_incl_tax': 2499413.5999999996,
+          'result_tax_excluded': 195603316,
+          'result_tax_included': 326966077,
+        }),
+        'start': datetime.datetime(2025, 12, 31, 23, 0, tzinfo=datetime.timezone.utc),
+        'totals': dict({
+          'd': 81633,
+          'p': 36874,
+        }),
+        'type': 'months',
+      }),
+    ]),
+  })
+# ---
 # name: test_async_get_electricity_delivered
   dict({
     'measurement_groups': list([
@@ -1023,6 +1355,346 @@
           'delivery_costs_incl_tax': 546000000,
         }),
         'total': 312000,
+      }),
+    ]),
+  })
+# ---
+# name: test_async_get_gas_chart[days-get_gas_chart_days.json]
+  dict({
+    'measurement_groups': list([
+      dict({
+        'measurements': list([
+          dict({
+            'start': datetime.datetime(2026, 9, 16, 22, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 17, 22, 0, tzinfo=datetime.timezone.utc),
+            'volume': 1501,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 18, 22, 0, tzinfo=datetime.timezone.utc),
+            'volume': 804,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 19, 22, 0, tzinfo=datetime.timezone.utc),
+            'volume': 1347,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 20, 22, 0, tzinfo=datetime.timezone.utc),
+            'volume': 1077,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 21, 22, 0, tzinfo=datetime.timezone.utc),
+            'volume': 510,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 22, 22, 0, tzinfo=datetime.timezone.utc),
+            'volume': 2386,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 23, 22, 0, tzinfo=datetime.timezone.utc),
+            'volume': 278,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 25, 22, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+        ]),
+        'meta': dict({
+          'delivery_costs_excl_tax': 78260346,
+          'delivery_costs_incl_tax': 135699240,
+          'delivery_price_per_unit_excl_tax': 9902612.4,
+          'delivery_price_per_unit_incl_tax': 17170598.5,
+          'energy_delivered_sum': 7903,
+          'has_supply_contract': True,
+        }),
+        'start': datetime.datetime(2026, 8, 31, 22, 0, tzinfo=datetime.timezone.utc),
+        'total': 7903,
+        'type': 'days',
+      }),
+    ]),
+  })
+# ---
+# name: test_async_get_gas_chart[hours-get_gas_chart_hours.json]
+  dict({
+    'measurement_groups': list([
+      dict({
+        'measurements': list([
+          dict({
+            'start': datetime.datetime(2026, 9, 23, 22, 0, tzinfo=datetime.timezone.utc),
+            'volume': 42,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 23, 23, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 0, 0, tzinfo=datetime.timezone.utc),
+            'volume': 3,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 1, 0, tzinfo=datetime.timezone.utc),
+            'volume': 6,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 2, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 3, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 4, 0, tzinfo=datetime.timezone.utc),
+            'volume': 35,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 5, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 6, 0, tzinfo=datetime.timezone.utc),
+            'volume': 14,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 7, 0, tzinfo=datetime.timezone.utc),
+            'volume': 6,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 8, 0, tzinfo=datetime.timezone.utc),
+            'volume': 7,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 9, 0, tzinfo=datetime.timezone.utc),
+            'volume': 6,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 10, 0, tzinfo=datetime.timezone.utc),
+            'volume': 3,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 11, 0, tzinfo=datetime.timezone.utc),
+            'volume': 6,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 12, 0, tzinfo=datetime.timezone.utc),
+            'volume': 6,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 13, 0, tzinfo=datetime.timezone.utc),
+            'volume': 7,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 14, 0, tzinfo=datetime.timezone.utc),
+            'volume': 3,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 15, 0, tzinfo=datetime.timezone.utc),
+            'volume': 6,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 16, 0, tzinfo=datetime.timezone.utc),
+            'volume': 35,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 17, 0, tzinfo=datetime.timezone.utc),
+            'volume': 26,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 18, 0, tzinfo=datetime.timezone.utc),
+            'volume': 46,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 19, 0, tzinfo=datetime.timezone.utc),
+            'volume': 15,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 20, 0, tzinfo=datetime.timezone.utc),
+            'volume': 6,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 24, 21, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+        ]),
+        'meta': dict({
+          'delivery_costs_excl_tax': 2628942,
+          'delivery_costs_incl_tax': 4649442,
+          'delivery_price_per_unit_excl_tax': 9456625.899999999,
+          'delivery_price_per_unit_incl_tax': 16724611.5,
+          'energy_delivered_sum': 278,
+          'has_supply_contract': True,
+          'price': 16730553,
+        }),
+        'start': datetime.datetime(2026, 9, 23, 22, 0, tzinfo=datetime.timezone.utc),
+        'total': 278,
+        'type': 'hours',
+      }),
+    ]),
+  })
+# ---
+# name: test_async_get_gas_chart[hours-get_gas_chart_hours_pending.json]
+  dict({
+    'measurement_groups': list([
+      dict({
+        'measurements': list([
+        ]),
+        'meta': dict({
+          'delivery_costs_excl_tax': None,
+          'delivery_costs_incl_tax': None,
+          'delivery_price_per_unit_excl_tax': None,
+          'delivery_price_per_unit_incl_tax': None,
+          'energy_delivered_sum': None,
+          'has_supply_contract': False,
+          'price': 16956098,
+        }),
+        'start': datetime.datetime(2026, 9, 24, 22, 0, tzinfo=datetime.timezone.utc),
+        'total': 0,
+        'type': 'hours',
+      }),
+    ]),
+  })
+# ---
+# name: test_async_get_gas_chart[hours-get_gas_chart_hours_today.json]
+  dict({
+    'measurement_groups': list([
+      dict({
+        'measurements': list([
+          dict({
+            'start': datetime.datetime(2026, 9, 25, 22, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 25, 23, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 0, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 1, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 2, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 3, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 4, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 5, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 6, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 7, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 8, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 9, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 10, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 11, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 12, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 13, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 14, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 15, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 16, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 17, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 18, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 19, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 20, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+          dict({
+            'start': datetime.datetime(2026, 9, 26, 21, 0, tzinfo=datetime.timezone.utc),
+            'volume': 0,
+          }),
+        ]),
+        'meta': dict({
+          'delivery_costs_excl_tax': None,
+          'delivery_costs_incl_tax': None,
+          'delivery_price_per_unit_excl_tax': None,
+          'delivery_price_per_unit_incl_tax': None,
+          'energy_delivered_sum': None,
+          'has_supply_contract': True,
+          'price': 16549337,
+        }),
+        'start': datetime.datetime(2026, 9, 25, 22, 0, tzinfo=datetime.timezone.utc),
+        'total': 0,
+        'type': 'hours',
+      }),
+    ]),
+  })
+# ---
+# name: test_async_get_gas_chart[months-get_gas_chart_months.json]
+  dict({
+    'measurement_groups': list([
+      dict({
+        'measurements': list([
+          dict({
+            'start': datetime.datetime(2026, 8, 31, 22, 0, tzinfo=datetime.timezone.utc),
+            'volume': 7903,
+          }),
+        ]),
+        'meta': dict({
+          'delivery_costs_excl_tax': 78260346,
+          'delivery_costs_incl_tax': 135699240,
+          'delivery_price_per_unit_excl_tax': 9902612.4,
+          'delivery_price_per_unit_incl_tax': 17170598.5,
+          'energy_delivered_sum': 7903,
+          'has_supply_contract': True,
+        }),
+        'start': datetime.datetime(2025, 12, 31, 23, 0, tzinfo=datetime.timezone.utc),
+        'total': 7903,
+        'type': 'months',
       }),
     ]),
   })
