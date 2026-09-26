@@ -27,6 +27,18 @@ class ChartInterval:
     MONTHS: Final = "months"
 
 
+class ConsumptionChart:
+    """Supported consumption chart intervals.
+
+    ``HOURS`` covers the local day of the requested date, ``DAYS`` its month
+    and ``MONTHS`` its year.
+    """
+
+    HOURS: Final = "hours"
+    DAYS: Final = "days"
+    MONTHS: Final = "months"
+
+
 class PriceChart:
     """Supported consumer price charts."""
 

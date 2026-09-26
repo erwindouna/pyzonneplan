@@ -13,6 +13,10 @@ class ZonneplanTimeoutError(ZonneplanError):
     """Exception raised for timeout errors."""
 
 
+class ZonneplanRequestError(ZonneplanError):
+    """Exception raised when the API rejects an authenticated request as invalid (HTTP 400)."""
+
+
 class ZonneplanAuthenticationError(ZonneplanError):
     """Exception raised for authentication errors."""
 

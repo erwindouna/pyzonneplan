@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
 import orjson
@@ -12,11 +12,12 @@ from aresponses import ResponsesMockServer
 
 from pyzonneplan import Zonneplan
 from pyzonneplan.auth import OtpChallenge, Token
-from pyzonneplan.const import PriceChart
+from pyzonneplan.const import ConsumptionChart, PriceChart
 from pyzonneplan.exceptions import (
     ZonneplanAuthenticationError,
     ZonneplanConnectionError,
     ZonneplanInvalidOtpError,
+    ZonneplanRequestError,
     ZonneplanTimeoutError,
 )
 
@@ -106,25 +107,39 @@ async def test_async_submit_otp_400_raises_invalid_otp_error(aresponses: Respons
         await zonneplan_client.async_submit_otp(challenge, "000000")
 
 
-async def test_request_400_raises_authentication_error(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
-    """A plain 400 response is treated as an authentication failure, not a connection error."""
-    aresponses.add(HOST, "/user-accounts/me", "GET", aresponses.Response(status=400, text="{}"))
+async def test_token_request_400_raises_authentication_error(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """A plain 400 from the token endpoint (rejected refresh grant) is an authentication failure, not a connection error."""
+    aresponses.add(HOST, "/oauth/token", "POST", aresponses.Response(status=400, text="{}"))
 
     with pytest.raises(ZonneplanAuthenticationError):
-        await zonneplan_client._request("user-accounts/me")
+        await zonneplan_client._request("oauth/token", method="POST", authenticated=False)
+
+
+async def test_data_request_400_raises_request_error(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """A 400 from a data endpoint is a bad request, not an authentication failure that would force a new login."""
+    aresponses.add(
+        HOST,
+        "/connections/conn-1/gas/charts/years",
+        "GET",
+        aresponses.Response(status=400, text=orjson.dumps({"message": "Invalid chart type."}).decode()),
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    with pytest.raises(ZonneplanRequestError, match="Invalid chart type"):
+        await zonneplan_client.async_get_gas_chart("conn-1", date(2026, 9, 24), interval="years")
 
 
 async def test_request_error_message_includes_response_body(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
     """The raised error includes the response body, so the server's actual reason is visible."""
     aresponses.add(
         HOST,
-        "/user-accounts/me",
-        "GET",
+        "/oauth/token",
+        "POST",
         aresponses.Response(status=400, text=orjson.dumps({"error": "too_many_requests"}).decode()),
     )
 
     with pytest.raises(ZonneplanAuthenticationError, match="too_many_requests"):
-        await zonneplan_client._request("user-accounts/me")
+        await zonneplan_client._request("oauth/token", method="POST", authenticated=False)
 
 
 async def test_async_get_account(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion) -> None:
@@ -206,6 +221,88 @@ async def test_async_get_gas(aresponses: ResponsesMockServer, zonneplan_client: 
     gas = await zonneplan_client.async_get_gas("conn-1")
 
     assert gas == snapshot
+
+
+async def test_async_get_account_without_p1(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """A real (scrubbed) account with electricity and gas contracts but no P1 meter is parsed."""
+    aresponses.add(HOST, "/user-accounts/me", "GET", aresponses.Response(text=load_fixtures("get_account_no_p1.json")))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    account = await zonneplan_client.async_get_account()
+
+    assert [connection.market_segment for connection in account.connections] == ["electricity", "gas"]
+    assert not any(connection.has_p1 for connection in account.connections)
+
+
+@pytest.mark.parametrize("path", ["electricity-delivered", "gas"])
+async def test_consumption_summary_without_p1_returns_none(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, path: str) -> None:
+    """Without a P1 meter the summary endpoints answer with a JSON null."""
+    aresponses.add(
+        HOST,
+        f"/connections/conn-1/{path}",
+        "GET",
+        aresponses.Response(text=load_fixtures("get_consumption_null.json"), content_type="application/json"),
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    method = zonneplan_client.async_get_electricity_delivered if path == "electricity-delivered" else zonneplan_client.async_get_gas
+
+    assert await method("conn-1") is None
+
+
+@pytest.mark.parametrize(
+    ("interval", "fixture"),
+    [
+        (ConsumptionChart.HOURS, "get_electricity_chart_hours.json"),
+        (ConsumptionChart.HOURS, "get_electricity_chart_hours_pending.json"),
+        (ConsumptionChart.DAYS, "get_electricity_chart_days.json"),
+        (ConsumptionChart.MONTHS, "get_electricity_chart_months.json"),
+    ],
+)
+async def test_async_get_electricity_chart(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion, interval: str, fixture: str
+) -> None:
+    """Captured electricity charts are parsed, with the date sent as a query parameter."""
+    aresponses.add(
+        HOST,
+        f"/connections/conn-1/electricity-delivered/charts/{interval}?date=2026-09-24",
+        "GET",
+        aresponses.Response(text=load_fixtures(fixture)),
+        match_querystring=True,
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    chart = await zonneplan_client.async_get_electricity_chart("conn-1", date(2026, 9, 24), interval)
+
+    assert chart == snapshot
+
+
+@pytest.mark.parametrize(
+    ("interval", "fixture"),
+    [
+        (ConsumptionChart.HOURS, "get_gas_chart_hours.json"),
+        (ConsumptionChart.HOURS, "get_gas_chart_hours_pending.json"),
+        (ConsumptionChart.HOURS, "get_gas_chart_hours_today.json"),
+        (ConsumptionChart.DAYS, "get_gas_chart_days.json"),
+        (ConsumptionChart.MONTHS, "get_gas_chart_months.json"),
+    ],
+)
+async def test_async_get_gas_chart(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion, interval: str, fixture: str
+) -> None:
+    """Captured gas charts are parsed, with the date sent as a query parameter."""
+    aresponses.add(
+        HOST,
+        f"/connections/conn-1/gas/charts/{interval}?date=2026-09-24",
+        "GET",
+        aresponses.Response(text=load_fixtures(fixture)),
+        match_querystring=True,
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    chart = await zonneplan_client.async_get_gas_chart("conn-1", date(2026, 9, 24), interval)
+
+    assert chart == snapshot
 
 
 async def test_request_refreshes_expired_token_before_use(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
