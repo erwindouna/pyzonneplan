@@ -1,0 +1,279 @@
+{
+  "data": {
+    "measurement_groups": [
+      {
+        "date": "2026-09-23T22:00:00.000000Z",
+        "group_type": "multi",
+        "labels": {
+          "d": "verbruik",
+          "p": "teruglevering"
+        },
+        "measurements": [
+          {
+            "date": "2026-09-23T22:00:00.000000Z",
+            "meta": {
+              "tariff_group": "low"
+            },
+            "values": {
+              "d": 205,
+              "p": 0
+            }
+          },
+          {
+            "date": "2026-09-23T23:00:00.000000Z",
+            "meta": {
+              "tariff_group": "low"
+            },
+            "values": {
+              "d": 171,
+              "p": 0
+            }
+          },
+          {
+            "date": "2026-09-24T00:00:00.000000Z",
+            "meta": {
+              "tariff_group": "low"
+            },
+            "values": {
+              "d": 150,
+              "p": 0
+            }
+          },
+          {
+            "date": "2026-09-24T01:00:00.000000Z",
+            "meta": {
+              "tariff_group": "low"
+            },
+            "values": {
+              "d": 137,
+              "p": 0
+            }
+          },
+          {
+            "date": "2026-09-24T02:00:00.000000Z",
+            "meta": {
+              "tariff_group": "low"
+            },
+            "values": {
+              "d": 137,
+              "p": 0
+            }
+          },
+          {
+            "date": "2026-09-24T03:00:00.000000Z",
+            "meta": {
+              "tariff_group": "low"
+            },
+            "values": {
+              "d": 150,
+              "p": 0
+            }
+          },
+          {
+            "date": "2026-09-24T04:00:00.000000Z",
+            "meta": {
+              "tariff_group": "normal"
+            },
+            "values": {
+              "d": 239,
+              "p": 0
+            }
+          },
+          {
+            "date": "2026-09-24T05:00:00.000000Z",
+            "meta": {
+              "tariff_group": "normal"
+            },
+            "values": {
+              "d": 341,
+              "p": -75
+            }
+          },
+          {
+            "date": "2026-09-24T06:00:00.000000Z",
+            "meta": {
+              "tariff_group": "normal"
+            },
+            "values": {
+              "d": 273,
+              "p": -300
+            }
+          },
+          {
+            "date": "2026-09-24T07:00:00.000000Z",
+            "meta": {
+              "tariff_group": "normal"
+            },
+            "values": {
+              "d": 205,
+              "p": -675
+            }
+          },
+          {
+            "date": "2026-09-24T08:00:00.000000Z",
+            "meta": {
+              "tariff_group": "low"
+            },
+            "values": {
+              "d": 137,
+              "p": -1050
+            }
+          },
+          {
+            "date": "2026-09-24T09:00:00.000000Z",
+            "meta": {
+              "tariff_group": "low"
+            },
+            "values": {
+              "d": 102,
+              "p": -1350
+            }
+          },
+          {
+            "date": "2026-09-24T10:00:00.000000Z",
+            "meta": {
+              "tariff_group": "low"
+            },
+            "values": {
+              "d": 102,
+              "p": -1500
+            }
+          },
+          {
+            "date": "2026-09-24T11:00:00.000000Z",
+            "meta": {
+              "tariff_group": "low"
+            },
+            "values": {
+              "d": 102,
+              "p": -1425
+            }
+          },
+          {
+            "date": "2026-09-24T12:00:00.000000Z",
+            "meta": {
+              "tariff_group": "low"
+            },
+            "values": {
+              "d": 136,
+              "p": -1200
+            }
+          },
+          {
+            "date": "2026-09-24T13:00:00.000000Z",
+            "meta": {
+              "tariff_group": "low"
+            },
+            "values": {
+              "d": 205,
+              "p": -825
+            }
+          },
+          {
+            "date": "2026-09-24T14:00:00.000000Z",
+            "meta": {
+              "tariff_group": "low"
+            },
+            "values": {
+              "d": 307,
+              "p": -450
+            }
+          },
+          {
+            "date": "2026-09-24T15:00:00.000000Z",
+            "meta": {
+              "tariff_group": "normal"
+            },
+            "values": {
+              "d": 478,
+              "p": -150
+            }
+          },
+          {
+            "date": "2026-09-24T16:00:00.000000Z",
+            "meta": {
+              "tariff_group": "normal"
+            },
+            "values": {
+              "d": 546,
+              "p": 0
+            }
+          },
+          {
+            "date": "2026-09-24T17:00:00.000000Z",
+            "meta": {
+              "tariff_group": "high"
+            },
+            "values": {
+              "d": 512,
+              "p": 0
+            }
+          },
+          {
+            "date": "2026-09-24T18:00:00.000000Z",
+            "meta": {
+              "tariff_group": "high"
+            },
+            "values": {
+              "d": 444,
+              "p": 0
+            }
+          },
+          {
+            "date": "2026-09-24T19:00:00.000000Z",
+            "meta": {
+              "tariff_group": "normal"
+            },
+            "values": {
+              "d": 375,
+              "p": 0
+            }
+          },
+          {
+            "date": "2026-09-24T20:00:00.000000Z",
+            "meta": {
+              "tariff_group": "normal"
+            },
+            "values": {
+              "d": 307,
+              "p": 0
+            }
+          },
+          {
+            "date": "2026-09-24T21:00:00.000000Z",
+            "meta": {
+              "tariff_group": "normal"
+            },
+            "values": {
+              "d": 239,
+              "p": 0
+            }
+          }
+        ],
+        "meta": {
+          "delivery_costs_excl_tax": 15238797,
+          "delivery_costs_incl_tax": 21889682,
+          "delivery_price_per_unit_excl_tax": 2539799.5,
+          "delivery_price_per_unit_incl_tax": 3648280.3,
+          "energy_delivered_sum": 6000,
+          "energy_produced_sum": 9000,
+          "has_supply_contract": true,
+          "over_capacity_kwh": null,
+          "production_costs_excl_tax": 14250758,
+          "production_costs_incl_tax": 24227086,
+          "production_price_per_unit_excl_tax": 1583417.5,
+          "production_price_per_unit_incl_tax": 2691898.4999999995,
+          "result_tax_excluded": 988039,
+          "result_tax_included": -2337404
+        },
+        "mutable": false,
+        "totals": {
+          "d": 6000,
+          "p": 9000
+        },
+        "type": "hours"
+      }
+    ],
+    "powerplay": []
+  }
+}
