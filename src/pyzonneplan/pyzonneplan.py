@@ -7,7 +7,7 @@ import socket
 from dataclasses import dataclass
 from http import HTTPStatus
 from importlib import metadata
-from typing import Any, NoReturn, Self
+from typing import TYPE_CHECKING, Any, NoReturn, Self
 
 import orjson
 from aiohttp import ClientError, ClientResponseError, ClientSession
@@ -23,17 +23,22 @@ from pyzonneplan.const import (
     APP_VERSION,
     AUTHORIZE_CHALLENGE_PATH,
     TOKEN_PATH,
+    ConsumptionChart,
     PriceChart,
 )
 from pyzonneplan.exceptions import (
     ZonneplanAuthenticationError,
     ZonneplanConnectionError,
     ZonneplanInvalidOtpError,
+    ZonneplanRequestError,
     ZonneplanTimeoutError,
 )
 from pyzonneplan.models.account import Account
-from pyzonneplan.models.consumption import ElectricityDelivered, Gas
+from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
 from pyzonneplan.models.prices import ConsumerPrices
+
+if TYPE_CHECKING:
+    from datetime import date
 
 try:
     VERSION = metadata.version(__package__)
@@ -174,7 +179,7 @@ class Zonneplan:
                     msg = f"Timeout error while accessing {method} {url}: {err}"
                     raise ZonneplanTimeoutError(msg) from err
                 except ClientResponseError as err:
-                    self._raise_for_client_response_error(method, url, err, body)
+                    self._raise_for_client_response_error(method, url, err, body, authenticated=authenticated)
                 except (ClientError, socket.gaierror) as err:
                     msg = f"Unexpected error during {method} {url}: {err}"
                     raise ZonneplanConnectionError(msg) from err
@@ -185,10 +190,15 @@ class Zonneplan:
         return orjson.loads(body)
 
     @staticmethod
-    def _raise_for_client_response_error(method: str, url: URL, err: ClientResponseError, body: bytes) -> NoReturn:
+    def _raise_for_client_response_error(method: str, url: URL, err: ClientResponseError, body: bytes, *, authenticated: bool) -> NoReturn:
         """Map a failed HTTP response to the appropriate Zonneplan exception."""
         body_text = body.decode(errors="replace")
         match err.status:
+            case 400 if authenticated:
+                # A data endpoint rejecting its parameters, e.g. an unknown
+                # chart interval ({"message": "Invalid chart type."}).
+                msg = f"Invalid request {method} {url}: {err} ({body_text})"
+                raise ZonneplanRequestError(msg) from err
             case 400 | 401 | 403:
                 # Zonneplan returns a plain 400 (not 401/403) for a rejected or
                 # expired OTP/refresh grant, so treat it as an authentication
@@ -276,15 +286,39 @@ class Zonneplan:
         response = await self._request(f"api/consumer-prices/charts/{chart}")
         return ConsumerPrices.from_dict(response["data"])
 
-    async def async_get_electricity_delivered(self, connection_uuid: str) -> ElectricityDelivered:
-        """Fetch electricity delivery/production data (P1) for a connection."""
-        response = await self._request(f"connections/{connection_uuid}/electricity-delivered")
-        return ElectricityDelivered.from_dict(response["data"])
+    async def async_get_electricity_delivered(self, connection_uuid: str) -> ElectricityDelivered | None:
+        """Fetch electricity delivery/production data (P1) for a connection.
 
-    async def async_get_gas(self, connection_uuid: str) -> Gas:
-        """Fetch gas consumption data (P1) for a connection."""
+        Returns ``None`` for connections without a P1 meter, where the API
+        responds with ``null``; use :meth:`async_get_electricity_chart` there.
+        """
+        response = await self._request(f"connections/{connection_uuid}/electricity-delivered")
+        return None if response is None else ElectricityDelivered.from_dict(response["data"])
+
+    async def async_get_gas(self, connection_uuid: str) -> Gas | None:
+        """Fetch gas consumption data (P1) for a connection.
+
+        Returns ``None`` for connections without a P1 meter, where the API
+        responds with ``null``; use :meth:`async_get_gas_chart` there.
+        """
         response = await self._request(f"connections/{connection_uuid}/gas")
-        return Gas.from_dict(response["data"])
+        return None if response is None else Gas.from_dict(response["data"])
+
+    async def async_get_electricity_chart(self, connection_uuid: str, day: date, interval: str = ConsumptionChart.HOURS) -> ElectricityChart:
+        """Fetch electricity used and returned around a local ``day``.
+
+        See :class:`pyzonneplan.const.ConsumptionChart` for the window each
+        ``interval`` covers. Use the electricity connection's uuid: the gas
+        connection returns an empty chart. Check ``group.has_data`` before
+        trusting zeros, since data from the grid operator arrives late.
+        """
+        response = await self._request(f"connections/{connection_uuid}/electricity-delivered/charts/{interval}", params={"date": day.isoformat()})
+        return ElectricityChart.from_dict(response["data"])
+
+    async def async_get_gas_chart(self, connection_uuid: str, day: date, interval: str = ConsumptionChart.HOURS) -> GasChart:
+        """Fetch gas used around a local ``day`` (see :meth:`async_get_electricity_chart`)."""
+        response = await self._request(f"connections/{connection_uuid}/gas/charts/{interval}", params={"date": day.isoformat()})
+        return GasChart.from_dict(response["data"])
 
     async def close(self) -> None:
         """Close open client session."""

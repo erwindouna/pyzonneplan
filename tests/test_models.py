@@ -7,10 +7,15 @@ from decimal import Decimal
 from typing import Any
 from zoneinfo import ZoneInfo
 
+import orjson
+
 from pyzonneplan.const import ContractType
 from pyzonneplan.models.account import Account, Address, AddressGroup, Connection, Contract, UserAccount
+from pyzonneplan.models.consumption import ElectricityChart, GasChart
 from pyzonneplan.models.devices import Battery, ChargePoint, ChargeSchedule, PvInverter, PvTotals
 from pyzonneplan.models.prices import ConsumerPrices, Money, PriceChartData, PricePoint, PriceRange, PriceSeries
+
+from . import load_fixtures
 
 
 def _contract(contract_type: str, *, end_date: datetime | None = None, meta: dict[str, Any] | None = None) -> Contract:
@@ -205,6 +210,19 @@ def test_consumer_prices_prices_for_day_filters_by_local_day() -> None:
     assert prices.prices_for_day(date(2024, 1, 13), tz) == []
 
 
+def test_consumer_prices_price_at() -> None:
+    """price_at returns the point covering the moment, with a half-open interval, and None outside the chart."""
+    first = _price_point(datetime(2024, 1, 15, 10, 0, tzinfo=UTC), 1)
+    second = _price_point(datetime(2024, 1, 15, 11, 0, tzinfo=UTC), 2)
+    prices = _consumer_prices([first, second])
+
+    assert prices.price_at(datetime(2024, 1, 15, 10, 30, tzinfo=UTC)) is first
+    assert prices.price_at(datetime(2024, 1, 15, 11, 0, tzinfo=UTC)) is second
+    assert prices.price_at(datetime(2024, 1, 15, 12, 30, tzinfo=ZoneInfo("Europe/Amsterdam"))) is second
+    assert prices.price_at(datetime(2024, 1, 15, 12, 0, tzinfo=UTC)) is None
+    assert prices.price_at(datetime(2024, 1, 15, 9, 59, tzinfo=UTC)) is None
+
+
 def test_consumer_prices_extreme_price() -> None:
     """extreme_price returns the cheapest or most expensive point for a day, or None."""
     tz = UTC
@@ -235,3 +253,72 @@ def test_consumer_prices_price_block() -> None:
 
     assert prices.price_block(day, tz, lowest=True) == (points[1], points[3])
     assert prices.price_block(date(2024, 6, 2), tz, lowest=True) is None
+
+
+def _electricity_chart(fixture: str) -> ElectricityChart:
+    return ElectricityChart.from_dict(orjson.loads(load_fixtures(fixture))["data"])
+
+
+def _gas_chart(fixture: str) -> GasChart:
+    return GasChart.from_dict(orjson.loads(load_fixtures(fixture))["data"])
+
+
+def test_electricity_chart_hourly_measurements_add_up_to_totals() -> None:
+    """Hourly production is negative in the API but positive in the totals; the model makes both positive."""
+    group = _electricity_chart("get_electricity_chart_hours.json").group
+    assert group is not None
+
+    assert len(group.measurements) == 24
+    assert group.measurements[0].start == datetime(2026, 9, 23, 22, 0, tzinfo=UTC)
+    assert sum(measurement.delivered for measurement in group.measurements) == group.totals["d"] == 6000
+    assert sum(measurement.produced for measurement in group.measurements) == group.totals["p"] == 9000
+    assert group.delivered_kwh == Decimal("6.000")
+    assert group.produced_kwh == Decimal("9.000")
+    assert {measurement.tariff_group for measurement in group.measurements} == {"low", "normal", "high"}
+
+
+def test_electricity_chart_months_parses_string_values() -> None:
+    """The months chart sends the delivered value as a string."""
+    group = _electricity_chart("get_electricity_chart_months.json").group
+    assert group is not None
+
+    assert group.measurements[0].delivered == 67000
+    assert group.measurements[0].produced_kwh == Decimal("34.500")
+
+
+def test_gas_chart_drops_the_repeated_trailing_hour() -> None:
+    """The stray 25th entry repeats an earlier hour with 0 and must not replace the real value."""
+    group = _gas_chart("get_gas_chart_hours.json").group
+    assert group is not None
+
+    starts = [measurement.start for measurement in group.measurements]
+    assert len(starts) == len(set(starts)) == 24
+    midnight_utc = next(measurement for measurement in group.measurements if measurement.start == datetime(2026, 9, 24, 0, 0, tzinfo=UTC))
+    assert midnight_utc.volume == 4
+    assert sum(measurement.volume for measurement in group.measurements) == group.total == 400
+    assert group.total_m3 == Decimal("0.400")
+
+
+def test_chart_without_data_yet_reports_no_totals() -> None:
+    """Pending days report zeros (today's gas even has 24 zero hours); has_data tells them apart from real zeros."""
+    electricity = _electricity_chart("get_electricity_chart_hours_pending.json").group
+    gas_pending = _gas_chart("get_gas_chart_hours_pending.json").group
+    gas_today = _gas_chart("get_gas_chart_hours_today.json").group
+    assert electricity is not None
+    assert gas_pending is not None
+    assert gas_today is not None
+
+    assert not electricity.has_data
+    assert electricity.delivered_kwh is None
+    assert electricity.produced_kwh is None
+    assert not gas_pending.has_data
+    assert gas_pending.total_m3 is None
+    assert len(gas_today.measurements) == 24
+    assert not gas_today.has_data
+    assert gas_today.total_m3 is None
+
+
+def test_empty_chart_has_no_group() -> None:
+    """A chart without measurement groups has no group."""
+    assert ElectricityChart().group is None
+    assert GasChart().group is None
