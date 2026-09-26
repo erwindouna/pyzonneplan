@@ -153,13 +153,13 @@ Contributions are welcome. Please open an issue or pull request.
 For local development:
 
 ```bash
-uv sync --all-groups && uv run pre-commit install
+uv sync --all-groups && uv run prek install
 ```
 
 Run checks:
 
 ```bash
-uv run pre-commit run --all-files
+uv run prek run --all-files
 ```
 
 Run tests:
