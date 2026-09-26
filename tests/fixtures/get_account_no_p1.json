@@ -1,0 +1,234 @@
+{
+  "data": {
+    "address_groups": [
+      {
+        "address": {
+          "addition": "",
+          "city": "Zonnedorp",
+          "id": "1234AB1",
+          "number": "1",
+          "street": "Teststraat",
+          "sunrise": "2026-09-26T05:30:00.000000Z",
+          "sunset": "2026-09-26T17:30:00.000000Z",
+          "zipcode": "1234 AB"
+        },
+        "connections": [
+          {
+            "buttons": [
+              {
+                "form_handler": "refresh-user-data",
+                "group": "Beschikbare check-ins",
+                "group_priority": 1,
+                "icon": "star",
+                "notification_badge": 1,
+                "subtitle": "Je kunt nu aan de slag",
+                "title": "Connect inchecken",
+                "url": "https://app-api.zonneplan.nl/connections/00000000-0000-4000-8000-000000000001/check-in-p1-installation"
+              }
+            ],
+            "contracts": [
+              {
+                "end_date": null,
+                "label": "Stroom tegen uurprijzen",
+                "meta": {
+                  "agreement_date": "2026-08-29",
+                  "contract_type": "smart",
+                  "deposit_type": "fixed",
+                  "end_reason": null,
+                  "expected_delivery": 4470,
+                  "expected_production": 2520,
+                  "external_contract_id": "00000000-0000-4000-8000-000000000002",
+                  "gas_price_ceiling_contract_end_date": null,
+                  "gas_price_ceiling_contract_start_date": null,
+                  "monthly_advanced_deposit_amount": 700000000,
+                  "original_end_date": null,
+                  "proposition_reference": "vast-voorschot-e-2025-12-kwart",
+                  "show_in_contract_screen": true,
+                  "start_reason": null
+                },
+                "start_date": "2026-09-17T22:00:00.000000Z",
+                "type": "electricity",
+                "uuid": "00000000-0000-4000-8000-000000000003"
+              }
+            ],
+            "ean": "871000000000000000",
+            "features": [
+              {
+                "code": "E004",
+                "label": "Verbruikshistorie",
+                "start_date": "2026-08-29"
+              },
+              {
+                "code": "S003",
+                "label": "Zonnebonus actief",
+                "start_date": "2026-09-18"
+              },
+              {
+                "code": "E005",
+                "label": "Kwartierprijzen actief",
+                "start_date": "2026-09-18"
+              }
+            ],
+            "market_segment": "electricity",
+            "uuid": "00000000-0000-4000-8000-000000000001"
+          },
+          {
+            "buttons": [],
+            "contracts": [
+              {
+                "end_date": null,
+                "label": "Gas tegen dagprijzen",
+                "meta": {
+                  "agreement_date": "2026-08-29",
+                  "contract_type": "smart",
+                  "deposit_type": "fixed",
+                  "end_reason": null,
+                  "expected_delivery": 2171,
+                  "expected_production": null,
+                  "external_contract_id": "00000000-0000-4000-8000-000000000004",
+                  "gas_price_ceiling_contract_end_date": null,
+                  "gas_price_ceiling_contract_start_date": null,
+                  "monthly_advanced_deposit_amount": 2640000000,
+                  "original_end_date": null,
+                  "proposition_reference": "vast-voorschot-g-2024-11",
+                  "show_in_contract_screen": true,
+                  "start_reason": null
+                },
+                "start_date": "2026-09-17T22:00:00.000000Z",
+                "type": "gas",
+                "uuid": "00000000-0000-4000-8000-000000000005"
+              }
+            ],
+            "ean": "871000000000000001",
+            "features": [],
+            "market_segment": "gas",
+            "uuid": "00000000-0000-4000-8000-000000000006"
+          }
+        ],
+        "is_representative": true,
+        "organization": {
+          "address": {
+            "addition": "",
+            "city": "Zonnedorp",
+            "id": "1234AB1",
+            "number": "1",
+            "street": "Teststraat",
+            "sunrise": "2026-09-26T05:30:00.000000Z",
+            "sunset": "2026-09-26T17:30:00.000000Z",
+            "zipcode": "1234 AB"
+          },
+          "debtor": {
+            "bank_account_number": "NL00BANK0123456789",
+            "mandate_date": "01-01-2026",
+            "mandate_reference": "01-01-2026",
+            "name": "J DOE",
+            "payment_method": "Automatische Incasso"
+          },
+          "emails": [
+            "user@example.com"
+          ],
+          "name": "Jane Doe",
+          "number": 12345678,
+          "phone_numbers": [
+            "+31600000000"
+          ],
+          "privacy_service_code": "ABC123"
+        },
+        "organization_uuid": "00000000-0000-4000-8000-000000000007",
+        "uuid": "00000000-0000-4000-8000-000000000001"
+      }
+    ],
+    "buttons": [],
+    "chat": {
+      "custom_attributes": {
+        "source": "app"
+      },
+      "user": {
+        "email": "user@example.com",
+        "identifier": "00000000-0000-4000-8000-000000000008",
+        "name": " Jane Doe"
+      }
+    },
+    "iar_enabled": false,
+    "notification_setting_groups": [
+      {
+        "description": "Algemene notificaties over Zonneplan van onderwerpen die relevant zijn voor jou",
+        "name": "Algemeen",
+        "settings": [
+          {
+            "description": "Altijd als eerste op de hoogte",
+            "name": "Algemeen",
+            "push_enabled": true,
+            "slug": "new-updates"
+          },
+          {
+            "description": "Krijg een melding bij een ongelezen bericht",
+            "name": "Chatberichten",
+            "push_enabled": true,
+            "slug": "conversation-updates"
+          },
+          {
+            "description": "Updates over de dongel in je slimme meter",
+            "name": "Connect P1-meter berichten",
+            "push_enabled": true,
+            "slug": "p1-sgn-updates"
+          }
+        ],
+        "slug": "general"
+      },
+      {
+        "description": "Notificaties bij belangrijke prijsupdates wanneer je klant bent bij Zonneplan Energie",
+        "name": "Prijsupdates",
+        "settings": [
+          {
+            "description": "Melding bij een bijzonder hoge stroomprijs",
+            "name": "Hoge stroomprijs",
+            "push_enabled": false,
+            "slug": "high-energy-price"
+          },
+          {
+            "description": "Melding als de stroomprijs negatief is",
+            "name": "Negatieve stroomprijs",
+            "push_enabled": true,
+            "slug": "low-energy-price"
+          }
+        ],
+        "slug": "prices"
+      },
+      {
+        "description": "Notificaties bij storingen",
+        "name": "Proactieve monitoring",
+        "settings": [
+          {
+            "description": "Belangrijke updates over je thuisbatterij",
+            "name": "Thuisbatterij",
+            "push_enabled": true,
+            "slug": "battery-malfunction"
+          },
+          {
+            "description": "Belangrijke updates over je laadpaal",
+            "name": "Laadpaal",
+            "push_enabled": true,
+            "slug": "chargepoint-malfunction"
+          },
+          {
+            "description": "Belangrijke updates over je zonnepanelen",
+            "name": "Zonnepanelen",
+            "push_enabled": true,
+            "slug": "solar-malfunction"
+          }
+        ],
+        "slug": "malfunctions"
+      }
+    ],
+    "unread_notification_count": 0,
+    "user_account": {
+      "email": "user@example.com",
+      "first_name": null,
+      "full_name": "Jane Doe",
+      "initials": "",
+      "is_representative": false,
+      "uuid": "00000000-0000-4000-8000-000000000008"
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "data": {
+    "measurement_groups": [
+      {
+        "date": "2025-12-31T23:00:00.000000Z",
+        "group_type": "normal",
+        "measurements": [
+          {
+            "measured_at": "2026-08-31T22:00:00.000000Z",
+            "meta": {
+              "has_supply_contract": 1
+            },
+            "value": 7903
+          }
+        ],
+        "meta": {
+          "delivery_costs_excl_tax": 78260346,
+          "delivery_costs_incl_tax": 135699240,
+          "delivery_price_per_unit_excl_tax": 9902612.4,
+          "delivery_price_per_unit_incl_tax": 17170598.5,
+          "energy_delivered_sum": 7903,
+          "has_supply_contract": true
+        },
+        "mutable": true,
+        "total": 7903,
+        "type": "months"
+      }
+    ],
+    "powerplay": []
+  }
+}

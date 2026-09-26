@@ -83,6 +83,14 @@ class ConsumerPrices(DataClassORJSONMixin):
         """Return the price points, flattened out of the nested chart/series structure."""
         return self.chart.series.prices
 
+    def price_at(self, moment: datetime) -> PricePoint | None:
+        """Return the price point whose ``[start_date, end_date)`` contains ``moment``, if the chart covers it.
+
+        ``moment`` must be timezone-aware. Works for hourly and quarter-hourly
+        charts alike, e.g. ``price_at(now + timedelta(hours=1))`` for the next hour.
+        """
+        return next((point for point in self.prices if point.start_date <= moment < point.end_date), None)
+
     def prices_for_day(self, day: date, tz: tzinfo) -> list[PricePoint]:
         """Return the price points that start on the given local day."""
         return [point for point in self.prices if point.start_date.astimezone(tz).date() == day]
