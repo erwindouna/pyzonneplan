@@ -1,0 +1,24 @@
+{
+  "data": {
+    "measurement_groups": [
+      {
+        "date": "2026-09-24T22:00:00.000000Z",
+        "group_type": "normal",
+        "measurements": [],
+        "meta": {
+          "delivery_costs_excl_tax": null,
+          "delivery_costs_incl_tax": null,
+          "delivery_price_per_unit_excl_tax": null,
+          "delivery_price_per_unit_incl_tax": null,
+          "energy_delivered_sum": null,
+          "has_supply_contract": false,
+          "price": 16956098
+        },
+        "mutable": false,
+        "total": 0,
+        "type": "hours"
+      }
+    ],
+    "powerplay": []
+  }
+}
