@@ -1,7 +1,18 @@
 """Typed models for the Zonneplan API."""
 
 from .account import Account, Address, AddressGroup, Connection, Contract, UserAccount
-from .consumption import ElectricityDelivered, ElectricityMeasurementGroup, Gas, GasMeasurementGroup
+from .consumption import (
+    ElectricityChart,
+    ElectricityChartGroup,
+    ElectricityChartMeasurement,
+    ElectricityDelivered,
+    ElectricityMeasurementGroup,
+    Gas,
+    GasChart,
+    GasChartGroup,
+    GasChartMeasurement,
+    GasMeasurementGroup,
+)
 from .devices import (
     Battery,
     BatteryChart,
@@ -31,9 +42,15 @@ __all__ = [
     "ConsumerPrices",
     "Contract",
     "DynamicChargingConstraints",
+    "ElectricityChart",
+    "ElectricityChartGroup",
+    "ElectricityChartMeasurement",
     "ElectricityDelivered",
     "ElectricityMeasurementGroup",
     "Gas",
+    "GasChart",
+    "GasChartGroup",
+    "GasChartMeasurement",
     "GasMeasurementGroup",
     "Money",
     "PriceChartData",
