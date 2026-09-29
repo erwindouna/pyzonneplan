@@ -31,6 +31,7 @@ from pyzonneplan.exceptions import (
     ZonneplanAuthenticationError,
     ZonneplanConnectionError,
     ZonneplanInvalidOtpError,
+    ZonneplanNotFoundError,
     ZonneplanRateLimitError,
     ZonneplanRequestError,
     ZonneplanTimeoutError,
@@ -140,9 +141,14 @@ class Zonneplan:
         Raises:
         ------
             ZonneplanAuthenticationError: If the access token is invalid or missing.
-            ZonneplanRateLimitError: If the API rate limit is hit (not retried).
-            ZonneplanConnectionError: On network errors.
+            ZonneplanRateLimitError: If the API rate limit is hit.
+            ZonneplanNotFoundError: If the resource doesn't exist (HTTP 404).
+            ZonneplanRequestError: If the API rejects the request (other HTTP 4xx).
+            ZonneplanConnectionError: On network errors and HTTP 5xx.
             ZonneplanTimeoutError: If the request times out.
+
+        Only GET requests are retried, and only on connection errors and
+        timeouts: repeating a POST or PUT could apply an action twice.
 
         """
         if authenticated and self._token is not None and self._token.is_expired:
@@ -173,7 +179,7 @@ class Zonneplan:
         async for attempt in AsyncRetrying(
             retry=retry_if_exception_type((ZonneplanConnectionError, ZonneplanTimeoutError)),
             wait=wait_exponential(multiplier=1, min=1, max=10),
-            stop=stop_after_attempt(self._max_retries + 1),
+            stop=stop_after_attempt(self._max_retries + 1 if method == METH_GET else 1),
             reraise=True,
         ):
             with attempt:
@@ -228,6 +234,12 @@ class Zonneplan:
                 # failure too, not a connection error.
                 msg = f"Authentication failed for {method} {url}: {err} ({body_text})"
                 raise ZonneplanAuthenticationError(msg) from err
+            case HTTPStatus.NOT_FOUND:
+                msg = f"Not found: {method} {url}: {err} ({body_text})"
+                raise ZonneplanNotFoundError(msg) from err
+            case status if status < HTTPStatus.INTERNAL_SERVER_ERROR:
+                msg = f"Request rejected for {method} {url}: {err} ({body_text})"
+                raise ZonneplanRequestError(msg) from err
             case _:
                 msg = f"Connection error for {method} {url}: {err} ({body_text})"
                 raise ZonneplanConnectionError(msg) from err
