@@ -17,6 +17,7 @@ from pyzonneplan.exceptions import (
     ZonneplanAuthenticationError,
     ZonneplanConnectionError,
     ZonneplanInvalidOtpError,
+    ZonneplanRateLimitError,
     ZonneplanRequestError,
     ZonneplanTimeoutError,
 )
@@ -140,6 +141,26 @@ async def test_request_error_message_includes_response_body(aresponses: Response
 
     with pytest.raises(ZonneplanAuthenticationError, match="too_many_requests"):
         await zonneplan_client._request("oauth/token", method="POST", authenticated=False)
+
+
+@pytest.mark.parametrize(
+    ("headers", "retry_after"),
+    [
+        ({"Retry-After": "30"}, 30),
+        ({"Retry-After": "Wed, 30 Sep 2026 07:28:00 GMT"}, None),
+        ({}, None),
+    ],
+)
+async def test_request_429_raises_rate_limit_error(aresponses: ResponsesMockServer, headers: dict[str, str], retry_after: int | None) -> None:
+    """A 429 raises ZonneplanRateLimitError with the Retry-After seconds, and isn't retried."""
+    aresponses.add(HOST, "/user-accounts/me", "GET", aresponses.Response(status=429, headers=headers, text="{}"))
+
+    async with Zonneplan(email="user@example.com", max_retries=3) as client:
+        with pytest.raises(ZonneplanRateLimitError) as exc_info:
+            await client._request("user-accounts/me")
+
+    assert exc_info.value.retry_after == retry_after
+    aresponses.assert_plan_strictly_followed()
 
 
 async def test_async_get_account(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion) -> None:

@@ -6,6 +6,7 @@ from .exceptions import (
     ZonneplanConnectionError,
     ZonneplanError,
     ZonneplanInvalidOtpError,
+    ZonneplanRateLimitError,
     ZonneplanRequestError,
     ZonneplanTimeoutError,
 )
@@ -87,6 +88,7 @@ __all__ = [
     "ZonneplanConnectionError",
     "ZonneplanError",
     "ZonneplanInvalidOtpError",
+    "ZonneplanRateLimitError",
     "ZonneplanRequestError",
     "ZonneplanTimeoutError",
     "generate_pkce_pair",
