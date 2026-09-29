@@ -9,6 +9,7 @@ from .exceptions import (
     ZonneplanNotFoundError,
     ZonneplanRateLimitError,
     ZonneplanRequestError,
+    ZonneplanResponseError,
     ZonneplanTimeoutError,
 )
 from .models import (
@@ -116,6 +117,7 @@ __all__ = [
     "ZonneplanNotFoundError",
     "ZonneplanRateLimitError",
     "ZonneplanRequestError",
+    "ZonneplanResponseError",
     "ZonneplanTimeoutError",
     "generate_pkce_pair",
 ]

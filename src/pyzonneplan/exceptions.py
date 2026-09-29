@@ -24,6 +24,10 @@ class ZonneplanNotFoundError(ZonneplanRequestError):
     """Exception raised when the requested resource doesn't exist (HTTP 404), e.g. a device the account doesn't have."""
 
 
+class ZonneplanResponseError(ZonneplanError):
+    """Exception raised when a response doesn't have the expected shape (not JSON, or fields missing or of the wrong type)."""
+
+
 class ZonneplanRateLimitError(ZonneplanError):
     """Exception raised when the API rate limit is hit (HTTP 429).
 

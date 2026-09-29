@@ -34,6 +34,7 @@ from pyzonneplan.exceptions import (
     ZonneplanNotFoundError,
     ZonneplanRateLimitError,
     ZonneplanRequestError,
+    ZonneplanResponseError,
     ZonneplanTimeoutError,
 )
 from pyzonneplan.models.account import Account
@@ -52,10 +53,28 @@ from pyzonneplan.models.summary import Summary
 if TYPE_CHECKING:
     from datetime import date
 
+    from mashumaro.mixins.orjson import DataClassORJSONMixin
+
 try:
     VERSION = metadata.version(__package__)
 except metadata.PackageNotFoundError:  # pragma: no cover
     VERSION = "DEV-0.0.0"
+
+
+def _parse[T: DataClassORJSONMixin](model: type[T], response: Any, *path: str | int) -> T:
+    """Parse the part of a response at ``path`` (default: its ``data`` envelope) into ``model``.
+
+    Raises ZonneplanResponseError when the response doesn't have the expected
+    shape, instead of the KeyError/TypeError/ValueError it would cause.
+    """
+    try:
+        data = response
+        for key in path or ("data",):
+            data = data[key]
+        return model.from_dict(data)
+    except (LookupError, TypeError, ValueError) as err:
+        msg = f"Unexpected response for {model.__name__}: {err!r}"
+        raise ZonneplanResponseError(msg) from err
 
 
 @dataclass
@@ -146,6 +165,7 @@ class Zonneplan:
             ZonneplanRequestError: If the API rejects the request (other HTTP 4xx).
             ZonneplanConnectionError: On network errors and HTTP 5xx.
             ZonneplanTimeoutError: If the request times out.
+            ZonneplanResponseError: If the response body isn't JSON.
 
         Only GET requests are retried, and only on connection errors and
         timeouts: repeating a POST or PUT could apply an action twice.
@@ -207,10 +227,14 @@ class Zonneplan:
                     msg = f"Unexpected error during {method} {url}: {err}"
                     raise ZonneplanConnectionError(msg) from err
 
-        if response.status in (204, 304):
+        if response.status in (204, 304) or not body:
             return None
 
-        return orjson.loads(body)
+        try:
+            return orjson.loads(body)
+        except orjson.JSONDecodeError as err:
+            msg = f"Invalid JSON from {method} {url}: {body[:200].decode(errors='replace')}"
+            raise ZonneplanResponseError(msg) from err
 
     @staticmethod
     def _raise_for_client_response_error(method: str, url: URL, err: ClientResponseError, body: bytes, *, authenticated: bool) -> NoReturn:
@@ -263,7 +287,7 @@ class Zonneplan:
             authenticated=False,
         )
 
-        if not response.get("otp_required") or "auth_session" not in response:
+        if not isinstance(response, dict) or not response.get("otp_required") or "auth_session" not in response:
             msg = "Zonneplan did not return an OTP challenge"
             raise ZonneplanAuthenticationError(msg)
 
@@ -282,7 +306,7 @@ class Zonneplan:
             msg = "Zonneplan rejected the one-time password"
             raise ZonneplanInvalidOtpError(msg) from err
 
-        authorization_code = response.get("authorization_code")
+        authorization_code = response.get("authorization_code") if isinstance(response, dict) else None
         if not authorization_code:
             msg = "Zonneplan rejected the one-time password"
             raise ZonneplanInvalidOtpError(msg)
@@ -309,12 +333,16 @@ class Zonneplan:
     async def _async_request_token(self, grant: dict[str, str]) -> Token:
         """Call the token endpoint and parse the result."""
         response = await self._request(TOKEN_PATH, method=METH_POST, json_body=grant, authenticated=False)
-        return Token.from_response(response)
+        try:
+            return Token.from_response(response)
+        except (LookupError, TypeError, ValueError) as err:
+            msg = f"Unexpected token response: {err!r}"
+            raise ZonneplanResponseError(msg) from err
 
     async def async_get_account(self) -> Account:
         """Fetch the authenticated Zonneplan account, its addresses and connections."""
         response = await self._request("user-accounts/me")
-        return Account.from_dict(response["data"])
+        return _parse(Account, response)
 
     async def async_set_locale(self, locale: str) -> None:
         """Set the account's locale, e.g. ``nl-NL``.
@@ -327,7 +355,7 @@ class Zonneplan:
     async def async_get_consumer_prices(self, chart: str = PriceChart.ELECTRICITY_HOURLY) -> ConsumerPrices:
         """Fetch a consumer price chart (see :class:`pyzonneplan.const.PriceChart` for valid ``chart`` values)."""
         response = await self._request(f"api/consumer-prices/charts/{chart}")
-        return ConsumerPrices.from_dict(response["data"])
+        return _parse(ConsumerPrices, response)
 
     async def async_get_electricity_delivered(self, connection_uuid: str) -> ElectricityDelivered | None:
         """Fetch electricity delivery/production data (P1) for a connection.
@@ -336,7 +364,7 @@ class Zonneplan:
         responds with ``null``; use :meth:`async_get_electricity_chart` there.
         """
         response = await self._request(f"connections/{connection_uuid}/electricity-delivered")
-        return None if response is None else ElectricityDelivered.from_dict(response["data"])
+        return None if response is None else _parse(ElectricityDelivered, response)
 
     async def async_get_gas(self, connection_uuid: str) -> Gas | None:
         """Fetch gas consumption data (P1) for a connection.
@@ -345,7 +373,7 @@ class Zonneplan:
         responds with ``null``; use :meth:`async_get_gas_chart` there.
         """
         response = await self._request(f"connections/{connection_uuid}/gas")
-        return None if response is None else Gas.from_dict(response["data"])
+        return None if response is None else _parse(Gas, response)
 
     async def async_get_electricity_chart(self, connection_uuid: str, day: date, interval: str = ConsumptionChart.HOURS) -> ElectricityChart:
         """Fetch electricity used and returned around a local ``day``.
@@ -356,27 +384,27 @@ class Zonneplan:
         trusting zeros, since data from the grid operator arrives late.
         """
         response = await self._request(f"connections/{connection_uuid}/electricity-delivered/charts/{interval}", params={"date": day.isoformat()})
-        return ElectricityChart.from_dict(response["data"])
+        return _parse(ElectricityChart, response)
 
     async def async_get_gas_chart(self, connection_uuid: str, day: date, interval: str = ConsumptionChart.HOURS) -> GasChart:
         """Fetch gas used around a local ``day`` (see :meth:`async_get_electricity_chart`)."""
         response = await self._request(f"connections/{connection_uuid}/gas/charts/{interval}", params={"date": day.isoformat()})
-        return GasChart.from_dict(response["data"])
+        return _parse(GasChart, response)
 
     async def async_get_summary(self, connection_uuid: str) -> Summary:
         """Fetch the connection summary: live usage (P1 only) and an hourly price forecast of about two days."""
         response = await self._request(f"connections/{connection_uuid}/summary")
-        return Summary.from_dict(response["data"])
+        return _parse(Summary, response)
 
     async def async_get_pv_installation(self, connection_uuid: str) -> PvInstallation:
         """Fetch every solar inverter on a connection and today's combined yield."""
         response = await self._request(f"connections/{connection_uuid}/pv-installation")
-        return PvInstallation.from_dict(response["data"])
+        return _parse(PvInstallation, response)
 
     async def async_get_battery(self, connection_uuid: str, contract_uuid: str) -> BatteryInstallation:
         """Fetch a home battery's state (``contract_uuid`` of its home_battery_installation contract)."""
         response = await self._request(f"connections/{connection_uuid}/home-battery-installation/{contract_uuid}")
-        return BatteryInstallation.from_dict(response["data"])
+        return _parse(BatteryInstallation, response)
 
     async def async_get_battery_chart(self, contract_uuid: str, day: date, interval: str = ChartInterval.DAYS) -> BatteryChart | None:
         """Fetch a home battery's results for the month (``DAYS``) or year (``MONTHS``) of ``day``.
@@ -385,22 +413,25 @@ class Zonneplan:
         underscores. Returns ``None`` when the API sends no chart.
         """
         response = await self._request(f"contracts/{contract_uuid}/home_battery_installation/charts/{interval}", params={"date": day.isoformat()})
-        return BatteryChart.from_dict(response["data"][0]) if response["data"] else None
+        charts = response.get("data") if isinstance(response, dict) else None
+        if isinstance(charts, list) and (not charts or charts[0] is None):
+            return None
+        return _parse(BatteryChart, response, "data", 0)
 
     async def async_get_battery_control_mode(self, contract_uuid: str) -> BatteryControlMode:
         """Fetch a home battery's control mode and which modes it supports."""
         response = await self._request(f"api/contracts/{contract_uuid}/home-battery/control-mode")
-        return BatteryControlMode.from_dict(response["data"])
+        return _parse(BatteryControlMode, response)
 
     async def async_get_battery_home_optimization(self, contract_uuid: str) -> BatteryHomeOptimization:
         """Fetch a home battery's power limits for home optimization mode."""
         response = await self._request(f"api/contracts/{contract_uuid}/home-battery/control-mode/home_optimization")
-        return BatteryHomeOptimization.from_dict(response["data"])
+        return _parse(BatteryHomeOptimization, response)
 
     async def async_get_charge_point(self, connection_uuid: str, contract_uuid: str) -> ChargePointInstallation:
         """Fetch a charge point's state and schedules, and the account's vehicles."""
         response = await self._request(f"connections/{connection_uuid}/charge-points/{contract_uuid}")
-        return ChargePointInstallation.from_dict(response["data"])
+        return _parse(ChargePointInstallation, response)
 
     async def close(self) -> None:
         """Close open client session."""
