@@ -13,9 +13,10 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
+from mashumaro import field_options
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 
-from pyzonneplan.const import MONEY_FACTOR, WH_TO_KWH
+from pyzonneplan.const import API_TIMEZONE, MONEY_FACTOR, WH_TO_KWH
 
 from .account import Contract
 
@@ -31,15 +32,30 @@ def _kwh(value: int | None) -> Decimal | None:
 
 
 def _datetime(value: str | None) -> datetime | None:
-    """Parse an ISO timestamp from a contract's meta block."""
-    return None if value is None else datetime.fromisoformat(value)
+    """Parse an API timestamp, or return ``None`` when it's missing or invalid.
+
+    Timestamps come in UTC (``...Z``). One without a timezone is read as
+    Europe/Amsterdam local time, the format the charge point actions take,
+    so callers always get a timezone-aware datetime.
+    """
+    if not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=API_TIMEZONE)
+
+
+# Field metadata that parses a timestamp with _datetime instead of mashumaro's parser.
+_DATETIME = field_options(deserialize=_datetime)
 
 
 @dataclass
 class DeviceMeasurement(DataClassORJSONMixin):
     """One data point of a device's measurement group or chart."""
 
-    measured_at: datetime | None = None
+    measured_at: datetime | None = field(default=None, metadata=_DATETIME)
     value: int | None = None
     meta: dict[str, Any] = field(default_factory=dict)
 
@@ -52,7 +68,7 @@ class DeviceMeasurementGroup(DataClassORJSONMixin):
     endpoint (Wh for PV yield, 1e-7 EUR for a battery result).
     """
 
-    date: datetime | None = None
+    date: datetime | None = field(default=None, metadata=_DATETIME)
     total: int | None = None
     meta: dict[str, Any] = field(default_factory=dict)
     measurements: list[DeviceMeasurement] = field(default_factory=list)
@@ -503,8 +519,8 @@ class BatteryChart(DataClassORJSONMixin):
 class ChargeSchedule(DataClassORJSONMixin):
     """A single planned charging window."""
 
-    start_time: datetime | None = None
-    end_time: datetime | None = None
+    start_time: datetime | None = field(default=None, metadata=_DATETIME)
+    end_time: datetime | None = field(default=None, metadata=_DATETIME)
 
 
 @dataclass
@@ -516,14 +532,14 @@ class DynamicChargingConstraints(DataClassORJSONMixin):
 
     desired_distance_in_kilometers: int | None = None
     desired_additional_battery_percentage: int | None = None
-    desired_end_time: datetime | None = None
+    desired_end_time: datetime | None = field(default=None, metadata=_DATETIME)
 
 
 @dataclass
 class ChargePointSession(DataClassORJSONMixin):
     """The currently running or last charging session."""
 
-    start_time: datetime | None = None
+    start_time: datetime | None = field(default=None, metadata=_DATETIME)
     charged_distance_in_kilometers: int | None = None
 
 

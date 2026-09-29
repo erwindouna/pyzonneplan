@@ -2,6 +2,7 @@
 
 from decimal import Decimal
 from typing import Final
+from zoneinfo import ZoneInfo
 
 API_SCHEME: Final = "https"
 API_URL: Final = "app-api.zonneplan.nl"
@@ -12,6 +13,9 @@ TOKEN_PATH: Final = "oauth/token"  # noqa: S105 (a URL path, not a credential)
 # Sent by the mobile app; the API rejects requests without them.
 APP_VERSION: Final = "5.10.1"
 APP_ENVIRONMENT: Final = "production"
+
+# The API's local time, e.g. for the charge point actions' end times.
+API_TIMEZONE: Final = ZoneInfo("Europe/Amsterdam")
 
 # Every monetary "amount" in the API is expressed in 1e-7 EUR.
 MONEY_FACTOR: Final = Decimal("0.0000001")
