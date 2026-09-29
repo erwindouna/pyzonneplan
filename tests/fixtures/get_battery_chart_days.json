@@ -1,0 +1,29 @@
+{
+  "data": [
+    {
+      "total": 15000000,
+      "meta": {
+        "delivery": 9000,
+        "production": 7500
+      },
+      "measurements": [
+        {
+          "measured_at": "2026-08-31T22:00:00.000000Z",
+          "value": 5000000,
+          "meta": {
+            "delivery": 3000,
+            "production": 2500
+          }
+        },
+        {
+          "measured_at": "2026-09-01T22:00:00.000000Z",
+          "value": 10000000,
+          "meta": {
+            "delivery": 6000,
+            "production": 5000
+          }
+        }
+      ]
+    }
+  ]
+}
