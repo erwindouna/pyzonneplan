@@ -1,0 +1,6 @@
+{
+  "data": {
+    "max_desired_charge_power_watts": 2500,
+    "max_desired_discharge_power_watts": 800
+  }
+}

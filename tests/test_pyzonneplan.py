@@ -12,7 +12,7 @@ from aresponses import ResponsesMockServer
 
 from pyzonneplan import Zonneplan
 from pyzonneplan.auth import OtpChallenge, Token
-from pyzonneplan.const import ConsumptionChart, PriceChart
+from pyzonneplan.const import ChartInterval, ConsumptionChart, PriceChart
 from pyzonneplan.exceptions import (
     ZonneplanAuthenticationError,
     ZonneplanConnectionError,
@@ -345,6 +345,71 @@ async def test_async_set_locale(aresponses: ResponsesMockServer, zonneplan_clien
 
     assert await aresponses.history[0].request.json() == {"locale": "nl-NL"}
     aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.parametrize(
+    ("method", "args", "path", "fixture"),
+    [
+        ("async_get_pv_installation", ("conn-1",), "/connections/conn-1/pv-installation", "get_pv_installation.json"),
+        ("async_get_battery", ("conn-1", "bat-1"), "/connections/conn-1/home-battery-installation/bat-1", "get_battery_installation.json"),
+        ("async_get_battery_control_mode", ("bat-1",), "/api/contracts/bat-1/home-battery/control-mode", "get_battery_control_mode.json"),
+        (
+            "async_get_battery_home_optimization",
+            ("bat-1",),
+            "/api/contracts/bat-1/home-battery/control-mode/home_optimization",
+            "get_battery_home_optimization.json",
+        ),
+        ("async_get_charge_point", ("conn-1", "cp-1"), "/connections/conn-1/charge-points/cp-1", "get_charge_point.json"),
+    ],
+    ids=["pv_installation", "battery", "battery_control_mode", "battery_home_optimization", "charge_point"],
+)
+async def test_device_reads(
+    aresponses: ResponsesMockServer,
+    zonneplan_client: Zonneplan,
+    snapshot: SnapshotAssertion,
+    *,
+    method: str,
+    args: tuple[str, ...],
+    path: str,
+    fixture: str,
+) -> None:
+    """Each device endpoint is fetched from its path and parsed into its model."""
+    aresponses.add(HOST, path, "GET", aresponses.Response(text=load_fixtures(fixture)))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    result = await getattr(zonneplan_client, method)(*args)
+
+    assert result == snapshot
+
+
+async def test_async_get_battery_chart(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion) -> None:
+    """The battery chart is fetched for the date and interval, and taken from the response's first element."""
+    aresponses.add(
+        HOST,
+        "/contracts/bat-1/home_battery_installation/charts/months?date=2026-01-01",
+        "GET",
+        aresponses.Response(text=load_fixtures("get_battery_chart_days.json")),
+        match_querystring=True,
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    chart = await zonneplan_client.async_get_battery_chart("bat-1", date(2026, 1, 1), ChartInterval.MONTHS)
+
+    assert chart == snapshot
+
+
+async def test_async_get_battery_chart_empty(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """An empty chart response returns None."""
+    aresponses.add(
+        HOST,
+        "/contracts/bat-1/home_battery_installation/charts/days?date=2026-09-01",
+        "GET",
+        aresponses.Response(text=orjson.dumps({"data": []}).decode()),
+        match_querystring=True,
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    assert await zonneplan_client.async_get_battery_chart("bat-1", date(2026, 9, 1)) is None
 
 
 async def test_request_refreshes_expired_token_before_use(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
