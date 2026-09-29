@@ -30,6 +30,7 @@ from pyzonneplan.exceptions import (
     ZonneplanAuthenticationError,
     ZonneplanConnectionError,
     ZonneplanInvalidOtpError,
+    ZonneplanRateLimitError,
     ZonneplanRequestError,
     ZonneplanTimeoutError,
 )
@@ -128,6 +129,7 @@ class Zonneplan:
         Raises:
         ------
             ZonneplanAuthenticationError: If the access token is invalid or missing.
+            ZonneplanRateLimitError: If the API rate limit is hit (not retried).
             ZonneplanConnectionError: On network errors.
             ZonneplanTimeoutError: If the request times out.
 
@@ -194,6 +196,12 @@ class Zonneplan:
         """Map a failed HTTP response to the appropriate Zonneplan exception."""
         body_text = body.decode(errors="replace")
         match err.status:
+            case HTTPStatus.TOO_MANY_REQUESTS:
+                # Retry-After may also be an HTTP date; only the seconds form is used.
+                header = err.headers.get("Retry-After", "") if err.headers else ""
+                retry_after = int(header) if header.isdigit() else None
+                msg = f"Rate limit hit for {method} {url}, retry after {retry_after} seconds ({body_text})"
+                raise ZonneplanRateLimitError(msg, retry_after=retry_after) from err
             case 400 if authenticated:
                 # A data endpoint rejecting its parameters, e.g. an unknown
                 # chart interval ({"message": "Invalid chart type."}).
