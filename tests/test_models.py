@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
 
 import orjson
+import pytest
 
 from pyzonneplan.const import BatteryMode, ContractType
 from pyzonneplan.models.account import Account, Address, AddressGroup, Connection, Contract, UserAccount
@@ -19,6 +20,7 @@ from pyzonneplan.models.devices import (
     BatteryInstallation,
     ChargePoint,
     ChargePointInstallation,
+    ChargeSchedule,
     P1Meter,
     PvInstallation,
     Vehicle,
@@ -181,6 +183,29 @@ def test_p1_meters_from_consumption_summaries() -> None:
 
     assert [meter.electricity_delivery for meter in electricity.meters] == [450]
     assert [meter.gas_last_measured_at for meter in gas.meters] == [datetime(2026, 8, 29, 11, 0, tzinfo=UTC)]
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("2026-09-29T10:00:00.000000Z", datetime(2026, 9, 29, 10, tzinfo=UTC)),
+        ("2026-09-29 12:00:00", datetime(2026, 9, 29, 12, tzinfo=ZoneInfo("Europe/Amsterdam"))),
+        ("", None),
+        ("not a date", None),
+        (None, None),
+    ],
+    ids=["utc", "naive_is_local", "empty", "invalid", "missing"],
+)
+def test_device_timestamps(value: str | None, expected: datetime | None) -> None:
+    """Device timestamps are timezone-aware, reading a naive one as Amsterdam time, and None when empty or invalid."""
+    meter = P1Meter(contract=_contract(ContractType.P1_INSTALLATION, meta={"electricity_last_measured_at": value}))
+    schedule = ChargeSchedule.from_dict({"start_time": value})
+
+    assert meter.electricity_last_measured_at == expected
+    assert schedule.start_time == expected
+    if expected is not None:
+        assert meter.electricity_last_measured_at is not None
+        assert meter.electricity_last_measured_at.tzinfo is not None
 
 
 def test_pv_installation(snapshot: SnapshotAssertion) -> None:
