@@ -22,6 +22,7 @@ from pyzonneplan.exceptions import (
     ZonneplanNotFoundError,
     ZonneplanRateLimitError,
     ZonneplanRequestError,
+    ZonneplanResponseError,
     ZonneplanTimeoutError,
 )
 
@@ -207,6 +208,49 @@ async def test_request_5xx_is_not_retried_for_post(aresponses: ResponsesMockServ
             await client._request("connections/conn-1/charge-points/cp-1/actions/start_boost", method="POST")
 
     aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        '{"data": null}',
+        "null",
+        '{"data": {"user_account": {"uuid": "u-1"}}}',
+        '{"data": {"user_account": "not an object"}}',
+    ],
+    ids=["data_null", "body_null", "missing_field", "wrong_type"],
+)
+async def test_unexpected_response_raises_response_error(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, body: str) -> None:
+    """A response of the wrong shape raises ZonneplanResponseError, not a bare TypeError or ValueError."""
+    aresponses.add(HOST, "/user-accounts/me", "GET", aresponses.Response(text=body))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    with pytest.raises(ZonneplanResponseError, match="Account"):
+        await zonneplan_client.async_get_account()
+
+
+async def test_invalid_json_raises_response_error(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """A body that isn't JSON raises ZonneplanResponseError."""
+    aresponses.add(HOST, "/user-accounts/me", "GET", aresponses.Response(text="<html>Maintenance</html>"))
+
+    with pytest.raises(ZonneplanResponseError, match="Maintenance"):
+        await zonneplan_client._request("user-accounts/me")
+
+
+async def test_empty_body_returns_none(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """A 200 without a body returns None, like a 204."""
+    aresponses.add(HOST, "/connections/conn-1/charge-points/cp-1/actions/start_boost", "POST", aresponses.Response(text=""))
+
+    assert await zonneplan_client._request("connections/conn-1/charge-points/cp-1/actions/start_boost", method="POST") is None
+
+
+async def test_unexpected_token_response_raises_response_error(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """A token response without the expected fields raises ZonneplanResponseError."""
+    aresponses.add(HOST, "/oauth/token", "POST", aresponses.Response(text=orjson.dumps({"access_token": "new-access"}).decode()))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    with pytest.raises(ZonneplanResponseError, match="token"):
+        await zonneplan_client.async_refresh_token()
 
 
 async def test_async_get_account(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion) -> None:
@@ -444,13 +488,14 @@ async def test_async_get_battery_chart(aresponses: ResponsesMockServer, zonnepla
     assert chart == snapshot
 
 
-async def test_async_get_battery_chart_empty(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
-    """An empty chart response returns None."""
+@pytest.mark.parametrize("data", [[], [None]], ids=["empty", "null_chart"])
+async def test_async_get_battery_chart_empty(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, data: list[None]) -> None:
+    """A response without a chart returns None."""
     aresponses.add(
         HOST,
         "/contracts/bat-1/home_battery_installation/charts/days?date=2026-09-01",
         "GET",
-        aresponses.Response(text=orjson.dumps({"data": []}).decode()),
+        aresponses.Response(text=orjson.dumps({"data": data}).decode()),
         match_querystring=True,
     )
 
