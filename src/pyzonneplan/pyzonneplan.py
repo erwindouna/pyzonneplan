@@ -23,6 +23,7 @@ from pyzonneplan.const import (
     APP_VERSION,
     AUTHORIZE_CHALLENGE_PATH,
     TOKEN_PATH,
+    BatteryMode,
     ChartInterval,
     ConsumptionChart,
     PriceChart,
@@ -486,6 +487,29 @@ class Zonneplan:
         await self._async_battery_action(
             connection_uuid, contract_uuid, "set_backup_power_reserved_state_of_charge", {"reserved_state_of_charge_wh": reserved_wh}
         )
+
+    async def async_set_battery_control_mode(self, connection_uuid: str, contract_uuid: str, mode: str) -> None:
+        """Switch a home battery to a :class:`pyzonneplan.const.BatteryMode`, the way the app does.
+
+        The API has no single call for this: enable the new mode, then disable
+        the one that was on (for dynamic charging, disable both). The current
+        modes are fetched first. If a later step fails, the earlier ones stay
+        applied; home optimization keeps its current power limits.
+        """
+        if mode not in (BatteryMode.SELF_CONSUMPTION, BatteryMode.HOME_OPTIMIZATION, BatteryMode.DYNAMIC_CHARGING):
+            msg = f"Unknown battery control mode: {mode}"
+            raise ValueError(msg)
+
+        current = await self.async_get_battery_control_mode(contract_uuid)
+        if mode == BatteryMode.SELF_CONSUMPTION:
+            await self.async_enable_battery_self_consumption(connection_uuid, contract_uuid)
+        elif mode == BatteryMode.HOME_OPTIMIZATION:
+            await self.async_enable_battery_home_optimization(connection_uuid, contract_uuid)
+
+        if mode != BatteryMode.HOME_OPTIMIZATION and current.is_enabled(BatteryMode.HOME_OPTIMIZATION):
+            await self.async_disable_battery_home_optimization(connection_uuid, contract_uuid)
+        if mode != BatteryMode.SELF_CONSUMPTION and current.is_enabled(BatteryMode.SELF_CONSUMPTION):
+            await self.async_disable_battery_self_consumption(connection_uuid, contract_uuid)
 
     async def async_get_charge_point(self, connection_uuid: str, contract_uuid: str) -> ChargePointInstallation:
         """Fetch a charge point's state and schedules, and the account's vehicles."""
