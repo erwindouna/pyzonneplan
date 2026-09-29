@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING, Any
+from zoneinfo import ZoneInfo
 
 import orjson
 import pytest
@@ -592,6 +593,81 @@ async def test_set_battery_control_mode_unknown(zonneplan_client: Zonneplan) -> 
     """An unknown mode is rejected before anything is sent."""
     with pytest.raises(ValueError, match="Unknown battery control mode"):
         await zonneplan_client.async_set_battery_control_mode("conn-1", "bat-1", "manual")
+
+
+@pytest.mark.parametrize(
+    ("method", "action"),
+    [
+        ("async_start_charge_point_boost", "start_boost"),
+        ("async_stop_charge_point", "stop_charging"),
+        ("async_resume_charge_point_auto_charging", "unsuppress_always_flex"),
+    ],
+)
+async def test_charge_point_actions(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, method: str, action: str) -> None:
+    """Each charge point action POSTs an empty body to the charge point's action path."""
+    aresponses.add(HOST, f"/connections/conn-1/charge-points/cp-1/actions/{action}", "POST", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await getattr(zonneplan_client, method)("conn-1", "cp-1")
+
+    assert await aresponses.history[0].request.json() == {}
+    aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.parametrize("stop_status", [204, 422], ids=["session_running", "no_session"])
+async def test_reset_charge_point_schedule(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, stop_status: int) -> None:
+    """Resetting the schedule stops a dynamic session first, and carries on when there is none to stop."""
+    actions = "/connections/conn-1/charge-points/cp-1/actions"
+    aresponses.add(HOST, f"{actions}/stop_dynamic_charging_session", "POST", aresponses.Response(status=stop_status, text="{}"))
+    aresponses.add(HOST, f"{actions}/reset_schedule", "POST", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_reset_charge_point_schedule("conn-1", "cp-1")
+
+    aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "amount"),
+    [
+        ({"kilometers": 150, "vehicle_uuid": "v-1"}, {"unit": "kilometers", "value": 150}),
+        ({"percentage": 40}, {"unit": "percentage", "value": 400}),
+    ],
+    ids=["kilometers", "percentage"],
+)
+async def test_start_charge_point_dynamic_session(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, kwargs: dict[str, Any], amount: dict[str, Any]
+) -> None:
+    """The session is started with the end time in Amsterdam local time, the amount (percentage in permille) and the vehicle."""
+    aresponses.add(HOST, "/connections/conn-1/charge-points/cp-1/actions/start_dynamic_charging_session", "POST", aresponses.Response(status=204))
+    end = datetime.now(UTC).replace(microsecond=0) + timedelta(hours=10)
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_start_charge_point_dynamic_session("conn-1", "cp-1", end, **kwargs)
+
+    body = await aresponses.history[0].request.json()
+    local_end = end.astimezone(ZoneInfo("Europe/Amsterdam")).strftime("%Y-%m-%d %H:%M:00")
+    assert body["user_constraints"] == {"desired_end_time": local_end, **amount}
+    assert body.get("vehicle") == ({"vehicle_uuid": "v-1"} if "vehicle_uuid" in kwargs else None)
+
+
+@pytest.mark.parametrize(
+    ("end", "kwargs", "match"),
+    [
+        (timedelta(hours=10), {}, "exactly one"),
+        (timedelta(hours=10), {"kilometers": 150, "percentage": 40}, "exactly one"),
+        (timedelta(minutes=5), {"kilometers": 150}, "15 minutes"),
+        (None, {"kilometers": 150}, "timezone-aware"),
+    ],
+    ids=["no_amount", "both_amounts", "too_soon", "naive_end"],
+)
+async def test_start_charge_point_dynamic_session_invalid(
+    zonneplan_client: Zonneplan, end: timedelta | None, kwargs: dict[str, Any], match: str
+) -> None:
+    """Invalid constraints are rejected before anything is sent."""
+    moment = datetime(2030, 1, 1, 12) if end is None else datetime.now(UTC) + end
+    with pytest.raises(ValueError, match=match):
+        await zonneplan_client.async_start_charge_point_dynamic_session("conn-1", "cp-1", moment, **kwargs)
 
 
 async def test_request_refreshes_expired_token_before_use(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:

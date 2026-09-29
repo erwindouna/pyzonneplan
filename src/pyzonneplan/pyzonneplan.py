@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import socket
 from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
 from http import HTTPStatus
 from importlib import metadata
 from typing import TYPE_CHECKING, Any, NoReturn, Self
@@ -18,6 +20,7 @@ from yarl import URL
 from pyzonneplan.auth import OtpChallenge, Token, generate_pkce_pair
 from pyzonneplan.const import (
     API_SCHEME,
+    API_TIMEZONE,
     API_URL,
     APP_ENVIRONMENT,
     APP_VERSION,
@@ -515,6 +518,76 @@ class Zonneplan:
         """Fetch a charge point's state and schedules, and the account's vehicles."""
         response = await self._request(f"connections/{connection_uuid}/charge-points/{contract_uuid}")
         return _parse(ChargePointInstallation, response)
+
+    async def _async_charge_point_action(self, connection_uuid: str, contract_uuid: str, action: str, body: dict[str, Any] | None = None) -> None:
+        """Send an action to a charge point.
+
+        The charge point confirms asynchronously: until it has, its state
+        reports ``processing``. Actions are never retried (see :meth:`_request`).
+        """
+        await self._request(
+            f"connections/{connection_uuid}/charge-points/{contract_uuid}/actions/{action}",
+            method=METH_POST,
+            json_body=body or {},
+        )
+
+    async def async_start_charge_point_boost(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Start charging now at full power, regardless of the prices (when the state is ``VehicleDetected``)."""
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "start_boost")
+
+    async def async_stop_charge_point(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Stop charging (when the state is ``Charging``)."""
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "stop_charging")
+
+    async def async_resume_charge_point_auto_charging(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Let the charge point charge automatically on cheap prices again, after a manual stop."""
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "unsuppress_always_flex")
+
+    async def async_reset_charge_point_schedule(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Clear the planned charging, stopping a running dynamic charging session first, as the app does.
+
+        A planning that hasn't started has no session to stop, so a rejection
+        of that first step is ignored.
+        """
+        with contextlib.suppress(ZonneplanRequestError):
+            await self._async_charge_point_action(connection_uuid, contract_uuid, "stop_dynamic_charging_session")
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "reset_schedule")
+
+    async def async_start_charge_point_dynamic_session(
+        self,
+        connection_uuid: str,
+        contract_uuid: str,
+        end: datetime,
+        *,
+        kilometers: int | None = None,
+        percentage: int | None = None,
+        vehicle_uuid: str | None = None,
+    ) -> None:
+        """Charge a given amount by ``end`` at the cheapest prices.
+
+        Pass exactly one of ``kilometers`` (range to add) or ``percentage``
+        (battery percentage to add; the API takes it in permille). ``end`` must
+        be timezone-aware and at least 15 minutes ahead. ``vehicle_uuid`` (see
+        :attr:`ChargePointInstallation.vehicles`) sizes kilometres to that car.
+        """
+        if kilometers is not None and percentage is None:
+            amount: dict[str, Any] = {"unit": "kilometers", "value": kilometers}
+        elif percentage is not None and kilometers is None:
+            amount = {"unit": "percentage", "value": percentage * 10}
+        else:
+            msg = "Pass exactly one of kilometers or percentage"
+            raise ValueError(msg)
+        if end.tzinfo is None:
+            msg = "end must be timezone-aware"
+            raise ValueError(msg)
+        if end < datetime.now(UTC) + timedelta(minutes=15):
+            msg = "end must be at least 15 minutes ahead"
+            raise ValueError(msg)
+
+        body: dict[str, Any] = {"user_constraints": {"desired_end_time": end.astimezone(API_TIMEZONE).strftime("%Y-%m-%d %H:%M:00"), **amount}}
+        if vehicle_uuid is not None:
+            body["vehicle"] = {"vehicle_uuid": vehicle_uuid}
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "start_dynamic_charging_session", body)
 
     async def close(self) -> None:
         """Close open client session."""

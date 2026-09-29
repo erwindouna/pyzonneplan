@@ -117,10 +117,14 @@ against live hardware yet. Reports and captured (anonymised) responses are welco
 | `async_enable_battery_home_optimization(connection_uuid, contract_uuid, *, max_charge_power_w, max_discharge_power_w)` / `async_disable_...` | Turns home optimization mode on (with new power limits, or the current ones) or off |
 | `async_set_battery_backup_reserve(connection_uuid, contract_uuid, reserved_wh)` | Reserves energy for backup power |
 | `async_set_battery_control_mode(connection_uuid, contract_uuid, mode)` | Switches to a `BatteryMode`, turning the other modes off the way the app does |
+| `async_start_charge_point_boost(connection_uuid, contract_uuid)` / `async_stop_charge_point(...)` | Starts charging now at full power, or stops charging |
+| `async_resume_charge_point_auto_charging(connection_uuid, contract_uuid)` | Lets the charge point charge on cheap prices again after a manual stop |
+| `async_start_charge_point_dynamic_session(connection_uuid, contract_uuid, end, *, kilometers or percentage, vehicle_uuid)` | Charges an amount by `end` at the cheapest prices |
+| `async_reset_charge_point_schedule(connection_uuid, contract_uuid)` | Clears the planned charging |
 
 A battery with both modes off trades on the dynamic prices (`BatteryMode.DYNAMIC_CHARGING`). The API doesn't
 switch the other mode off for you; `async_set_battery_control_mode()` does, like the Zonneplan app. The battery
-confirms a change asynchronously; until then `async_get_battery_control_mode()` reports `processing`.
+and charge point confirm a change asynchronously; until then their state reports `processing`.
 Actions are sent once and never retried.
 
 ### Errors
