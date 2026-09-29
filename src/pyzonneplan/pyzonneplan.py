@@ -100,6 +100,7 @@ class Zonneplan:
         self._close_session = session is None
         self._token = token
         self._max_retries = max_retries
+        self._refresh_lock = asyncio.Lock()
 
     @property
     def token(self) -> Token | None:
@@ -145,7 +146,11 @@ class Zonneplan:
 
         """
         if authenticated and self._token is not None and self._token.is_expired:
-            await self.async_refresh_token()
+            # Refreshing rotates the refresh token, so concurrent requests must
+            # not each refresh: the second would be rejected and force a new login.
+            async with self._refresh_lock:
+                if self._token.is_expired:
+                    await self.async_refresh_token()
 
         url = URL.build(scheme=API_SCHEME, host=API_URL, path="/").join(URL(uri))
 

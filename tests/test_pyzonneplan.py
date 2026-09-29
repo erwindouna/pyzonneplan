@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, date, datetime, timedelta
 from typing import TYPE_CHECKING, Any
 
@@ -444,6 +445,29 @@ async def test_request_refreshes_expired_token_before_use(aresponses: ResponsesM
 
     assert zonneplan_client._token.access_token == "new-access"
     assert account.user_account.uuid == "u-1"
+
+
+async def test_concurrent_requests_refresh_the_token_once(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Requests that find the token expired together refresh it once, as the refresh token rotates."""
+    aresponses.add(
+        HOST,
+        "/oauth/token",
+        "POST",
+        aresponses.Response(text=orjson.dumps({"access_token": "new-access", "refresh_token": "new-refresh", "expires_in": 3600}).decode()),
+    )
+    for _ in range(2):
+        aresponses.add(
+            HOST, "/api/consumer-prices/charts/gas-daily", "GET", aresponses.Response(text=load_fixtures("get_consumer_prices_gas_daily.json"))
+        )
+
+    zonneplan_client._token = Token(access_token="old-access", refresh_token="old-refresh", expires_at=datetime.now(UTC) - timedelta(hours=1))
+    await asyncio.gather(
+        zonneplan_client.async_get_consumer_prices(PriceChart.GAS_DAILY),
+        zonneplan_client.async_get_consumer_prices(PriceChart.GAS_DAILY),
+    )
+
+    assert zonneplan_client._token.refresh_token == "new-refresh"
+    aresponses.assert_plan_strictly_followed()
 
 
 async def test_seeded_token_is_used_without_login(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
