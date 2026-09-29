@@ -442,11 +442,25 @@ class BatteryControlMode(DataClassORJSONMixin):
 
 
 @dataclass
+class BatteryPowerLimits(DataClassORJSONMixin):
+    """The range a battery power setting accepts, in W."""
+
+    min_watts: int | None = None
+    max_watts: int | None = None
+
+
+@dataclass
 class BatteryHomeOptimization(DataClassORJSONMixin):
-    """Response of the home_optimization control-mode endpoint (limits in W)."""
+    """Response of the home_optimization control-mode endpoint.
+
+    The most power (W) home optimization may charge and discharge with, and
+    the range each setting accepts.
+    """
 
     max_desired_charge_power_watts: int | None = None
+    max_desired_charge_power_limits: BatteryPowerLimits | None = None
     max_desired_discharge_power_watts: int | None = None
+    max_desired_discharge_power_limits: BatteryPowerLimits | None = None
 
 
 @dataclass

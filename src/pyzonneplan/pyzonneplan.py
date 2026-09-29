@@ -424,7 +424,7 @@ class Zonneplan:
         return _parse(BatteryControlMode, response)
 
     async def async_get_battery_home_optimization(self, contract_uuid: str) -> BatteryHomeOptimization:
-        """Fetch a home battery's power limits for home optimization mode."""
+        """Fetch the charge and discharge power home optimization may use, and the range each accepts."""
         response = await self._request(f"api/contracts/{contract_uuid}/home-battery/control-mode/home_optimization")
         return _parse(BatteryHomeOptimization, response)
 
