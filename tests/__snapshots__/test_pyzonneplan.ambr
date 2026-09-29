@@ -99,6 +99,29 @@
     }),
   })
 # ---
+# name: test_async_get_battery_chart
+  dict({
+    'measurements': list([
+      dict({
+        'delivery': 3000,
+        'production': 2500,
+        'result': 5000000,
+        'start': datetime.datetime(2026, 8, 31, 22, 0, tzinfo=datetime.timezone.utc),
+      }),
+      dict({
+        'delivery': 6000,
+        'production': 5000,
+        'result': 10000000,
+        'start': datetime.datetime(2026, 9, 1, 22, 0, tzinfo=datetime.timezone.utc),
+      }),
+    ]),
+    'meta': dict({
+      'delivery': 9000,
+      'production': 7500,
+    }),
+    'total': 15000000,
+  })
+# ---
 # name: test_async_get_consumer_prices
   dict({
     'chart': dict({
@@ -2308,5 +2331,236 @@
       'type': 'high',
       'value': 0,
     }),
+  })
+# ---
+# name: test_device_reads[battery]
+  dict({
+    'contracts': list([
+      dict({
+        'end_date': None,
+        'label': 'Thuisbatterij',
+        'meta': dict({
+          'average_day': 4000000,
+          'backup_power_active': False,
+          'backup_power_capable': True,
+          'backup_power_usable_capacity_wh': 4000,
+          'battery_state': 'Discharging',
+          'cycle_count': 100,
+          'delivery_day': 3000,
+          'dynamic_charging_enabled': False,
+          'dynamic_load_balancing_enabled': True,
+          'dynamic_load_balancing_overload_active': False,
+          'first_measured_at': '2026-04-10T12:30:00.000000Z',
+          'grid_congestion_active': False,
+          'home_optimization_active': False,
+          'home_optimization_enabled': False,
+          'host_device_model_name': 'Example Battery 5',
+          'identifier': 'SERIAL0000003',
+          'inverter_state': 'Discharging',
+          'last_measured_at': '2026-09-29T11:55:00.000000Z',
+          'manual_control_enabled': False,
+          'manual_control_state': None,
+          'power_ac': -800,
+          'production_day': 2500,
+          'production_month': None,
+          'reserve_discharge_cutoff_wh': 1000,
+          'self_consumption_enabled': True,
+          'show_in_contract_screen': True,
+          'state_of_charge': 655,
+          'total_day': 5000000,
+          'total_earned': 1000000000,
+        }),
+        'start_date': datetime.datetime(2026, 4, 9, 22, 0, tzinfo=datetime.timezone.utc),
+        'type': 'home_battery_installation',
+        'uuid': '00000000-0000-4000-8000-000000000201',
+      }),
+    ]),
+    'measurement_groups': list([
+      dict({
+        'date': datetime.datetime(2026, 9, 28, 22, 0, tzinfo=datetime.timezone.utc),
+        'measurements': list([
+        ]),
+        'meta': dict({
+        }),
+        'total': 5000000,
+      }),
+    ]),
+  })
+# ---
+# name: test_device_reads[battery_control_mode]
+  dict({
+    'control_mode': 'self_consumption',
+    'modes': dict({
+      'dynamic_charging': dict({
+        'available': False,
+        'enabled': False,
+      }),
+      'home_optimization': dict({
+        'available': True,
+        'enabled': False,
+      }),
+      'self_consumption': dict({
+        'available': True,
+        'enabled': True,
+      }),
+    }),
+    'processing': False,
+  })
+# ---
+# name: test_device_reads[battery_home_optimization]
+  dict({
+    'max_desired_charge_power_watts': 2500,
+    'max_desired_discharge_power_watts': 800,
+  })
+# ---
+# name: test_device_reads[charge_point]
+  dict({
+    'contracts': list([
+      dict({
+        'charge_schedules': list([
+          dict({
+            'end_time': datetime.datetime(2026, 9, 29, 14, 0, tzinfo=datetime.timezone.utc),
+            'start_time': datetime.datetime(2026, 9, 29, 12, 0, tzinfo=datetime.timezone.utc),
+          }),
+          dict({
+            'end_time': datetime.datetime(2026, 9, 30, 4, 0, tzinfo=datetime.timezone.utc),
+            'start_time': datetime.datetime(2026, 9, 30, 2, 0, tzinfo=datetime.timezone.utc),
+          }),
+        ]),
+        'end_date': None,
+        'label': 'Laadpaal',
+        'meta': dict({
+          'charge_point_model_name': 'Example Charger 11',
+          'charging_cost_total': 1500000000,
+          'identifier': 'SERIAL0000004',
+          'serial_number': 'SERIAL0000004',
+          'session_average_cost_in_cents': 2500000,
+          'session_charging_cost_total': 25000000,
+          'session_flex_result': 2000000,
+          'show_in_contract_screen': True,
+        }),
+        'start_date': datetime.datetime(2023, 10, 8, 22, 0, tzinfo=datetime.timezone.utc),
+        'state': dict({
+          'can_charge': True,
+          'can_schedule': True,
+          'charge_on_solar_enabled': False,
+          'charge_point_session': dict({
+            'charged_distance_in_kilometers': 60,
+            'start_time': datetime.datetime(2026, 9, 29, 10, 0, tzinfo=datetime.timezone.utc),
+          }),
+          'charging_automatically': True,
+          'charging_manually': False,
+          'connectivity_state': True,
+          'dynamic_charging_enabled': True,
+          'dynamic_charging_flex_enabled': True,
+          'dynamic_charging_flex_suppressed': False,
+          'dynamic_charging_user_constraints': dict({
+            'desired_additional_battery_percentage': None,
+            'desired_distance_in_kilometers': 150,
+            'desired_end_time': datetime.datetime(2026, 9, 30, 5, 0, tzinfo=datetime.timezone.utc),
+          }),
+          'dynamic_load_balancing_health': 'HEALTHY',
+          'energy_delivered_session': 10000,
+          'overload_protection_active': False,
+          'plug_and_charge': False,
+          'power_actual': 11000,
+          'processing': False,
+          'start_mode': 'Automatic',
+          'state': 'Charging',
+        }),
+        'type': 'charge_point_installation',
+        'uuid': '00000000-0000-4000-8000-000000000301',
+      }),
+    ]),
+    'vehicles': list([
+      dict({
+        'battery_capacity_useable_wh': 60000,
+        'consumption_wh_per_km': 160,
+        'label': 'Example Car',
+        'uuid': '00000000-0000-4000-8000-000000000401',
+      }),
+    ]),
+  })
+# ---
+# name: test_device_reads[pv_installation]
+  dict({
+    'contracts': list([
+      dict({
+        'end_date': None,
+        'label': 'Zonnepanelen',
+        'meta': dict({
+          'dynamic_control_enabled': True,
+          'first_measured_at': '2025-04-01T08:00:00.000000Z',
+          'identifier': 'SERIAL0000001',
+          'installation_wp': 3600,
+          'inverter_firmware_version': '1.2.3',
+          'inverter_model_name': 'Example Inverter 3000',
+          'last_measured_at': '2026-09-29T11:55:00.000000Z',
+          'last_measured_power_value': 1500,
+          'module_firmware_version': '4.5.6',
+          'panel_count': 9,
+          'panel_wp': 400,
+          'power_limit_active': False,
+          'show_in_contract_screen': True,
+          'total_day': 1500000,
+          'total_earned': 250000000,
+          'total_power_measured': 4200000,
+        }),
+        'start_date': datetime.datetime(2025, 3, 31, 22, 0, tzinfo=datetime.timezone.utc),
+        'type': 'pv_installation',
+        'uuid': '00000000-0000-4000-8000-000000000101',
+      }),
+      dict({
+        'end_date': None,
+        'label': 'Zonnepanelen',
+        'meta': dict({
+          'dynamic_control_enabled': False,
+          'first_measured_at': '2025-04-01T08:00:00.000000Z',
+          'identifier': 'SERIAL0000002',
+          'installation_wp': 2400,
+          'inverter_model_name': 'Example Inverter 2000',
+          'last_measured_at': '2026-09-29T11:55:00.000000Z',
+          'last_measured_power_value': 1000,
+          'panel_count': 6,
+          'panel_wp': 400,
+          'power_limit_active': False,
+          'show_in_contract_screen': True,
+          'total_day': None,
+          'total_earned': None,
+          'total_power_measured': 2800000,
+        }),
+        'start_date': datetime.datetime(2025, 3, 31, 22, 0, tzinfo=datetime.timezone.utc),
+        'type': 'pv_installation',
+        'uuid': '00000000-0000-4000-8000-000000000102',
+      }),
+    ]),
+    'measurement_groups': list([
+      dict({
+        'date': datetime.datetime(2026, 9, 28, 22, 0, tzinfo=datetime.timezone.utc),
+        'measurements': list([
+          dict({
+            'measured_at': datetime.datetime(2026, 9, 29, 11, 45, tzinfo=datetime.timezone.utc),
+            'meta': dict({
+            }),
+            'value': 2400,
+          }),
+          dict({
+            'measured_at': datetime.datetime(2026, 9, 29, 11, 50, tzinfo=datetime.timezone.utc),
+            'meta': dict({
+            }),
+            'value': 2450,
+          }),
+          dict({
+            'measured_at': datetime.datetime(2026, 9, 29, 11, 55, tzinfo=datetime.timezone.utc),
+            'meta': dict({
+            }),
+            'value': 2500,
+          }),
+        ]),
+        'meta': dict({
+        }),
+        'total': 6000,
+      }),
+    ]),
   })
 # ---

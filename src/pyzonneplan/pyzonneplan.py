@@ -23,6 +23,7 @@ from pyzonneplan.const import (
     APP_VERSION,
     AUTHORIZE_CHALLENGE_PATH,
     TOKEN_PATH,
+    ChartInterval,
     ConsumptionChart,
     PriceChart,
 )
@@ -36,6 +37,14 @@ from pyzonneplan.exceptions import (
 )
 from pyzonneplan.models.account import Account
 from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
+from pyzonneplan.models.devices import (
+    BatteryChart,
+    BatteryControlMode,
+    BatteryHomeOptimization,
+    BatteryInstallation,
+    ChargePointInstallation,
+    PvInstallation,
+)
 from pyzonneplan.models.prices import ConsumerPrices
 from pyzonneplan.models.summary import Summary
 
@@ -341,6 +350,40 @@ class Zonneplan:
         """Fetch the connection summary: live usage (P1 only) and an hourly price forecast of about two days."""
         response = await self._request(f"connections/{connection_uuid}/summary")
         return Summary.from_dict(response["data"])
+
+    async def async_get_pv_installation(self, connection_uuid: str) -> PvInstallation:
+        """Fetch every solar inverter on a connection and today's combined yield."""
+        response = await self._request(f"connections/{connection_uuid}/pv-installation")
+        return PvInstallation.from_dict(response["data"])
+
+    async def async_get_battery(self, connection_uuid: str, contract_uuid: str) -> BatteryInstallation:
+        """Fetch a home battery's state (``contract_uuid`` of its home_battery_installation contract)."""
+        response = await self._request(f"connections/{connection_uuid}/home-battery-installation/{contract_uuid}")
+        return BatteryInstallation.from_dict(response["data"])
+
+    async def async_get_battery_chart(self, contract_uuid: str, day: date, interval: str = ChartInterval.DAYS) -> BatteryChart | None:
+        """Fetch a home battery's results for the month (``DAYS``) or year (``MONTHS``) of ``day``.
+
+        Unlike the other device endpoints, the path has no connection and uses
+        underscores. Returns ``None`` when the API sends no chart.
+        """
+        response = await self._request(f"contracts/{contract_uuid}/home_battery_installation/charts/{interval}", params={"date": day.isoformat()})
+        return BatteryChart.from_dict(response["data"][0]) if response["data"] else None
+
+    async def async_get_battery_control_mode(self, contract_uuid: str) -> BatteryControlMode:
+        """Fetch a home battery's control mode and which modes it supports."""
+        response = await self._request(f"api/contracts/{contract_uuid}/home-battery/control-mode")
+        return BatteryControlMode.from_dict(response["data"])
+
+    async def async_get_battery_home_optimization(self, contract_uuid: str) -> BatteryHomeOptimization:
+        """Fetch a home battery's power limits for home optimization mode."""
+        response = await self._request(f"api/contracts/{contract_uuid}/home-battery/control-mode/home_optimization")
+        return BatteryHomeOptimization.from_dict(response["data"])
+
+    async def async_get_charge_point(self, connection_uuid: str, contract_uuid: str) -> ChargePointInstallation:
+        """Fetch a charge point's state and schedules, and the account's vehicles."""
+        response = await self._request(f"connections/{connection_uuid}/charge-points/{contract_uuid}")
+        return ChargePointInstallation.from_dict(response["data"])
 
     async def close(self) -> None:
         """Close open client session."""
