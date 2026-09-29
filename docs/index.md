@@ -92,8 +92,10 @@ Every error derives from `ZonneplanError`:
 
 - `ZonneplanAuthenticationError`: the token is invalid or expired (log in again); `ZonneplanInvalidOtpError` when the OTP is rejected.
 - `ZonneplanRateLimitError`: HTTP 429; `retry_after` holds the seconds to wait. It isn't retried.
-- `ZonneplanRequestError`: the API rejected the request (HTTP 400), e.g. an unknown chart interval.
-- `ZonneplanConnectionError` / `ZonneplanTimeoutError`: a network error, a timeout or any other HTTP error status; retried with backoff (`max_retries`, default 3).
+- `ZonneplanRequestError`: the API rejected the request (HTTP 4xx), e.g. an unknown chart interval;
+  `ZonneplanNotFoundError` for a 404, e.g. a device the account doesn't have. Not retried.
+- `ZonneplanConnectionError` / `ZonneplanTimeoutError`: a network error, a timeout or an HTTP 5xx.
+  GET requests are retried with backoff first (`max_retries`, default 3); actions are never retried.
 
 See the API reference for every model and its properties.
 

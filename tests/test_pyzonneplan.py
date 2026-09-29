@@ -10,6 +10,7 @@ import orjson
 import pytest
 from aiohttp import ClientConnectionError
 from aresponses import ResponsesMockServer
+from tenacity import wait_none
 
 from pyzonneplan import Zonneplan
 from pyzonneplan.auth import OtpChallenge, Token
@@ -18,6 +19,7 @@ from pyzonneplan.exceptions import (
     ZonneplanAuthenticationError,
     ZonneplanConnectionError,
     ZonneplanInvalidOtpError,
+    ZonneplanNotFoundError,
     ZonneplanRateLimitError,
     ZonneplanRequestError,
     ZonneplanTimeoutError,
@@ -161,6 +163,49 @@ async def test_request_429_raises_rate_limit_error(aresponses: ResponsesMockServ
             await client._request("user-accounts/me")
 
     assert exc_info.value.retry_after == retry_after
+    aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.parametrize(
+    ("status", "exception"),
+    [
+        (404, ZonneplanNotFoundError),
+        (409, ZonneplanRequestError),
+        (422, ZonneplanRequestError),
+    ],
+)
+async def test_request_4xx_raises_request_error_without_retry(aresponses: ResponsesMockServer, status: int, exception: type[Exception]) -> None:
+    """A 4xx the caller caused raises a ZonneplanRequestError, and isn't retried."""
+    aresponses.add(HOST, "/connections/conn-1/pv-installation", "GET", aresponses.Response(status=status, text="{}"))
+
+    async with Zonneplan(email="user@example.com", max_retries=3) as client:
+        with pytest.raises(exception):
+            await client._request("connections/conn-1/pv-installation")
+
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_request_5xx_is_retried_for_get(aresponses: ResponsesMockServer, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A 5xx on a GET is retried, and raises ZonneplanConnectionError once the retries run out."""
+    monkeypatch.setattr("pyzonneplan.pyzonneplan.wait_exponential", lambda **_: wait_none())
+    for _ in range(2):
+        aresponses.add(HOST, "/user-accounts/me", "GET", aresponses.Response(status=503, text="{}"))
+
+    async with Zonneplan(email="user@example.com", max_retries=1) as client:
+        with pytest.raises(ZonneplanConnectionError):
+            await client._request("user-accounts/me")
+
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_request_5xx_is_not_retried_for_post(aresponses: ResponsesMockServer) -> None:
+    """A POST is sent once, even on a 5xx: repeating it could apply an action twice."""
+    aresponses.add(HOST, "/connections/conn-1/charge-points/cp-1/actions/start_boost", "POST", aresponses.Response(status=503, text="{}"))
+
+    async with Zonneplan(email="user@example.com", max_retries=3) as client:
+        with pytest.raises(ZonneplanConnectionError):
+            await client._request("connections/conn-1/charge-points/cp-1/actions/start_boost", method="POST")
+
     aresponses.assert_plan_strictly_followed()
 
 

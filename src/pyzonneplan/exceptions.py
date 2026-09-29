@@ -14,7 +14,14 @@ class ZonneplanTimeoutError(ZonneplanError):
 
 
 class ZonneplanRequestError(ZonneplanError):
-    """Exception raised when the API rejects an authenticated request as invalid (HTTP 400)."""
+    """Exception raised when the API rejects an authenticated request (HTTP 4xx other than 401/403/429).
+
+    Not retried: sending the same request again would fail the same way.
+    """
+
+
+class ZonneplanNotFoundError(ZonneplanRequestError):
+    """Exception raised when the requested resource doesn't exist (HTTP 404), e.g. a device the account doesn't have."""
 
 
 class ZonneplanRateLimitError(ZonneplanError):
