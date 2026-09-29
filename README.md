@@ -109,6 +109,19 @@ and expect the last hours of a day to be revised when the next day arrives.
 The PV, battery and charge point models follow the responses other projects have seen, but haven't been tested
 against live hardware yet. Reports and captured (anonymised) responses are welcome.
 
+### Actions
+
+| Method | Does |
+|---|---|
+| `async_enable_battery_self_consumption(connection_uuid, contract_uuid)` / `async_disable_...` | Turns self consumption mode on or off |
+| `async_enable_battery_home_optimization(connection_uuid, contract_uuid, *, max_charge_power_w, max_discharge_power_w)` / `async_disable_...` | Turns home optimization mode on (with new power limits, or the current ones) or off |
+| `async_set_battery_backup_reserve(connection_uuid, contract_uuid, reserved_wh)` | Reserves energy for backup power |
+
+A battery with both modes off trades on the dynamic prices (`BatteryMode.DYNAMIC_CHARGING`). The API doesn't
+switch the other mode off for you: the Zonneplan app disables the other mode after enabling one. The battery
+confirms a change asynchronously; until then `async_get_battery_control_mode()` reports `processing`.
+Actions are sent once and never retried.
+
 ### Errors
 
 Every error derives from `ZonneplanError`:
