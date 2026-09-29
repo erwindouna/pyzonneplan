@@ -6,9 +6,9 @@ comes from the grid operator's history, which arrives a day or more late.
 
 The summary endpoints (``/connections/{uuid}/{electricity-delivered,gas}``)
 return ``null`` without a P1 meter. Their models are reverse-engineered from
-the dotted sensor key-paths (e.g. ``measurement_groups.0.totals.d``) in
-fsaris/home-assistant-zonneplan-one's ``const.py``; no populated response has
-been captured yet.
+the dotted sensor key-paths (e.g. ``measurement_groups.0.totals.d``,
+``contracts.0.meta.dsmr_version``) in fsaris/home-assistant-zonneplan-one's
+``const.py``; no populated response has been captured yet.
 """
 
 from dataclasses import dataclass, field
@@ -19,6 +19,9 @@ from typing import Any
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 
 from pyzonneplan.const import WH_TO_KWH
+
+from .account import Contract
+from .devices import P1Meter
 
 # Gas volumes are reported in dm³ (litres).
 DM3_TO_M3 = Decimal("0.001")
@@ -47,9 +50,19 @@ class ElectricityMeasurementGroup(DataClassORJSONMixin):
 
 @dataclass
 class ElectricityDelivered(DataClassORJSONMixin):
-    """Response of /connections/{uuid}/electricity-delivered."""
+    """Response of /connections/{uuid}/electricity-delivered.
 
+    ``contracts`` are the P1 readers with their live readings, which are more
+    current here than in /user-accounts/me.
+    """
+
+    contracts: list[Contract] = field(default_factory=list)
     measurement_groups: list[ElectricityMeasurementGroup] = field(default_factory=list)
+
+    @property
+    def meters(self) -> list[P1Meter]:
+        """Return a view per P1 reader."""
+        return [P1Meter(contract) for contract in self.contracts]
 
 
 @dataclass
@@ -68,9 +81,15 @@ class GasMeasurementGroup(DataClassORJSONMixin):
 
 @dataclass
 class Gas(DataClassORJSONMixin):
-    """Response of /connections/{uuid}/gas."""
+    """Response of /connections/{uuid}/gas (``contracts`` as in :class:`ElectricityDelivered`)."""
 
+    contracts: list[Contract] = field(default_factory=list)
     measurement_groups: list[GasMeasurementGroup] = field(default_factory=list)
+
+    @property
+    def meters(self) -> list[P1Meter]:
+        """Return a view per P1 reader."""
+        return [P1Meter(contract) for contract in self.contracts]
 
 
 @dataclass

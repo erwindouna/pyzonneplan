@@ -11,7 +11,7 @@ import orjson
 
 from pyzonneplan.const import BatteryMode, ContractType
 from pyzonneplan.models.account import Account, Address, AddressGroup, Connection, Contract, UserAccount
-from pyzonneplan.models.consumption import ElectricityChart, GasChart
+from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
 from pyzonneplan.models.devices import (
     Battery,
     BatteryChart,
@@ -172,6 +172,15 @@ def test_p1_meter_reads_contract_meta(snapshot: SnapshotAssertion) -> None:
     assert meter.electricity_last_measured_at == datetime(2026, 9, 29, 11, 55, tzinfo=UTC)
     assert meter.gas_last_measured_at is None
     assert _properties(meter) == snapshot
+
+
+def test_p1_meters_from_consumption_summaries() -> None:
+    """electricity-delivered and gas carry the P1 contracts with their live readings."""
+    electricity = ElectricityDelivered.from_dict(_data("get_electricity_delivered.json"))
+    gas = Gas.from_dict(_data("get_gas.json"))
+
+    assert [meter.electricity_delivery for meter in electricity.meters] == [450]
+    assert [meter.gas_last_measured_at for meter in gas.meters] == [datetime(2026, 8, 29, 11, 0, tzinfo=UTC)]
 
 
 def test_pv_installation(snapshot: SnapshotAssertion) -> None:

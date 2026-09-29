@@ -1294,6 +1294,27 @@
 # ---
 # name: test_async_get_electricity_delivered
   dict({
+    'contracts': list([
+      dict({
+        'end_date': None,
+        'label': 'P1-meter',
+        'meta': dict({
+          'dsmr_version': '5.0',
+          'electricity_first_measured_at': '2024-01-01T10:00:00.000000Z',
+          'electricity_last_measured_at': '2026-08-29T11:55:00.000000Z',
+          'electricity_last_measured_average_value': 400,
+          'electricity_last_measured_delivery_value': 450,
+          'electricity_last_measured_production_at': '2026-08-28T16:00:00.000000Z',
+          'electricity_last_measured_production_value': 0,
+          'gas_first_measured_at': '2024-01-01T10:00:00.000000Z',
+          'gas_last_measured_at': '2026-08-29T11:00:00.000000Z',
+          'identifier': 'SERIAL0000005',
+        }),
+        'start_date': datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.timezone.utc),
+        'type': 'p1_installation',
+        'uuid': '00000000-0000-4000-8000-000000000501',
+      }),
+    ]),
     'measurement_groups': list([
       dict({
         'date': '2026-08-29',
@@ -1348,6 +1369,27 @@
 # ---
 # name: test_async_get_gas
   dict({
+    'contracts': list([
+      dict({
+        'end_date': None,
+        'label': 'P1-meter',
+        'meta': dict({
+          'dsmr_version': '5.0',
+          'electricity_first_measured_at': '2024-01-01T10:00:00.000000Z',
+          'electricity_last_measured_at': '2026-08-29T11:55:00.000000Z',
+          'electricity_last_measured_average_value': 400,
+          'electricity_last_measured_delivery_value': 450,
+          'electricity_last_measured_production_at': '2026-08-28T16:00:00.000000Z',
+          'electricity_last_measured_production_value': 0,
+          'gas_first_measured_at': '2024-01-01T10:00:00.000000Z',
+          'gas_last_measured_at': '2026-08-29T11:00:00.000000Z',
+          'identifier': 'SERIAL0000005',
+        }),
+        'start_date': datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.timezone.utc),
+        'type': 'p1_installation',
+        'uuid': '00000000-0000-4000-8000-000000000501',
+      }),
+    ]),
     'measurement_groups': list([
       dict({
         'date': '2026-08-29',
