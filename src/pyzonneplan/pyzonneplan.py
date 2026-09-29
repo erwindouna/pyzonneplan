@@ -11,7 +11,7 @@ from typing import TYPE_CHECKING, Any, NoReturn, Self
 
 import orjson
 from aiohttp import ClientError, ClientResponseError, ClientSession
-from aiohttp.hdrs import METH_GET, METH_POST
+from aiohttp.hdrs import METH_GET, METH_POST, METH_PUT
 from tenacity import AsyncRetrying, retry_if_exception_type, stop_after_attempt, wait_exponential
 from yarl import URL
 
@@ -37,6 +37,7 @@ from pyzonneplan.exceptions import (
 from pyzonneplan.models.account import Account
 from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
 from pyzonneplan.models.prices import ConsumerPrices
+from pyzonneplan.models.summary import Summary
 
 if TYPE_CHECKING:
     from datetime import date
@@ -289,6 +290,14 @@ class Zonneplan:
         response = await self._request("user-accounts/me")
         return Account.from_dict(response["data"])
 
+    async def async_set_locale(self, locale: str) -> None:
+        """Set the account's locale, e.g. ``nl-NL``.
+
+        The API uses it for its texts, such as the summary's ``status_message``
+        and ``status_tip``.
+        """
+        await self._request("user-accounts/locale", method=METH_PUT, json_body={"locale": locale})
+
     async def async_get_consumer_prices(self, chart: str = PriceChart.ELECTRICITY_HOURLY) -> ConsumerPrices:
         """Fetch a consumer price chart (see :class:`pyzonneplan.const.PriceChart` for valid ``chart`` values)."""
         response = await self._request(f"api/consumer-prices/charts/{chart}")
@@ -327,6 +336,11 @@ class Zonneplan:
         """Fetch gas used around a local ``day`` (see :meth:`async_get_electricity_chart`)."""
         response = await self._request(f"connections/{connection_uuid}/gas/charts/{interval}", params={"date": day.isoformat()})
         return GasChart.from_dict(response["data"])
+
+    async def async_get_summary(self, connection_uuid: str) -> Summary:
+        """Fetch the connection summary: live usage (P1 only) and an hourly price forecast of about two days."""
+        response = await self._request(f"connections/{connection_uuid}/summary")
+        return Summary.from_dict(response["data"])
 
     async def close(self) -> None:
         """Close open client session."""

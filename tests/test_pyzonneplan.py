@@ -326,6 +326,27 @@ async def test_async_get_gas_chart(
     assert chart == snapshot
 
 
+async def test_async_get_summary(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion) -> None:
+    """A real /summary response is unwrapped and parsed, with the price forecast's ``datetime`` as ``start``."""
+    aresponses.add(HOST, "/connections/conn-1/summary", "GET", aresponses.Response(text=load_fixtures("get_summary.json")))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    summary = await zonneplan_client.async_get_summary("conn-1")
+
+    assert summary == snapshot
+
+
+async def test_async_set_locale(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """set_locale PUTs the locale to user-accounts/locale."""
+    aresponses.add(HOST, "/user-accounts/locale", "PUT", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_set_locale("nl-NL")
+
+    assert await aresponses.history[0].request.json() == {"locale": "nl-NL"}
+    aresponses.assert_plan_strictly_followed()
+
+
 async def test_request_refreshes_expired_token_before_use(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
     """An expired token is refreshed before the request that needed it goes out."""
     aresponses.add(

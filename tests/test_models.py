@@ -14,6 +14,7 @@ from pyzonneplan.models.account import Account, Address, AddressGroup, Connectio
 from pyzonneplan.models.consumption import ElectricityChart, GasChart
 from pyzonneplan.models.devices import Battery, ChargePoint, ChargeSchedule, PvInverter, PvTotals
 from pyzonneplan.models.prices import ConsumerPrices, Money, PriceChartData, PricePoint, PriceRange, PriceSeries
+from pyzonneplan.models.summary import Summary
 
 from . import load_fixtures
 
@@ -322,3 +323,28 @@ def test_empty_chart_has_no_group() -> None:
     """A chart without measurement groups has no group."""
     assert ElectricityChart().group is None
     assert GasChart().group is None
+
+
+def test_summary_price_at() -> None:
+    """price_at returns the forecast hour covering the moment, half-open, and None outside the forecast."""
+    summary = Summary.from_dict(orjson.loads(load_fixtures("get_summary.json"))["data"])
+    first, second = summary.price_per_hour[:2]
+    last = summary.price_per_hour[-1]
+
+    assert summary.price_at(first.start) is first
+    assert summary.price_at(first.start + timedelta(minutes=59)) is first
+    assert summary.price_at(second.start) is second
+    assert summary.price_at(datetime(2026, 9, 25, 19, 30, tzinfo=ZoneInfo("Europe/Amsterdam"))) is second
+    assert summary.price_at(first.start - timedelta(seconds=1)) is None
+    assert summary.price_at(last.end) is None
+
+
+def test_summary_prices_in_euro() -> None:
+    """Prices convert from 1e-7 EUR; the gas price is only set on the hour the gas day starts."""
+    summary = Summary.from_dict(orjson.loads(load_fixtures("get_summary.json"))["data"])
+    gas_day_start = summary.price_at(datetime(2026, 9, 26, 6, 0, tzinfo=ZoneInfo("Europe/Amsterdam")))
+
+    assert summary.price_per_hour[0].electricity_price_euro == Decimal("0.4217229")
+    assert summary.price_per_hour[0].gas_price_euro is None
+    assert gas_day_start is not None
+    assert gas_day_start.gas_price_euro == Decimal("1.6549336")
