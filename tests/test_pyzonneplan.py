@@ -473,6 +473,14 @@ async def test_device_reads(
     assert result == snapshot
 
 
+async def test_async_get_pv_installation_without_panels(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """A connection without solar panels answers null (captured), which returns None."""
+    aresponses.add(HOST, "/connections/conn-1/pv-installation", "GET", aresponses.Response(text=load_fixtures("get_consumption_null.json")))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    assert await zonneplan_client.async_get_pv_installation("conn-1") is None
+
+
 async def test_async_get_battery_chart(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion) -> None:
     """The battery chart is fetched for the date and interval, and taken from the response's first element."""
     aresponses.add(

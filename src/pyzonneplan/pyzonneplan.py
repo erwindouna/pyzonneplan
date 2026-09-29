@@ -400,10 +400,14 @@ class Zonneplan:
         response = await self._request(f"connections/{connection_uuid}/summary")
         return _parse(Summary, response)
 
-    async def async_get_pv_installation(self, connection_uuid: str) -> PvInstallation:
-        """Fetch every solar inverter on a connection and today's combined yield."""
+    async def async_get_pv_installation(self, connection_uuid: str) -> PvInstallation | None:
+        """Fetch every solar inverter on a connection and today's combined yield.
+
+        Returns ``None`` for connections without solar panels, where the API
+        responds with ``null``.
+        """
         response = await self._request(f"connections/{connection_uuid}/pv-installation")
-        return _parse(PvInstallation, response)
+        return None if response is None else _parse(PvInstallation, response)
 
     async def async_get_battery(self, connection_uuid: str, contract_uuid: str) -> BatteryInstallation:
         """Fetch a home battery's state (``contract_uuid`` of its home_battery_installation contract)."""

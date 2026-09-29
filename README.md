@@ -91,7 +91,7 @@ if __name__ == "__main__":
 | `async_get_electricity_chart(connection_uuid, day, interval)` | Electricity used and returned per hour, day or month |
 | `async_get_gas_chart(connection_uuid, day, interval)` | Gas used per hour, day or month |
 | `async_get_electricity_delivered(connection_uuid)` / `async_get_gas(connection_uuid)` | P1 totals and live readings (`meters`), or `None` without a P1 meter |
-| `async_get_pv_installation(connection_uuid)` | Every solar inverter on the connection and today's yield |
+| `async_get_pv_installation(connection_uuid)` | Every solar inverter on the connection and today's yield, or `None` without solar panels |
 | `async_get_battery(connection_uuid, contract_uuid)` | Home battery state, results and modes |
 | `async_get_battery_chart(contract_uuid, day, interval)` | Home battery results per day or month |
 | `async_get_battery_control_mode(contract_uuid)` / `async_get_battery_home_optimization(contract_uuid)` | The battery's control mode, and the charge and discharge power for home optimization with the range each accepts |
@@ -100,6 +100,7 @@ if __name__ == "__main__":
 
 The contract UUIDs come from the account, e.g. `connection.contracts_of_type(ContractType.HOME_BATTERY)`
 (constants such as `ContractType`, `ChartInterval` and `BatteryMode` live in `pyzonneplan.const`).
+For a contract the account doesn't have, the battery and charge point methods raise `ZonneplanNotFoundError`.
 Fields keep the API's raw units (1e-7 EUR, Wh, dm³, permille); properties such as `delivered_kwh`,
 `electricity_price_euro` and `state_of_charge_percent` convert them.
 
