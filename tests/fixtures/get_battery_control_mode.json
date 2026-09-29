@@ -1,0 +1,20 @@
+{
+  "data": {
+    "control_mode": "self_consumption",
+    "processing": false,
+    "modes": {
+      "self_consumption": {
+        "enabled": true,
+        "available": true
+      },
+      "home_optimization": {
+        "enabled": false,
+        "available": true
+      },
+      "dynamic_charging": {
+        "enabled": false,
+        "available": false
+      }
+    }
+  }
+}

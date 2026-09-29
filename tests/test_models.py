@@ -4,19 +4,32 @@ from __future__ import annotations
 
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
 
 import orjson
 
-from pyzonneplan.const import ContractType
+from pyzonneplan.const import BatteryMode, ContractType
 from pyzonneplan.models.account import Account, Address, AddressGroup, Connection, Contract, UserAccount
 from pyzonneplan.models.consumption import ElectricityChart, GasChart
-from pyzonneplan.models.devices import Battery, ChargePoint, ChargeSchedule, PvInverter, PvTotals
+from pyzonneplan.models.devices import (
+    Battery,
+    BatteryChart,
+    BatteryControlMode,
+    BatteryInstallation,
+    ChargePoint,
+    ChargePointInstallation,
+    P1Meter,
+    PvInstallation,
+    Vehicle,
+)
 from pyzonneplan.models.prices import ConsumerPrices, Money, PriceChartData, PricePoint, PriceRange, PriceSeries
 from pyzonneplan.models.summary import Summary
 
 from . import load_fixtures
+
+if TYPE_CHECKING:
+    from syrupy.assertion import SnapshotAssertion
 
 
 def _contract(contract_type: str, *, end_date: datetime | None = None, meta: dict[str, Any] | None = None) -> Contract:
@@ -128,56 +141,123 @@ def test_account_connections_flattens_address_groups() -> None:
     assert account.connections == [connection_a, connection_b]
 
 
-def test_pv_inverter_reads_contract_meta() -> None:
-    """PvInverter exposes the static metadata carried on the contract."""
-    inverter = PvInverter(
+def _properties(obj: object) -> dict[str, Any]:
+    """Return every property of a model, for a snapshot of its typed view."""
+    return {name: getattr(obj, name) for name in dir(type(obj)) if isinstance(getattr(type(obj), name), property)}
+
+
+def _data(fixture: str) -> Any:
+    return orjson.loads(load_fixtures(fixture))["data"]
+
+
+def test_p1_meter_reads_contract_meta(snapshot: SnapshotAssertion) -> None:
+    """P1Meter exposes the live readings on a p1_installation contract, with timestamps parsed."""
+    meter = P1Meter(
         contract=_contract(
-            ContractType.PV_INSTALLATION,
+            ContractType.P1_INSTALLATION,
             meta={
-                "inverter_model_name": "SolarEdge SE5000",
-                "panel_count": 12,
-                "total_earned": 12345,
+                "dsmr_version": "5.0",
+                "electricity_last_measured_delivery_value": 450,
+                "electricity_last_measured_production_value": 0,
+                "electricity_last_measured_average_value": 400,
+                "electricity_first_measured_at": "2024-01-01T00:00:00.000000Z",
+                "electricity_last_measured_at": "2026-09-29T11:55:00.000000Z",
+                "electricity_last_measured_production_at": "2026-09-28T16:00:00.000000Z",
+                "gas_first_measured_at": "2024-01-01T00:00:00.000000Z",
+                "gas_last_measured_at": None,
             },
         )
     )
 
-    assert inverter.uuid == "c-1"
-    assert inverter.model_name == "SolarEdge SE5000"
-    assert inverter.panel_count == 12
-    assert inverter.total_earned == Decimal("0.0012345")
+    assert meter.electricity_last_measured_at == datetime(2026, 9, 29, 11, 55, tzinfo=UTC)
+    assert meter.gas_last_measured_at is None
+    assert _properties(meter) == snapshot
 
 
-def test_pv_totals_yield_today_kwh() -> None:
-    """yield_today_kwh converts the raw Wh total to kWh."""
-    assert PvTotals(total_today=1500).yield_today_kwh == Decimal("1.5")
-    assert PvTotals(total_today=None).yield_today_kwh is None
+def test_pv_installation(snapshot: SnapshotAssertion) -> None:
+    """PvInstallation has a view per inverter and today's combined yield."""
+    installation = PvInstallation.from_dict(_data("get_pv_installation.json"))
+
+    assert [inverter.panel_count for inverter in installation.inverters] == [9, 6]
+    assert installation.yield_today_kwh == Decimal(6)
+    assert installation.inverters[0].total_earned == Decimal(25)
+    assert installation.inverters[1].total_earned is None
+    assert [_properties(inverter) for inverter in installation.inverters] == snapshot
 
 
-def test_battery_is_charging() -> None:
-    """is_charging reflects the sign of power_ac."""
-    assert Battery(power_ac=100).is_charging is True
-    assert Battery(power_ac=-100).is_charging is False
-    assert Battery(power_ac=None).is_charging is None
+def test_pv_installation_without_measurements() -> None:
+    """Without a measurement group there is no yield today."""
+    assert PvInstallation().yield_today_kwh is None
 
 
-def test_battery_earned_properties() -> None:
-    """earned_total/earned_today convert the raw 1e-7 EUR amounts."""
-    battery = Battery(total_earned=10_000_000, total_day=5_000_000)
-    assert battery.earned_total == Decimal(1)
-    assert battery.earned_today == Decimal("0.5")
+def test_battery_installation(snapshot: SnapshotAssertion) -> None:
+    """Battery reads the contract meta, converting permille, Wh and 1e-7 EUR."""
+    battery = BatteryInstallation.from_dict(_data("get_battery_installation.json")).battery
+
+    assert battery is not None
+    assert battery.state_of_charge_percent == Decimal("65.5")
+    assert battery.is_charging is False
+    assert battery.model_name == "Example Battery 5"
+    assert _properties(battery) == snapshot
 
 
-def test_charge_point_next_schedule() -> None:
-    """next_schedule returns the first schedule, or None when there is none."""
-    schedule = ChargeSchedule(start_time=datetime.now(UTC), end_time=datetime.now(UTC))
-    assert ChargePoint(charge_schedules=[schedule]).next_schedule is schedule
-    assert ChargePoint().next_schedule is None
+def test_battery_without_readings() -> None:
+    """An empty response has no battery, and a battery without readings reports None."""
+    assert BatteryInstallation().battery is None
+    battery = Battery(contract=_contract(ContractType.HOME_BATTERY))
+    assert battery.state_of_charge_percent is None
+    assert battery.is_charging is None
 
 
-def test_charge_point_session_cost() -> None:
-    """session_cost converts the raw 1e-7 EUR session total."""
-    assert ChargePoint(session_charging_cost_total=20_000_000).session_cost == Decimal(2)
-    assert ChargePoint().session_cost is None
+def test_battery_control_mode() -> None:
+    """The control mode lists the available modes and which one is enabled."""
+    control_mode = BatteryControlMode.from_dict(_data("get_battery_control_mode.json"))
+
+    assert control_mode.control_mode == BatteryMode.SELF_CONSUMPTION
+    assert control_mode.available_modes == [BatteryMode.SELF_CONSUMPTION, BatteryMode.HOME_OPTIMIZATION]
+    assert control_mode.is_enabled(BatteryMode.SELF_CONSUMPTION) is True
+    assert control_mode.is_enabled(BatteryMode.HOME_OPTIMIZATION) is False
+    assert control_mode.is_enabled("unknown") is False
+    assert control_mode.processing is False
+
+
+def test_battery_chart() -> None:
+    """A battery chart converts its result and energy totals, per day and in total."""
+    chart = BatteryChart.from_dict(_data("get_battery_chart_days.json")[0])
+
+    assert chart.result_euro == Decimal("1.5")
+    assert chart.delivery_kwh == Decimal(9)
+    assert chart.production_kwh == Decimal("7.5")
+    assert [measurement.start for measurement in chart.measurements] == [
+        datetime(2026, 8, 31, 22, tzinfo=UTC),
+        datetime(2026, 9, 1, 22, tzinfo=UTC),
+    ]
+    assert chart.measurements[0].result_euro == Decimal("0.5")
+    assert chart.measurements[0].delivery_kwh == Decimal(3)
+    assert chart.measurements[0].production_kwh == Decimal("2.5")
+
+
+def test_charge_point_installation(snapshot: SnapshotAssertion) -> None:
+    """ChargePoint is a contract with its state and schedules, and the vehicles come along."""
+    installation = ChargePointInstallation.from_dict(_data("get_charge_point.json"))
+    charge_point = installation.charge_point
+
+    assert charge_point is not None
+    assert charge_point.model_name == "Example Charger 11"
+    assert charge_point.state.state == "Charging"
+    assert charge_point.state.energy_delivered_session_kwh == Decimal(10)
+    assert charge_point.next_schedule == charge_point.charge_schedules[0]
+    assert installation.vehicles[0].range_km == 375
+    assert _properties(charge_point) == snapshot
+
+
+def test_charge_point_without_data() -> None:
+    """An empty response has no charge point, and a bare one has no schedule, costs or range."""
+    assert ChargePointInstallation().charge_point is None
+    charge_point = ChargePoint(uuid="c-1", type=ContractType.CHARGE_POINT)
+    assert charge_point.next_schedule is None
+    assert charge_point.session_cost is None
+    assert Vehicle(uuid="v-1").range_km is None
 
 
 def _price_point(start: datetime, amount: int) -> PricePoint:

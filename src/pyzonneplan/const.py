@@ -27,6 +27,18 @@ class ChartInterval:
     MONTHS: Final = "months"
 
 
+class BatteryMode:
+    """Home battery control modes.
+
+    ``DYNAMIC_CHARGING`` (trading on prices) is what the battery does with the
+    other two modes disabled.
+    """
+
+    SELF_CONSUMPTION: Final = "self_consumption"
+    HOME_OPTIMIZATION: Final = "home_optimization"
+    DYNAMIC_CHARGING: Final = "dynamic_charging"
+
+
 class ConsumptionChart:
     """Supported consumption chart intervals.
 

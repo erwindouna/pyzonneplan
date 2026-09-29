@@ -1,0 +1,102 @@
+# serializer version: 1
+# name: test_battery_installation
+  dict({
+    'average_day': Decimal('0.4000000'),
+    'backup_power_active': False,
+    'backup_power_capable': True,
+    'backup_power_usable_capacity_wh': 4000,
+    'battery_state': 'Discharging',
+    'cycle_count': 100,
+    'delivery_day_kwh': Decimal('3.000'),
+    'dynamic_charging_enabled': False,
+    'dynamic_load_balancing_enabled': True,
+    'dynamic_load_balancing_overload_active': False,
+    'first_measured_at': datetime.datetime(2026, 4, 10, 12, 30, tzinfo=datetime.timezone.utc),
+    'grid_congestion_active': False,
+    'home_optimization_active': False,
+    'home_optimization_enabled': False,
+    'inverter_state': 'Discharging',
+    'is_charging': False,
+    'last_measured_at': datetime.datetime(2026, 9, 29, 11, 55, tzinfo=datetime.timezone.utc),
+    'manual_control_enabled': False,
+    'model_name': 'Example Battery 5',
+    'power_ac': -800,
+    'production_day_kwh': Decimal('2.500'),
+    'reserve_discharge_cutoff_wh': 1000,
+    'self_consumption_enabled': True,
+    'state_of_charge': 655,
+    'state_of_charge_percent': Decimal('65.5'),
+    'total_day': Decimal('0.5000000'),
+    'total_earned': Decimal('100.0000000'),
+    'uuid': '00000000-0000-4000-8000-000000000201',
+  })
+# ---
+# name: test_charge_point_installation
+  dict({
+    'charging_cost_total': Decimal('150.0000000'),
+    'is_active': True,
+    'model_name': 'Example Charger 11',
+    'next_schedule': dict({
+      'end_time': datetime.datetime(2026, 9, 29, 14, 0, tzinfo=datetime.timezone.utc),
+      'start_time': datetime.datetime(2026, 9, 29, 12, 0, tzinfo=datetime.timezone.utc),
+    }),
+    'serial_number': 'SERIAL0000004',
+    'session_average_cost': Decimal('0.2500000'),
+    'session_cost': Decimal('2.5000000'),
+    'session_flex_result': Decimal('0.2000000'),
+  })
+# ---
+# name: test_p1_meter_reads_contract_meta
+  dict({
+    'dsmr_version': '5.0',
+    'electricity_average': 400,
+    'electricity_delivery': 450,
+    'electricity_first_measured_at': datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.timezone.utc),
+    'electricity_last_measured_at': datetime.datetime(2026, 9, 29, 11, 55, tzinfo=datetime.timezone.utc),
+    'electricity_last_measured_production_at': datetime.datetime(2026, 9, 28, 16, 0, tzinfo=datetime.timezone.utc),
+    'electricity_production': 0,
+    'gas_first_measured_at': datetime.datetime(2024, 1, 1, 0, 0, tzinfo=datetime.timezone.utc),
+    'gas_last_measured_at': None,
+    'uuid': 'c-1',
+  })
+# ---
+# name: test_pv_installation
+  list([
+    dict({
+      'dynamic_control_enabled': True,
+      'first_measured_at': datetime.datetime(2025, 4, 1, 8, 0, tzinfo=datetime.timezone.utc),
+      'installation_wp': 3600,
+      'inverter_firmware_version': '1.2.3',
+      'last_measured_at': datetime.datetime(2026, 9, 29, 11, 55, tzinfo=datetime.timezone.utc),
+      'last_measured_power': 1500,
+      'model_name': 'Example Inverter 3000',
+      'module_firmware_version': '4.5.6',
+      'panel_count': 9,
+      'panel_wp': 400,
+      'power_limit_active': False,
+      'total_day': Decimal('0.1500000'),
+      'total_earned': Decimal('25.0000000'),
+      'total_power_measured': 4200000,
+      'total_power_measured_kwh': Decimal('4200.000'),
+      'uuid': '00000000-0000-4000-8000-000000000101',
+    }),
+    dict({
+      'dynamic_control_enabled': False,
+      'first_measured_at': datetime.datetime(2025, 4, 1, 8, 0, tzinfo=datetime.timezone.utc),
+      'installation_wp': 2400,
+      'inverter_firmware_version': None,
+      'last_measured_at': datetime.datetime(2026, 9, 29, 11, 55, tzinfo=datetime.timezone.utc),
+      'last_measured_power': 1000,
+      'model_name': 'Example Inverter 2000',
+      'module_firmware_version': None,
+      'panel_count': 6,
+      'panel_wp': 400,
+      'power_limit_active': False,
+      'total_day': None,
+      'total_earned': None,
+      'total_power_measured': 2800000,
+      'total_power_measured_kwh': Decimal('2800.000'),
+      'uuid': '00000000-0000-4000-8000-000000000102',
+    }),
+  ])
+# ---

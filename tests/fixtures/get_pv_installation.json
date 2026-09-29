@@ -1,0 +1,74 @@
+{
+  "data": {
+    "contracts": [
+      {
+        "uuid": "00000000-0000-4000-8000-000000000101",
+        "label": "Zonnepanelen",
+        "type": "pv_installation",
+        "start_date": "2025-03-31T22:00:00.000000Z",
+        "end_date": null,
+        "meta": {
+          "identifier": "SERIAL0000001",
+          "inverter_model_name": "Example Inverter 3000",
+          "inverter_firmware_version": "1.2.3",
+          "module_firmware_version": "4.5.6",
+          "installation_wp": 3600,
+          "panel_wp": 400,
+          "panel_count": 9,
+          "first_measured_at": "2025-04-01T08:00:00.000000Z",
+          "last_measured_at": "2026-09-29T11:55:00.000000Z",
+          "last_measured_power_value": 1500,
+          "total_power_measured": 4200000,
+          "total_earned": 250000000,
+          "total_day": 1500000,
+          "dynamic_control_enabled": true,
+          "power_limit_active": false,
+          "show_in_contract_screen": true
+        }
+      },
+      {
+        "uuid": "00000000-0000-4000-8000-000000000102",
+        "label": "Zonnepanelen",
+        "type": "pv_installation",
+        "start_date": "2025-03-31T22:00:00.000000Z",
+        "end_date": null,
+        "meta": {
+          "identifier": "SERIAL0000002",
+          "inverter_model_name": "Example Inverter 2000",
+          "installation_wp": 2400,
+          "panel_wp": 400,
+          "panel_count": 6,
+          "first_measured_at": "2025-04-01T08:00:00.000000Z",
+          "last_measured_at": "2026-09-29T11:55:00.000000Z",
+          "last_measured_power_value": 1000,
+          "total_power_measured": 2800000,
+          "total_earned": null,
+          "total_day": null,
+          "dynamic_control_enabled": false,
+          "power_limit_active": false,
+          "show_in_contract_screen": true
+        }
+      }
+    ],
+    "measurement_groups": [
+      {
+        "date": "2026-09-28T22:00:00.000000Z",
+        "total": 6000,
+        "measurements": [
+          {
+            "measured_at": "2026-09-29T11:45:00.000000Z",
+            "value": 2400
+          },
+          {
+            "measured_at": "2026-09-29T11:50:00.000000Z",
+            "value": 2450
+          },
+          {
+            "measured_at": "2026-09-29T11:55:00.000000Z",
+            "value": 2500
+          }
+        ]
+      }
+    ]
+  }
+}
