@@ -14,7 +14,7 @@ from tenacity import wait_none
 
 from pyzonneplan import Zonneplan
 from pyzonneplan.auth import OtpChallenge, Token
-from pyzonneplan.const import ChartInterval, ConsumptionChart, PriceChart
+from pyzonneplan.const import BatteryMode, ChartInterval, ConsumptionChart, PriceChart
 from pyzonneplan.exceptions import (
     ZonneplanAuthenticationError,
     ZonneplanConnectionError,
@@ -549,6 +549,49 @@ async def test_enable_battery_home_optimization_needs_both_limits(zonneplan_clie
     """Only one power limit is rejected before anything is sent, as the API takes both or neither."""
     with pytest.raises(ValueError, match="both"):
         await zonneplan_client.async_enable_battery_home_optimization("conn-1", "bat-1", max_charge_power_w=2000)
+
+
+@pytest.mark.parametrize(
+    ("mode", "enabled", "actions"),
+    [
+        (BatteryMode.SELF_CONSUMPTION, [BatteryMode.HOME_OPTIMIZATION], ["enable_self_consumption", "disable_home_optimization"]),
+        (BatteryMode.SELF_CONSUMPTION, [], ["enable_self_consumption"]),
+        (BatteryMode.HOME_OPTIMIZATION, [BatteryMode.SELF_CONSUMPTION], ["enable_home_optimization", "disable_self_consumption"]),
+        (
+            BatteryMode.DYNAMIC_CHARGING,
+            [BatteryMode.SELF_CONSUMPTION, BatteryMode.HOME_OPTIMIZATION],
+            ["disable_home_optimization", "disable_self_consumption"],
+        ),
+        (BatteryMode.DYNAMIC_CHARGING, [], []),
+    ],
+    ids=["self_consumption", "self_consumption_already_alone", "home_optimization", "dynamic_charging", "dynamic_charging_already"],
+)
+async def test_set_battery_control_mode(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, mode: str, enabled: list[str], actions: list[str]
+) -> None:
+    """Switching mode enables the new one first, then disables whichever other mode was on."""
+    control_mode = {
+        "control_mode": "self_consumption",
+        "processing": False,
+        "modes": {name: {"enabled": name in enabled, "available": True} for name in (BatteryMode.SELF_CONSUMPTION, BatteryMode.HOME_OPTIMIZATION)},
+    }
+    aresponses.add(
+        HOST, "/api/contracts/bat-1/home-battery/control-mode", "GET", aresponses.Response(text=orjson.dumps({"data": control_mode}).decode())
+    )
+    for action in actions:
+        aresponses.add(HOST, f"/connections/conn-1/home-battery-installation/bat-1/actions/{action}", "POST", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_set_battery_control_mode("conn-1", "bat-1", mode)
+
+    assert [entry.request.path.rsplit("/", 1)[-1] for entry in aresponses.history[1:]] == actions
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_set_battery_control_mode_unknown(zonneplan_client: Zonneplan) -> None:
+    """An unknown mode is rejected before anything is sent."""
+    with pytest.raises(ValueError, match="Unknown battery control mode"):
+        await zonneplan_client.async_set_battery_control_mode("conn-1", "bat-1", "manual")
 
 
 async def test_request_refreshes_expired_token_before_use(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
