@@ -428,6 +428,65 @@ class Zonneplan:
         response = await self._request(f"api/contracts/{contract_uuid}/home-battery/control-mode/home_optimization")
         return _parse(BatteryHomeOptimization, response)
 
+    async def _async_battery_action(self, connection_uuid: str, contract_uuid: str, action: str, body: dict[str, Any] | None = None) -> None:
+        """Send an action to a home battery.
+
+        The battery confirms asynchronously: until it has, the control mode
+        reports ``processing``. Actions are never retried (see :meth:`_request`).
+        """
+        await self._request(
+            f"connections/{connection_uuid}/home-battery-installation/{contract_uuid}/actions/{action}",
+            method=METH_POST,
+            json_body=body or {},
+        )
+
+    async def async_enable_battery_self_consumption(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Enable self consumption mode: the battery stores surplus solar power and supplies the home with it.
+
+        The API doesn't disable home optimization for you; the app does that next.
+        """
+        await self._async_battery_action(connection_uuid, contract_uuid, "enable_self_consumption")
+
+    async def async_disable_battery_self_consumption(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Disable self consumption mode."""
+        await self._async_battery_action(connection_uuid, contract_uuid, "disable_self_consumption")
+
+    async def async_enable_battery_home_optimization(
+        self,
+        connection_uuid: str,
+        contract_uuid: str,
+        *,
+        max_charge_power_w: int | None = None,
+        max_discharge_power_w: int | None = None,
+    ) -> None:
+        """Enable home optimization mode, optionally with new charge and discharge power limits (W).
+
+        The API takes both limits or neither: without them it keeps the current
+        ones (see :meth:`async_get_battery_home_optimization` for their ranges).
+        The API doesn't disable self consumption for you; the app does that next.
+        """
+        if (max_charge_power_w is None) != (max_discharge_power_w is None):
+            msg = "Pass both max_charge_power_w and max_discharge_power_w, or neither"
+            raise ValueError(msg)
+        body = None
+        if max_charge_power_w is not None:
+            body = {"max_desired_charge_power_w": max_charge_power_w, "max_desired_discharge_power_w": max_discharge_power_w}
+        await self._async_battery_action(connection_uuid, contract_uuid, "enable_home_optimization", body)
+
+    async def async_disable_battery_home_optimization(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Disable home optimization mode."""
+        await self._async_battery_action(connection_uuid, contract_uuid, "disable_home_optimization")
+
+    async def async_set_battery_backup_reserve(self, connection_uuid: str, contract_uuid: str, reserved_wh: int) -> None:
+        """Reserve energy for backup power ("noodstroom"), in Wh.
+
+        At most the battery's ``backup_power_usable_capacity_wh``; the battery
+        reports the new value as ``reserve_discharge_cutoff_wh``.
+        """
+        await self._async_battery_action(
+            connection_uuid, contract_uuid, "set_backup_power_reserved_state_of_charge", {"reserved_state_of_charge_wh": reserved_wh}
+        )
+
     async def async_get_charge_point(self, connection_uuid: str, contract_uuid: str) -> ChargePointInstallation:
         """Fetch a charge point's state and schedules, and the account's vehicles."""
         response = await self._request(f"connections/{connection_uuid}/charge-points/{contract_uuid}")

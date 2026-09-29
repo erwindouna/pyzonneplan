@@ -503,6 +503,54 @@ async def test_async_get_battery_chart_empty(aresponses: ResponsesMockServer, zo
     assert await zonneplan_client.async_get_battery_chart("bat-1", date(2026, 9, 1)) is None
 
 
+@pytest.mark.parametrize(
+    ("method", "kwargs", "action", "body"),
+    [
+        ("async_enable_battery_self_consumption", {}, "enable_self_consumption", {}),
+        ("async_disable_battery_self_consumption", {}, "disable_self_consumption", {}),
+        ("async_enable_battery_home_optimization", {}, "enable_home_optimization", {}),
+        (
+            "async_enable_battery_home_optimization",
+            {"max_charge_power_w": 2000, "max_discharge_power_w": 800},
+            "enable_home_optimization",
+            {"max_desired_charge_power_w": 2000, "max_desired_discharge_power_w": 800},
+        ),
+        ("async_disable_battery_home_optimization", {}, "disable_home_optimization", {}),
+        (
+            "async_set_battery_backup_reserve",
+            {"reserved_wh": 1500},
+            "set_backup_power_reserved_state_of_charge",
+            {"reserved_state_of_charge_wh": 1500},
+        ),
+    ],
+    ids=[
+        "enable_self_consumption",
+        "disable_self_consumption",
+        "enable_home_optimization",
+        "enable_home_optimization_limits",
+        "disable_home_optimization",
+        "backup_reserve",
+    ],
+)
+async def test_battery_actions(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, *, method: str, kwargs: dict[str, int], action: str, body: dict[str, int]
+) -> None:
+    """Each battery action POSTs its body to the battery's action path."""
+    aresponses.add(HOST, f"/connections/conn-1/home-battery-installation/bat-1/actions/{action}", "POST", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await getattr(zonneplan_client, method)("conn-1", "bat-1", **kwargs)
+
+    assert await aresponses.history[0].request.json() == body
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_enable_battery_home_optimization_needs_both_limits(zonneplan_client: Zonneplan) -> None:
+    """Only one power limit is rejected before anything is sent, as the API takes both or neither."""
+    with pytest.raises(ValueError, match="both"):
+        await zonneplan_client.async_enable_battery_home_optimization("conn-1", "bat-1", max_charge_power_w=2000)
+
+
 async def test_request_refreshes_expired_token_before_use(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
     """An expired token is refreshed before the request that needed it goes out."""
     aresponses.add(
