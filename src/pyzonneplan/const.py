@@ -1,6 +1,7 @@
 """Constants for the Zonneplan API client."""
 
 from decimal import Decimal
+from enum import StrEnum
 from typing import Final
 from zoneinfo import ZoneInfo
 
@@ -41,6 +42,17 @@ class BatteryMode:
     SELF_CONSUMPTION: Final = "self_consumption"
     HOME_OPTIMIZATION: Final = "home_optimization"
     DYNAMIC_CHARGING: Final = "dynamic_charging"
+
+
+class BatteryState(StrEnum):
+    """Home battery and battery inverter states.
+
+    The API sends them capitalised (``Charging``); the models parse them case-insensitively.
+    """
+
+    CHARGING = "charging"
+    DISCHARGING = "discharging"
+    OPERATIVE = "operative"
 
 
 class ConsumptionChart:

@@ -8,6 +8,7 @@ device state in each contract's ``meta``, so most models are typed views on a
 :class:`Contract`, like the ones returned by /user-accounts/me.
 """
 
+import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
@@ -16,9 +17,11 @@ from typing import Any
 from mashumaro import field_options
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 
-from pyzonneplan.const import API_TIMEZONE, MONEY_FACTOR, WH_TO_KWH
+from pyzonneplan.const import API_TIMEZONE, MONEY_FACTOR, WH_TO_KWH, BatteryState
 
 from .account import Contract
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def _euro(value: int | None) -> Decimal | None:
@@ -29,6 +32,17 @@ def _euro(value: int | None) -> Decimal | None:
 def _kwh(value: int | None) -> Decimal | None:
     """Convert Wh to kWh."""
     return None if value is None else Decimal(value) * WH_TO_KWH
+
+
+def _battery_state(value: str | None) -> BatteryState | None:
+    """Parse a battery state case-insensitively, or return ``None`` when it's missing or unknown."""
+    if value is None:
+        return None
+    try:
+        return BatteryState(str(value).lower())
+    except ValueError:
+        _LOGGER.debug("Unknown battery state: %s", value)
+        return None
 
 
 def _datetime(value: str | None) -> datetime | None:
@@ -266,14 +280,20 @@ class Battery:
         return self.contract.model_name
 
     @property
-    def battery_state(self) -> str | None:
-        """Return the battery state, e.g. ``Charging`` or ``Discharging``."""
-        return self.contract.meta.get("battery_state")
+    def battery_state(self) -> BatteryState | None:
+        """Return the battery state, or ``None`` when it's missing or unknown.
+
+        The raw value stays in ``contract.meta["battery_state"]``.
+        """
+        return _battery_state(self.contract.meta.get("battery_state"))
 
     @property
-    def inverter_state(self) -> str | None:
-        """Return the battery inverter's state."""
-        return self.contract.meta.get("inverter_state")
+    def inverter_state(self) -> BatteryState | None:
+        """Return the battery inverter's state, or ``None`` when it's missing or unknown.
+
+        The raw value stays in ``contract.meta["inverter_state"]``.
+        """
+        return _battery_state(self.contract.meta.get("inverter_state"))
 
     @property
     def state_of_charge(self) -> int | None:
