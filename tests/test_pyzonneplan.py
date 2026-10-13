@@ -458,8 +458,17 @@ async def test_async_set_locale(aresponses: ResponsesMockServer, zonneplan_clien
             "get_battery_day_ahead_arbitrage.json",
         ),
         ("async_get_charge_point", ("conn-1", "cp-1"), "/connections/conn-1/charge-points/cp-1", "get_charge_point.json"),
+        ("async_get_p1_installation", ("p1-1",), "/contracts/p1-1/p1-installation", "get_p1_installation.json"),
     ],
-    ids=["pv_installation", "battery", "battery_control_mode", "battery_home_optimization", "battery_day_ahead_arbitrage", "charge_point"],
+    ids=[
+        "pv_installation",
+        "battery",
+        "battery_control_mode",
+        "battery_home_optimization",
+        "battery_day_ahead_arbitrage",
+        "charge_point",
+        "p1_installation",
+    ],
 )
 async def test_device_reads(
     aresponses: ResponsesMockServer,
@@ -486,6 +495,19 @@ async def test_async_get_pv_installation_without_panels(aresponses: ResponsesMoc
 
     zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
     assert await zonneplan_client.async_get_pv_installation("conn-1") is None
+
+
+async def test_async_get_p1_installation_without_p1(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Without a P1 installation the API answers 404 (captured), which returns None."""
+    aresponses.add(
+        HOST,
+        "/contracts/p1-1/p1-installation",
+        "GET",
+        aresponses.Response(status=404, text=orjson.dumps({"message": "Not found"}).decode()),
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    assert await zonneplan_client.async_get_p1_installation("p1-1") is None
 
 
 async def test_async_get_battery_chart(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion) -> None:
