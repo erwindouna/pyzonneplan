@@ -12,6 +12,8 @@ from .consumption import (
     GasChartGroup,
     GasChartMeasurement,
     GasMeasurementGroup,
+    PowerMeasurement,
+    RecentPowerChart,
 )
 from .devices import (
     Battery,
@@ -78,12 +80,14 @@ __all__ = [
     "GasMeasurementGroup",
     "Money",
     "P1Meter",
+    "PowerMeasurement",
     "PriceChartData",
     "PricePoint",
     "PriceRange",
     "PriceSeries",
     "PvInstallation",
     "PvInverter",
+    "RecentPowerChart",
     "Summary",
     "SummaryPrice",
     "SummaryUsage",

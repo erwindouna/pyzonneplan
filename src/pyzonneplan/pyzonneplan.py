@@ -33,6 +33,7 @@ from pyzonneplan.const import (
     ConsumptionChart,
     MarketTimeResolution,
     PriceChart,
+    RecentPowerDuration,
 )
 from pyzonneplan.exceptions import (
     ZonneplanAuthenticationError,
@@ -45,7 +46,7 @@ from pyzonneplan.exceptions import (
     ZonneplanTimeoutError,
 )
 from pyzonneplan.models.account import Account
-from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
+from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart, RecentPowerChart
 from pyzonneplan.models.devices import (
     BatteryChart,
     BatteryControlMode,
@@ -373,6 +374,28 @@ class Zonneplan:
         """
         response = await self._request(f"connections/{connection_uuid}/electricity-delivered")
         return None if response is None else _parse(ElectricityDelivered, response)
+
+    async def async_get_electricity_home_consumption(self, connection_uuid: str) -> ElectricityDelivered | None:
+        """Fetch the home's electricity consumption (P1) for a connection, without its charts.
+
+        The app's demo data gives it the shape of :meth:`async_get_electricity_delivered`.
+        Returns ``None`` for connections without a P1 meter, where the API
+        responds with ``null``.
+        """
+        response = await self._request(f"connections/{connection_uuid}/electricity-home-consumption", params={"no-charts": "1"})
+        if response is None or (isinstance(response, dict) and response.get("data") is None):
+            return None
+        return _parse(ElectricityDelivered, response)
+
+    async def async_get_recent_power(self, connection_uuid: str, duration: str = RecentPowerDuration.HOURS_24) -> RecentPowerChart:
+        """Fetch the net power the P1 meter measured over the last ``duration`` (a :class:`pyzonneplan.const.RecentPowerDuration`).
+
+        Without a P1 meter the chart has no measurements.
+        """
+        response = await self._request(
+            f"api/connections/{connection_uuid}/electricity/charts/recent-power", params={"duration": RecentPowerDuration(duration).value}
+        )
+        return _parse(RecentPowerChart, response, "data", "chart")
 
     async def async_get_gas(self, connection_uuid: str) -> Gas | None:
         """Fetch gas consumption data (P1) for a connection.

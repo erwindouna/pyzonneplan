@@ -14,9 +14,9 @@ from aiohttp import ClientConnectionError
 from aresponses import ResponsesMockServer
 from tenacity import wait_none
 
-from pyzonneplan import Zonneplan
+from pyzonneplan import ElectricityDelivered, Zonneplan
 from pyzonneplan.auth import OtpChallenge, Token
-from pyzonneplan.const import BatteryMode, ChartInterval, ConsumptionChart, MarketTimeResolution, PriceChart
+from pyzonneplan.const import BatteryMode, ChartInterval, ConsumptionChart, MarketTimeResolution, PriceChart, RecentPowerDuration
 from pyzonneplan.exceptions import (
     ZonneplanAuthenticationError,
     ZonneplanConnectionError,
@@ -361,6 +361,71 @@ async def test_consumption_summary_without_p1_returns_none(aresponses: Responses
     method = zonneplan_client.async_get_electricity_delivered if path == "electricity-delivered" else zonneplan_client.async_get_gas
 
     assert await method("conn-1") is None
+
+
+async def test_async_get_electricity_home_consumption(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Home consumption is fetched without charts and parsed like electricity-delivered."""
+    aresponses.add(
+        HOST,
+        "/connections/conn-1/electricity-home-consumption?no-charts=1",
+        "GET",
+        aresponses.Response(text=load_fixtures("get_electricity_delivered.json")),
+        match_querystring=True,
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    consumption = await zonneplan_client.async_get_electricity_home_consumption("conn-1")
+
+    assert consumption == ElectricityDelivered.from_dict(orjson.loads(load_fixtures("get_electricity_delivered.json"))["data"])
+
+
+@pytest.mark.parametrize("body", ["null", '{"data": null}'], ids=["null", "null_data"])
+async def test_async_get_electricity_home_consumption_without_p1(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, body: str) -> None:
+    """Without a P1 meter home consumption is null (captured), with or without the data envelope."""
+    aresponses.add(HOST, "/connections/conn-1/electricity-home-consumption", "GET", aresponses.Response(text=body))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    assert await zonneplan_client.async_get_electricity_home_consumption("conn-1") is None
+
+
+async def test_async_get_recent_power(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion) -> None:
+    """The recent power chart is fetched for the last 24 hours by default and flattened."""
+    aresponses.add(
+        HOST,
+        "/api/connections/conn-1/electricity/charts/recent-power?duration=PT24H",
+        "GET",
+        aresponses.Response(text=load_fixtures("get_recent_power.json")),
+        match_querystring=True,
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    chart = await zonneplan_client.async_get_recent_power("conn-1")
+
+    assert chart == snapshot
+
+
+@pytest.mark.parametrize("duration", [RecentPowerDuration.HOURS_12, "PT48H"], ids=["enum", "string"])
+async def test_async_get_recent_power_duration(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, duration: str) -> None:
+    """The duration is sent as given; a chart without a P1 meter has no measurements (captured)."""
+    aresponses.add(
+        HOST,
+        f"/api/connections/conn-1/electricity/charts/recent-power?duration={duration}",
+        "GET",
+        aresponses.Response(text=load_fixtures("get_recent_power_no_p1.json")),
+        match_querystring=True,
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    chart = await zonneplan_client.async_get_recent_power("conn-1", duration)
+
+    assert chart.measurements == []
+    assert chart.latest is None
+
+
+async def test_async_get_recent_power_unknown_duration(zonneplan_client: Zonneplan) -> None:
+    """An unsupported duration is rejected before anything is sent."""
+    with pytest.raises(ValueError, match="PT6H"):
+        await zonneplan_client.async_get_recent_power("conn-1", "PT6H")
 
 
 @pytest.mark.parametrize(

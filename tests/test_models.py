@@ -24,7 +24,7 @@ from pyzonneplan.const import (
     TariffGroup,
 )
 from pyzonneplan.models.account import Account, Address, AddressGroup, Connection, ConnectionFeature, Contract, UserAccount
-from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
+from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart, RecentPowerChart
 from pyzonneplan.models.devices import (
     Battery,
     BatteryChart,
@@ -608,6 +608,24 @@ def test_chart_without_data_yet_reports_no_totals() -> None:
     assert len(gas_today.measurements) == 24
     assert not gas_today.has_data
     assert gas_today.total_m3 is None
+
+
+def test_recent_power_chart() -> None:
+    """Recent power is net power: negative while returning, and the latest point may have no value yet."""
+    chart = RecentPowerChart.from_dict(_data("get_recent_power.json")["chart"])
+
+    assert [measurement.watts for measurement in chart.measurements] == [420, 385, -1250, -1310, None]
+    assert chart.latest is chart.measurements[-1]
+    assert chart.latest.start == datetime(2026, 9, 24, 10, tzinfo=UTC)
+    assert chart.range.end_date == datetime(2026, 9, 24, 10, tzinfo=UTC)
+
+
+def test_recent_power_chart_without_series() -> None:
+    """A chart without a power series has no measurements."""
+    chart = RecentPowerChart.from_dict({"range": {"start_date": "2026-09-23T12:00:00+02:00", "end_date": "2026-09-24T12:00:00+02:00"}})
+
+    assert chart.measurements == []
+    assert chart.latest is None
 
 
 def test_empty_chart_has_no_group() -> None:

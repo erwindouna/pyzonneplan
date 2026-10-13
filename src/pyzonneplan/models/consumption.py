@@ -9,6 +9,9 @@ return ``null`` without a P1 meter. Their models are reverse-engineered from
 the dotted sensor key-paths (e.g. ``measurement_groups.0.totals.d``,
 ``contracts.0.meta.dsmr_version``) in fsaris/home-assistant-zonneplan-one's
 ``const.py``; no populated response has been captured yet.
+
+The recent power chart (``/api/connections/{uuid}/electricity/charts/recent-power``)
+is captured empty (no P1 meter); its points follow the Zonneplan app's demo data.
 """
 
 from dataclasses import dataclass, field
@@ -23,6 +26,7 @@ from pyzonneplan.const import WH_TO_KWH, MeasurementGroupType, TariffGroup
 from ._parse import DATETIME, enum_field, euro
 from .account import Contract
 from .devices import P1Meter
+from .prices import PriceRange
 
 # Gas volumes are reported in dm³ (litres).
 DM3_TO_M3 = Decimal("0.001")
@@ -266,3 +270,39 @@ class GasChart(DataClassORJSONMixin):
     def group(self) -> GasChartGroup | None:
         """Return the chart's window; the API sends exactly one."""
         return self.measurement_groups[0] if self.measurement_groups else None
+
+
+@dataclass
+class PowerMeasurement(DataClassORJSONMixin):
+    """The net power drawn from the grid at one moment, in W (negative while returning)."""
+
+    start: datetime
+    watts: int | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Rename ``date`` and flatten ``power.watts``."""
+        return {"start": d["date"], "watts": (d.get("power") or {}).get("watts")}
+
+
+@dataclass
+class RecentPowerChart(DataClassORJSONMixin):
+    """Response of /api/connections/{uuid}/electricity/charts/recent-power.
+
+    The net power measured by the P1 meter over the requested duration, a
+    point per 5 minutes in the app's demo data. Empty without a P1 meter.
+    """
+
+    range: PriceRange
+    measurements: list[PowerMeasurement] = field(default_factory=list)
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``series.power.data``."""
+        power = (d.get("series") or {}).get("power") or {}
+        return {"range": d["range"], "measurements": power.get("data") or []}
+
+    @property
+    def latest(self) -> PowerMeasurement | None:
+        """Return the most recent measurement."""
+        return max(self.measurements, key=lambda measurement: measurement.start, default=None)
