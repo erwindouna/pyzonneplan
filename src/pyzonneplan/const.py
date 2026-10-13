@@ -12,7 +12,7 @@ AUTHORIZE_CHALLENGE_PATH: Final = "oauth/authorize-challenge"
 TOKEN_PATH: Final = "oauth/token"  # noqa: S105 (a URL path, not a credential)
 
 # Sent by the mobile app; the API rejects requests without them.
-APP_VERSION: Final = "5.10.1"
+APP_VERSION: Final = "6.23.0"
 APP_ENVIRONMENT: Final = "production"
 
 # The API's local time, e.g. for the charge point actions' end times.
@@ -88,6 +88,13 @@ class BatteryActivityDirection(StrEnum):
     DISCHARGE = "discharge"
 
 
+class PriceResolution(StrEnum):
+    """The interval the app shows electricity prices in (the ``price_resolution`` app setting)."""
+
+    QUARTER_HOUR = "15-min"
+    HOUR = "60-min"
+
+
 class BatteryState(StrEnum):
     """Home battery and battery inverter states.
 
@@ -128,6 +135,16 @@ class ChargePointStartMode(StrEnum):
     ALWAYS_FLEX = "always_flex"
     PLUG_AND_CHARGE = "plug_and_charge"
     START_WITH_APP = "start_with_app"
+
+
+class ChargePointMode(StrEnum):
+    """Charge point control modes (``modes`` of the charge point control-mode endpoint)."""
+
+    BOOST = "boost"
+    PLUG_AND_CHARGE = "plug_and_charge"
+    DYNAMIC_CHARGING = "dynamic_charging"
+    SCHEDULED_CHARGING = "scheduled_charging"
+    CHARGE_ON_SOLAR = "charge_on_solar"
 
 
 class TariffGroup(StrEnum):

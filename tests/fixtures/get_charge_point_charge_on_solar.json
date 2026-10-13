@@ -1,0 +1,18 @@
+{
+  "data": {
+    "solar_surplus_threshold": {
+      "watts": 1400
+    },
+    "min_charge_duration": {
+      "iso8601": "PT15M"
+    },
+    "allowed_window": {
+      "start_time": {
+        "iso8601": "10:00:00"
+      },
+      "end_time": {
+        "iso8601": "16:00:00"
+      }
+    }
+  }
+}

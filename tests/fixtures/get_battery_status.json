@@ -1,0 +1,15 @@
+{
+  "data": {
+    "home_battery": {
+      "state_of_charge": {
+        "permille": 724
+      },
+      "power_ac": {
+        "watts": -1500
+      },
+      "control_mode": "self_consumption",
+      "state": "discharging",
+      "modem_online": true
+    }
+  }
+}
