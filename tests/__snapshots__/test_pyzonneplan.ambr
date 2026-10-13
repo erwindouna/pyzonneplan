@@ -2564,6 +2564,152 @@
     }),
   })
 # ---
+# name: test_battery_earnings_charts[asset_costs_days]
+  dict({
+    'average_asset_costs': -3166667,
+    'costs': list([
+      dict({
+        'amount': -6500000,
+        'start': datetime.datetime(2026, 8, 31, 22, 0, tzinfo=datetime.timezone.utc),
+      }),
+      dict({
+        'amount': -4250000,
+        'start': datetime.datetime(2026, 9, 1, 22, 0, tzinfo=datetime.timezone.utc),
+      }),
+      dict({
+        'amount': 1250000,
+        'start': datetime.datetime(2026, 9, 2, 22, 0, tzinfo=datetime.timezone.utc),
+      }),
+    ]),
+    'granularity': 'days',
+    'range': dict({
+      'end_date': datetime.datetime(2026, 9, 30, 21, 59, 59, 999000, tzinfo=datetime.timezone.utc),
+      'start_date': datetime.datetime(2026, 8, 31, 22, 0, tzinfo=datetime.timezone.utc),
+    }),
+    'sum_asset_costs': -9500000,
+    'sum_flex_costs': -2000000,
+  })
+# ---
+# name: test_battery_earnings_charts[asset_costs_months]
+  dict({
+    'average_asset_costs': -3166667,
+    'costs': list([
+      dict({
+        'amount': -6500000,
+        'start': datetime.datetime(2026, 8, 31, 22, 0, tzinfo=datetime.timezone.utc),
+      }),
+      dict({
+        'amount': -4250000,
+        'start': datetime.datetime(2026, 9, 1, 22, 0, tzinfo=datetime.timezone.utc),
+      }),
+      dict({
+        'amount': 1250000,
+        'start': datetime.datetime(2026, 9, 2, 22, 0, tzinfo=datetime.timezone.utc),
+      }),
+    ]),
+    'granularity': 'days',
+    'range': dict({
+      'end_date': datetime.datetime(2026, 9, 30, 21, 59, 59, 999000, tzinfo=datetime.timezone.utc),
+      'start_date': datetime.datetime(2026, 8, 31, 22, 0, tzinfo=datetime.timezone.utc),
+    }),
+    'sum_asset_costs': -9500000,
+    'sum_flex_costs': -2000000,
+  })
+# ---
+# name: test_battery_earnings_charts[cumulative]
+  dict({
+    'average_asset_costs': -3666667,
+    'costs': list([
+      dict({
+        'amount': -3000000,
+        'start': datetime.datetime(2026, 6, 26, 22, 0, tzinfo=datetime.timezone.utc),
+      }),
+      dict({
+        'amount': -7500000,
+        'start': datetime.datetime(2026, 6, 27, 22, 0, tzinfo=datetime.timezone.utc),
+      }),
+      dict({
+        'amount': -11000000,
+        'start': datetime.datetime(2026, 6, 28, 22, 0, tzinfo=datetime.timezone.utc),
+      }),
+    ]),
+    'granularity': 'days',
+    'range': dict({
+      'end_date': datetime.datetime(2026, 9, 24, 21, 59, 59, 999000, tzinfo=datetime.timezone.utc),
+      'start_date': datetime.datetime(2026, 6, 26, 22, 0, tzinfo=datetime.timezone.utc),
+    }),
+    'sum_asset_costs': -11000000,
+    'sum_flex_costs': -11000000,
+  })
+# ---
+# name: test_battery_earnings_charts[cumulative_range]
+  dict({
+    'average_asset_costs': -3666667,
+    'costs': list([
+      dict({
+        'amount': -3000000,
+        'start': datetime.datetime(2026, 6, 26, 22, 0, tzinfo=datetime.timezone.utc),
+      }),
+      dict({
+        'amount': -7500000,
+        'start': datetime.datetime(2026, 6, 27, 22, 0, tzinfo=datetime.timezone.utc),
+      }),
+      dict({
+        'amount': -11000000,
+        'start': datetime.datetime(2026, 6, 28, 22, 0, tzinfo=datetime.timezone.utc),
+      }),
+    ]),
+    'granularity': 'days',
+    'range': dict({
+      'end_date': datetime.datetime(2026, 9, 24, 21, 59, 59, 999000, tzinfo=datetime.timezone.utc),
+      'start_date': datetime.datetime(2026, 6, 26, 22, 0, tzinfo=datetime.timezone.utc),
+    }),
+    'sum_asset_costs': -11000000,
+    'sum_flex_costs': -11000000,
+  })
+# ---
+# name: test_battery_earnings_charts[self_sufficiency]
+  dict({
+    'home_consumption_savings': list([
+      dict({
+        'value': 584,
+        'year_month': '2026-07',
+      }),
+      dict({
+        'value': 521,
+        'year_month': '2026-08',
+      }),
+      dict({
+        'value': None,
+        'year_month': '2026-09',
+      }),
+    ]),
+    'home_solar_self_consumption': list([
+      dict({
+        'value': 812,
+        'year_month': '2026-07',
+      }),
+      dict({
+        'value': 765,
+        'year_month': '2026-08',
+      }),
+      dict({
+        'value': None,
+        'year_month': '2026-09',
+      }),
+    ]),
+    'stats': dict({
+      'year_average_home_consumption_savings': 553,
+      'year_average_home_solar_self_consumption': 788,
+    }),
+  })
+# ---
+# name: test_battery_earnings_charts[self_sufficiency_stats]
+  dict({
+    'year_average_home_consumption_savings': 553,
+    'year_average_home_solar_self_consumption': 788,
+  })
+# ---
 # name: test_device_reads[battery]
   dict({
     'contracts': list([

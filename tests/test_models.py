@@ -33,12 +33,15 @@ from pyzonneplan.models.consumption import ConsumptionInsight, ConsumptionInsigh
 from pyzonneplan.models.devices import (
     Battery,
     BatteryActivityChart,
+    BatteryAssetCostsChart,
     BatteryChart,
     BatteryControlMode,
     BatteryDayAheadArbitrage,
     BatteryHomeOptimization,
     BatteryInstallation,
     BatteryPowerPresetOption,
+    BatterySelfSufficiency,
+    BatterySelfSufficiencyStats,
     BatteryStatus,
     ChargeOnSolar,
     ChargePoint,
@@ -543,6 +546,56 @@ def test_battery_activity_chart_unknown_values() -> None:
     assert chart.planned_activities[0].direction is None
     assert chart.state_of_charge == []
     assert BatteryActivityChart.from_dict({"range": chart.range.to_dict()}).market_prices == []
+
+
+def test_battery_asset_costs_chart() -> None:
+    """Asset costs are negative when the battery earned; the earnings properties negate them into EUR."""
+    chart = BatteryAssetCostsChart.from_dict(_data("get_battery_asset_costs_chart.json")["chart"])
+
+    assert chart.granularity == "days"
+    assert [cost.earnings_euro for cost in chart.costs] == [Decimal("0.65"), Decimal("0.425"), Decimal("-0.125")]
+    assert chart.costs[0].start == datetime(2026, 8, 31, 22, tzinfo=UTC)
+    assert chart.earnings_euro == Decimal("0.95")
+    assert chart.average_earnings_euro == Decimal("0.3166667")
+    assert chart.flex_earnings_euro == Decimal("0.2")
+
+
+def test_battery_asset_costs_chart_without_data() -> None:
+    """A chart without costs or aggregate has no earnings."""
+    chart = BatteryAssetCostsChart.from_dict(
+        {
+            "range": {"start_date": "2026-09-01T00:00:00Z", "end_date": "2026-09-30T00:00:00Z"},
+            "series": {"costs": {"data": [{"date": "2026-09-01T00:00:00Z"}]}},
+        }
+    )
+
+    assert chart.costs[0].earnings_euro is None
+    assert chart.earnings_euro is None
+    assert chart.average_earnings_euro is None
+    assert chart.flex_earnings_euro is None
+
+
+def test_battery_self_sufficiency() -> None:
+    """Self-sufficiency values and averages are converted from permille to percent."""
+    self_sufficiency = BatterySelfSufficiency.from_dict(_data("get_battery_self_sufficiency_chart.json"))
+
+    assert [(month.year_month, month.percent) for month in self_sufficiency.home_solar_self_consumption] == [
+        ("2026-07", Decimal("81.2")),
+        ("2026-08", Decimal("76.5")),
+        ("2026-09", None),
+    ]
+    assert self_sufficiency.home_consumption_savings[0].percent == Decimal("58.4")
+    assert self_sufficiency.stats.home_solar_self_consumption_percent == Decimal("78.8")
+    assert self_sufficiency.stats.home_consumption_savings_percent == Decimal("55.3")
+
+
+def test_battery_self_sufficiency_without_data() -> None:
+    """A response without series or stats is empty."""
+    self_sufficiency = BatterySelfSufficiency.from_dict({})
+
+    assert self_sufficiency == BatterySelfSufficiency()
+    assert self_sufficiency.stats.home_solar_self_consumption_percent is None
+    assert BatterySelfSufficiencyStats.from_dict({"year_average_home_consumption_savings": None}).home_consumption_savings_percent is None
 
 
 def test_charge_point_installation(snapshot: SnapshotAssertion) -> None:
