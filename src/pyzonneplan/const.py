@@ -67,6 +67,27 @@ class MarketTimeResolution(StrEnum):
     HOUR = "PT60M"
 
 
+class BatteryChartType(StrEnum):
+    """The kind of recent activity chart: day-ahead arbitrage adds the planning and market prices."""
+
+    DEFAULT = "default"
+    DAY_AHEAD_ARBITRAGE = "day_ahead_arbitrage"
+
+
+class BatteryActivityType(StrEnum):
+    """What steered a home battery during a period of its recent activity."""
+
+    HOME_OPTIMIZATION = "home_optimization"
+    GRID_OPTIMIZATION = "grid_optimization"
+
+
+class BatteryActivityDirection(StrEnum):
+    """Whether a planned battery activity charges or discharges."""
+
+    CHARGE = "charge"
+    DISCHARGE = "discharge"
+
+
 class PriceResolution(StrEnum):
     """The interval the app shows electricity prices in (the ``price_resolution`` app setting)."""
 

@@ -19,6 +19,9 @@ from mashumaro.mixins.orjson import DataClassORJSONMixin
 from pyzonneplan.const import (
     MONEY_FACTOR,
     WH_TO_KWH,
+    BatteryActivityDirection,
+    BatteryActivityType,
+    BatteryChartType,
     BatteryMode,
     BatteryPowerPreset,
     BatteryState,
@@ -31,6 +34,7 @@ from pyzonneplan.const import (
 
 from ._parse import DATETIME, enum_field, euro, kwh, parse_enum, to_datetime, to_time, to_timedelta
 from .account import Contract
+from .prices import Money, PriceRange
 
 
 def _battery_state(value: str | None) -> BatteryState | None:
@@ -668,6 +672,86 @@ class BatteryChart(DataClassORJSONMixin):
     def production_kwh(self) -> Decimal | None:
         """Return the energy discharged over the chart, in kWh."""
         return kwh(self.meta.get("production"))
+
+
+@dataclass
+class BatteryStateOfChargePoint(DataClassORJSONMixin):
+    """A home battery's state of charge (permille) at one moment of its recent activity."""
+
+    start: datetime
+    state_of_charge: int | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Rename ``date`` and flatten ``state_of_charge.permille``."""
+        return {"start": d["date"], "state_of_charge": (d.get("state_of_charge") or {}).get("permille")}
+
+    @property
+    def state_of_charge_percent(self) -> Decimal | None:
+        """Return the state of charge, in percent."""
+        return None if self.state_of_charge is None else Decimal(self.state_of_charge) / 10
+
+
+@dataclass
+class BatteryActivity(DataClassORJSONMixin):
+    """A period in which home or grid optimization steered the battery."""
+
+    start_date: datetime
+    end_date: datetime
+    activity_type: BatteryActivityType | None = field(default=None, metadata=enum_field(BatteryActivityType, "battery activity type"))
+
+
+@dataclass
+class BatteryPlannedActivity(DataClassORJSONMixin):
+    """A period in which day-ahead arbitrage plans to charge or discharge the battery."""
+
+    start_date: datetime
+    end_date: datetime
+    direction: BatteryActivityDirection | None = field(default=None, metadata=enum_field(BatteryActivityDirection, "battery activity direction"))
+
+
+@dataclass
+class BatteryMarketPrice(DataClassORJSONMixin):
+    """The day-ahead market price, including tax, of one interval."""
+
+    start_date: datetime
+    end_date: datetime
+    market_price_tax_included: Money | None = None
+
+
+@dataclass
+class BatteryActivityChart(DataClassORJSONMixin):
+    """Response of /api/contracts/{uuid}/home-battery/charts/recent-activity.
+
+    The battery's state of charge and what steered it over the last hours.
+    A ``DAY_AHEAD_ARBITRAGE`` chart also covers the coming hours, with the
+    planned charging and discharging and the market prices. The shape comes
+    from the Zonneplan app's demo data; it isn't verified against live hardware.
+    """
+
+    range: PriceRange
+    type: BatteryChartType | None = field(default=None, metadata=enum_field(BatteryChartType, "battery chart type"))
+    state_of_charge: list[BatteryStateOfChargePoint] = field(default_factory=list)
+    activities: list[BatteryActivity] = field(default_factory=list)
+    planned_activities: list[BatteryPlannedActivity] = field(default_factory=list)
+    market_prices: list[BatteryMarketPrice] = field(default_factory=list)
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten each ``series.<name>.data``."""
+        series = d.get("series") or {}
+
+        def _data(name: str) -> list[dict[str, Any]]:
+            return (series.get(name) or {}).get("data") or []
+
+        return {
+            "range": d["range"],
+            "type": d.get("type"),
+            "state_of_charge": _data("state_of_charge"),
+            "activities": _data("activity_type"),
+            "planned_activities": _data("planned_activity"),
+            "market_prices": _data("market_prices"),
+        }
 
 
 @dataclass

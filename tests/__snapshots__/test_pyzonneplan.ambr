@@ -2620,6 +2620,98 @@
     ]),
   })
 # ---
+# name: test_device_reads[battery_activity_chart]
+  dict({
+    'activities': list([
+      dict({
+        'activity_type': <BatteryActivityType.GRID_OPTIMIZATION: 'grid_optimization'>,
+        'end_date': datetime.datetime(2026, 9, 24, 1, 0, tzinfo=datetime.timezone.utc),
+        'start_date': datetime.datetime(2026, 9, 24, 0, 0, tzinfo=datetime.timezone.utc),
+      }),
+      dict({
+        'activity_type': <BatteryActivityType.HOME_OPTIMIZATION: 'home_optimization'>,
+        'end_date': datetime.datetime(2026, 9, 24, 3, 0, tzinfo=datetime.timezone.utc),
+        'start_date': datetime.datetime(2026, 9, 24, 1, 0, tzinfo=datetime.timezone.utc),
+      }),
+    ]),
+    'market_prices': list([
+    ]),
+    'planned_activities': list([
+    ]),
+    'range': dict({
+      'end_date': datetime.datetime(2026, 9, 24, 3, 0, tzinfo=datetime.timezone.utc),
+      'start_date': datetime.datetime(2026, 9, 24, 0, 0, tzinfo=datetime.timezone.utc),
+    }),
+    'state_of_charge': list([
+      dict({
+        'start': datetime.datetime(2026, 9, 24, 0, 0, tzinfo=datetime.timezone.utc),
+        'state_of_charge': 450,
+      }),
+      dict({
+        'start': datetime.datetime(2026, 9, 24, 1, 0, tzinfo=datetime.timezone.utc),
+        'state_of_charge': 525,
+      }),
+      dict({
+        'start': datetime.datetime(2026, 9, 24, 2, 0, tzinfo=datetime.timezone.utc),
+        'state_of_charge': 600,
+      }),
+      dict({
+        'start': datetime.datetime(2026, 9, 24, 3, 0, tzinfo=datetime.timezone.utc),
+        'state_of_charge': None,
+      }),
+    ]),
+    'type': <BatteryChartType.DEFAULT: 'default'>,
+  })
+# ---
+# name: test_device_reads[battery_activity_chart_day_ahead]
+  dict({
+    'activities': list([
+    ]),
+    'market_prices': list([
+      dict({
+        'end_date': datetime.datetime(2026, 9, 24, 2, 15, tzinfo=datetime.timezone.utc),
+        'market_price_tax_included': dict({
+          'amount': 1825000,
+        }),
+        'start_date': datetime.datetime(2026, 9, 24, 2, 0, tzinfo=datetime.timezone.utc),
+      }),
+      dict({
+        'end_date': datetime.datetime(2026, 9, 24, 17, 15, tzinfo=datetime.timezone.utc),
+        'market_price_tax_included': dict({
+          'amount': 3410000,
+        }),
+        'start_date': datetime.datetime(2026, 9, 24, 17, 0, tzinfo=datetime.timezone.utc),
+      }),
+    ]),
+    'planned_activities': list([
+      dict({
+        'direction': <BatteryActivityDirection.CHARGE: 'charge'>,
+        'end_date': datetime.datetime(2026, 9, 24, 2, 15, tzinfo=datetime.timezone.utc),
+        'start_date': datetime.datetime(2026, 9, 24, 2, 0, tzinfo=datetime.timezone.utc),
+      }),
+      dict({
+        'direction': <BatteryActivityDirection.DISCHARGE: 'discharge'>,
+        'end_date': datetime.datetime(2026, 9, 24, 18, 30, tzinfo=datetime.timezone.utc),
+        'start_date': datetime.datetime(2026, 9, 24, 17, 0, tzinfo=datetime.timezone.utc),
+      }),
+    ]),
+    'range': dict({
+      'end_date': datetime.datetime(2026, 9, 25, 22, 0, tzinfo=datetime.timezone.utc),
+      'start_date': datetime.datetime(2026, 9, 24, 0, 0, tzinfo=datetime.timezone.utc),
+    }),
+    'state_of_charge': list([
+      dict({
+        'start': datetime.datetime(2026, 9, 24, 0, 0, tzinfo=datetime.timezone.utc),
+        'state_of_charge': 300,
+      }),
+      dict({
+        'start': datetime.datetime(2026, 9, 24, 1, 0, tzinfo=datetime.timezone.utc),
+        'state_of_charge': 375,
+      }),
+    ]),
+    'type': <BatteryChartType.DAY_AHEAD_ARBITRAGE: 'day_ahead_arbitrage'>,
+  })
+# ---
 # name: test_device_reads[battery_control_mode]
   dict({
     'control_mode': <BatteryMode.SELF_CONSUMPTION: 'self_consumption'>,

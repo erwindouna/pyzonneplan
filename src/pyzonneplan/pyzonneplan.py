@@ -49,6 +49,7 @@ from pyzonneplan.exceptions import (
 from pyzonneplan.models.account import Account, AppSettings
 from pyzonneplan.models.consumption import ConsumptionInsight, ElectricityChart, ElectricityDelivered, Gas, GasChart
 from pyzonneplan.models.devices import (
+    BatteryActivityChart,
     BatteryChart,
     BatteryControlMode,
     BatteryDayAheadArbitrage,
@@ -509,6 +510,11 @@ class Zonneplan:
         if isinstance(charts, list) and (not charts or charts[0] is None):
             return None
         return _parse(BatteryChart, response, "data", 0)
+
+    async def async_get_battery_activity_chart(self, contract_uuid: str) -> BatteryActivityChart:
+        """Fetch a home battery's recent state of charge and activity, as the app's battery screen shows it."""
+        response = await self._request(f"api/contracts/{contract_uuid}/home-battery/charts/recent-activity")
+        return _parse(BatteryActivityChart, response, "data", "chart")
 
     async def async_get_battery_control_mode(self, contract_uuid: str) -> BatteryControlMode:
         """Fetch a home battery's control mode and which modes it supports."""
