@@ -246,6 +246,18 @@ async def test_empty_body_returns_none(aresponses: ResponsesMockServer, zonnepla
     assert await zonneplan_client._request("connections/conn-1/charge-points/cp-1/actions/start_boost", method="POST") is None
 
 
+async def test_request_sends_app_headers(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Requests carry the app version and environment the API expects, with the library's own user agent."""
+    aresponses.add(HOST, "/user-accounts/me", "GET", aresponses.Response(text="{}"))
+
+    await zonneplan_client._request("user-accounts/me")
+
+    headers = aresponses.history[0].request.headers
+    assert headers["x-app-version"] == "6.23.0"
+    assert headers["x-app-environment"] == "production"
+    assert headers["user-agent"].startswith("pyzonneplan/")
+
+
 async def test_unexpected_token_response_raises_response_error(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
     """A token response without the expected fields raises ZonneplanResponseError."""
     aresponses.add(HOST, "/oauth/token", "POST", aresponses.Response(text=orjson.dumps({"access_token": "new-access"}).decode()))
