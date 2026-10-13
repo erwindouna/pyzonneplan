@@ -45,7 +45,7 @@
               dict({
                 'code': 'E004',
                 'label': 'Verbruikshistorie',
-                'start_date': '2026-01-01',
+                'start_date': datetime.date(2026, 1, 1),
               }),
             ]),
             'market_segment': 'electricity',
@@ -91,7 +91,7 @@
     ]),
     'user_account': dict({
       'email': 'user@example.com',
-      'first_name': 'None',
+      'first_name': None,
       'full_name': 'Jane Doe',
       'initials': '',
       'is_representative': False,
@@ -143,7 +143,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 28, 15, 0, tzinfo=datetime.timezone.utc),
@@ -157,7 +157,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 28, 16, 0, tzinfo=datetime.timezone.utc),
@@ -171,7 +171,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 28, 17, 0, tzinfo=datetime.timezone.utc),
@@ -185,7 +185,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 28, 18, 0, tzinfo=datetime.timezone.utc),
@@ -199,7 +199,7 @@
             'sustainability_score': dict({
               'permille': 896,
             }),
-            'tariff_group': 'high',
+            'tariff_group': <TariffGroup.HIGH: 'high'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 28, 19, 0, tzinfo=datetime.timezone.utc),
@@ -213,7 +213,7 @@
             'sustainability_score': dict({
               'permille': 747,
             }),
-            'tariff_group': 'high',
+            'tariff_group': <TariffGroup.HIGH: 'high'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 28, 20, 0, tzinfo=datetime.timezone.utc),
@@ -227,7 +227,7 @@
             'sustainability_score': dict({
               'permille': 633,
             }),
-            'tariff_group': 'high',
+            'tariff_group': <TariffGroup.HIGH: 'high'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 28, 21, 0, tzinfo=datetime.timezone.utc),
@@ -241,7 +241,7 @@
             'sustainability_score': dict({
               'permille': 689,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 28, 22, 0, tzinfo=datetime.timezone.utc),
@@ -255,7 +255,7 @@
             'sustainability_score': dict({
               'permille': 712,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 28, 23, 0, tzinfo=datetime.timezone.utc),
@@ -269,7 +269,7 @@
             'sustainability_score': dict({
               'permille': 729,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 0, 0, tzinfo=datetime.timezone.utc),
@@ -283,7 +283,7 @@
             'sustainability_score': dict({
               'permille': 781,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 1, 0, tzinfo=datetime.timezone.utc),
@@ -297,7 +297,7 @@
             'sustainability_score': dict({
               'permille': 776,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 2, 0, tzinfo=datetime.timezone.utc),
@@ -311,7 +311,7 @@
             'sustainability_score': dict({
               'permille': 776,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 3, 0, tzinfo=datetime.timezone.utc),
@@ -325,7 +325,7 @@
             'sustainability_score': dict({
               'permille': 672,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 4, 0, tzinfo=datetime.timezone.utc),
@@ -339,7 +339,7 @@
             'sustainability_score': dict({
               'permille': 675,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 5, 0, tzinfo=datetime.timezone.utc),
@@ -353,7 +353,7 @@
             'sustainability_score': dict({
               'permille': 678,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 6, 0, tzinfo=datetime.timezone.utc),
@@ -367,7 +367,7 @@
             'sustainability_score': dict({
               'permille': 674,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 7, 0, tzinfo=datetime.timezone.utc),
@@ -381,7 +381,7 @@
             'sustainability_score': dict({
               'permille': 748,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 8, 0, tzinfo=datetime.timezone.utc),
@@ -395,7 +395,7 @@
             'sustainability_score': dict({
               'permille': 993,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 9, 0, tzinfo=datetime.timezone.utc),
@@ -409,7 +409,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 10, 0, tzinfo=datetime.timezone.utc),
@@ -423,7 +423,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 11, 0, tzinfo=datetime.timezone.utc),
@@ -437,7 +437,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 12, 0, tzinfo=datetime.timezone.utc),
@@ -451,7 +451,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 13, 0, tzinfo=datetime.timezone.utc),
@@ -465,7 +465,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 14, 0, tzinfo=datetime.timezone.utc),
@@ -479,7 +479,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 15, 0, tzinfo=datetime.timezone.utc),
@@ -493,7 +493,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 16, 0, tzinfo=datetime.timezone.utc),
@@ -507,7 +507,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 17, 0, tzinfo=datetime.timezone.utc),
@@ -521,7 +521,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 18, 0, tzinfo=datetime.timezone.utc),
@@ -535,7 +535,7 @@
             'sustainability_score': dict({
               'permille': 815,
             }),
-            'tariff_group': 'high',
+            'tariff_group': <TariffGroup.HIGH: 'high'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 19, 0, tzinfo=datetime.timezone.utc),
@@ -549,7 +549,7 @@
             'sustainability_score': dict({
               'permille': 681,
             }),
-            'tariff_group': 'high',
+            'tariff_group': <TariffGroup.HIGH: 'high'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 20, 0, tzinfo=datetime.timezone.utc),
@@ -563,7 +563,7 @@
             'sustainability_score': dict({
               'permille': 612,
             }),
-            'tariff_group': 'high',
+            'tariff_group': <TariffGroup.HIGH: 'high'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 21, 0, tzinfo=datetime.timezone.utc),
@@ -577,7 +577,7 @@
             'sustainability_score': dict({
               'permille': 614,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 22, 0, tzinfo=datetime.timezone.utc),
@@ -591,7 +591,7 @@
             'sustainability_score': dict({
               'permille': 648,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 29, 23, 0, tzinfo=datetime.timezone.utc),
@@ -605,7 +605,7 @@
             'sustainability_score': dict({
               'permille': 677,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 0, 0, tzinfo=datetime.timezone.utc),
@@ -619,7 +619,7 @@
             'sustainability_score': dict({
               'permille': 756,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 1, 0, tzinfo=datetime.timezone.utc),
@@ -633,7 +633,7 @@
             'sustainability_score': dict({
               'permille': 780,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 2, 0, tzinfo=datetime.timezone.utc),
@@ -647,7 +647,7 @@
             'sustainability_score': dict({
               'permille': 824,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 3, 0, tzinfo=datetime.timezone.utc),
@@ -661,7 +661,7 @@
             'sustainability_score': dict({
               'permille': 835,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 4, 0, tzinfo=datetime.timezone.utc),
@@ -675,7 +675,7 @@
             'sustainability_score': dict({
               'permille': 846,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 5, 0, tzinfo=datetime.timezone.utc),
@@ -689,7 +689,7 @@
             'sustainability_score': dict({
               'permille': 860,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 6, 0, tzinfo=datetime.timezone.utc),
@@ -703,7 +703,7 @@
             'sustainability_score': dict({
               'permille': 853,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 7, 0, tzinfo=datetime.timezone.utc),
@@ -717,7 +717,7 @@
             'sustainability_score': dict({
               'permille': 889,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 8, 0, tzinfo=datetime.timezone.utc),
@@ -731,7 +731,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 9, 0, tzinfo=datetime.timezone.utc),
@@ -745,7 +745,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 10, 0, tzinfo=datetime.timezone.utc),
@@ -759,7 +759,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 11, 0, tzinfo=datetime.timezone.utc),
@@ -773,7 +773,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 12, 0, tzinfo=datetime.timezone.utc),
@@ -787,7 +787,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 13, 0, tzinfo=datetime.timezone.utc),
@@ -801,7 +801,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 14, 0, tzinfo=datetime.timezone.utc),
@@ -815,7 +815,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 15, 0, tzinfo=datetime.timezone.utc),
@@ -829,7 +829,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 16, 0, tzinfo=datetime.timezone.utc),
@@ -843,7 +843,7 @@
             'sustainability_score': dict({
               'permille': 1000,
             }),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 17, 0, tzinfo=datetime.timezone.utc),
@@ -857,7 +857,7 @@
             'sustainability_score': dict({
               'permille': 898,
             }),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 18, 0, tzinfo=datetime.timezone.utc),
@@ -871,7 +871,7 @@
             'sustainability_score': dict({
               'permille': 584,
             }),
-            'tariff_group': 'high',
+            'tariff_group': <TariffGroup.HIGH: 'high'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 19, 0, tzinfo=datetime.timezone.utc),
@@ -885,7 +885,7 @@
             'sustainability_score': dict({
               'permille': 409,
             }),
-            'tariff_group': 'high',
+            'tariff_group': <TariffGroup.HIGH: 'high'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 20, 0, tzinfo=datetime.timezone.utc),
@@ -899,7 +899,7 @@
             'sustainability_score': dict({
               'permille': 314,
             }),
-            'tariff_group': 'high',
+            'tariff_group': <TariffGroup.HIGH: 'high'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 21, 0, tzinfo=datetime.timezone.utc),
@@ -913,7 +913,7 @@
             'sustainability_score': dict({
               'permille': 348,
             }),
-            'tariff_group': 'high',
+            'tariff_group': <TariffGroup.HIGH: 'high'>,
           }),
           dict({
             'end_date': datetime.datetime(2026, 8, 30, 22, 0, tzinfo=datetime.timezone.utc),
@@ -927,7 +927,7 @@
             'sustainability_score': dict({
               'permille': 374,
             }),
-            'tariff_group': 'high',
+            'tariff_group': <TariffGroup.HIGH: 'high'>,
           }),
         ]),
       }),
@@ -1041,7 +1041,7 @@
           'd': 67000,
           'p': 34500,
         }),
-        'type': 'days',
+        'type': <MeasurementGroupType.DAYS: 'days'>,
       }),
     ]),
   })
@@ -1055,145 +1055,145 @@
             'delivered': 205,
             'produced': 0,
             'start': datetime.datetime(2026, 9, 23, 22, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'delivered': 171,
             'produced': 0,
             'start': datetime.datetime(2026, 9, 23, 23, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'delivered': 150,
             'produced': 0,
             'start': datetime.datetime(2026, 9, 24, 0, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'delivered': 137,
             'produced': 0,
             'start': datetime.datetime(2026, 9, 24, 1, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'delivered': 137,
             'produced': 0,
             'start': datetime.datetime(2026, 9, 24, 2, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'delivered': 150,
             'produced': 0,
             'start': datetime.datetime(2026, 9, 24, 3, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'delivered': 239,
             'produced': 0,
             'start': datetime.datetime(2026, 9, 24, 4, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'delivered': 341,
             'produced': 75,
             'start': datetime.datetime(2026, 9, 24, 5, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'delivered': 273,
             'produced': 300,
             'start': datetime.datetime(2026, 9, 24, 6, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'delivered': 205,
             'produced': 675,
             'start': datetime.datetime(2026, 9, 24, 7, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'delivered': 137,
             'produced': 1050,
             'start': datetime.datetime(2026, 9, 24, 8, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'delivered': 102,
             'produced': 1350,
             'start': datetime.datetime(2026, 9, 24, 9, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'delivered': 102,
             'produced': 1500,
             'start': datetime.datetime(2026, 9, 24, 10, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'delivered': 102,
             'produced': 1425,
             'start': datetime.datetime(2026, 9, 24, 11, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'delivered': 136,
             'produced': 1200,
             'start': datetime.datetime(2026, 9, 24, 12, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'delivered': 205,
             'produced': 825,
             'start': datetime.datetime(2026, 9, 24, 13, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'delivered': 307,
             'produced': 450,
             'start': datetime.datetime(2026, 9, 24, 14, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'low',
+            'tariff_group': <TariffGroup.LOW: 'low'>,
           }),
           dict({
             'delivered': 478,
             'produced': 150,
             'start': datetime.datetime(2026, 9, 24, 15, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'delivered': 546,
             'produced': 0,
             'start': datetime.datetime(2026, 9, 24, 16, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'delivered': 512,
             'produced': 0,
             'start': datetime.datetime(2026, 9, 24, 17, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'high',
+            'tariff_group': <TariffGroup.HIGH: 'high'>,
           }),
           dict({
             'delivered': 444,
             'produced': 0,
             'start': datetime.datetime(2026, 9, 24, 18, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'high',
+            'tariff_group': <TariffGroup.HIGH: 'high'>,
           }),
           dict({
             'delivered': 375,
             'produced': 0,
             'start': datetime.datetime(2026, 9, 24, 19, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'delivered': 307,
             'produced': 0,
             'start': datetime.datetime(2026, 9, 24, 20, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
           dict({
             'delivered': 239,
             'produced': 0,
             'start': datetime.datetime(2026, 9, 24, 21, 0, tzinfo=datetime.timezone.utc),
-            'tariff_group': 'normal',
+            'tariff_group': <TariffGroup.NORMAL: 'normal'>,
           }),
         ]),
         'meta': dict({
@@ -1217,7 +1217,7 @@
           'd': 6000,
           'p': 9000,
         }),
-        'type': 'hours',
+        'type': <MeasurementGroupType.HOURS: 'hours'>,
       }),
     ]),
   })
@@ -1249,7 +1249,7 @@
           'd': 0,
           'p': 0,
         }),
-        'type': 'hours',
+        'type': <MeasurementGroupType.HOURS: 'hours'>,
       }),
     ]),
   })
@@ -1287,7 +1287,7 @@
           'd': 67000,
           'p': 34500,
         }),
-        'type': 'months',
+        'type': <MeasurementGroupType.MONTHS: 'months'>,
       }),
     ]),
   })
@@ -1317,7 +1317,7 @@
     ]),
     'measurement_groups': list([
       dict({
-        'date': '2026-08-29',
+        'date': datetime.datetime(2026, 8, 29, 0, 0, tzinfo=zoneinfo.ZoneInfo(key='Europe/Amsterdam')),
         'meta': dict({
           'delivery_costs_excl_tax': 1875000,
           'delivery_costs_incl_tax': 3125000,
@@ -1334,7 +1334,7 @@
         }),
       }),
       dict({
-        'date': '2026-08-28',
+        'date': datetime.datetime(2026, 8, 28, 0, 0, tzinfo=zoneinfo.ZoneInfo(key='Europe/Amsterdam')),
         'meta': dict({
         }),
         'totals': dict({
@@ -1343,7 +1343,7 @@
         }),
       }),
       dict({
-        'date': '2026-08-01',
+        'date': datetime.datetime(2026, 8, 1, 0, 0, tzinfo=zoneinfo.ZoneInfo(key='Europe/Amsterdam')),
         'meta': dict({
           'delivery_costs_excl_tax': 51300000,
           'delivery_costs_incl_tax': 85500000,
@@ -1354,7 +1354,7 @@
         }),
       }),
       dict({
-        'date': '2026-01-01',
+        'date': datetime.datetime(2026, 1, 1, 0, 0, tzinfo=zoneinfo.ZoneInfo(key='Europe/Amsterdam')),
         'meta': dict({
           'delivery_costs_excl_tax': 468000000,
           'delivery_costs_incl_tax': 780000000,
@@ -1392,7 +1392,7 @@
     ]),
     'measurement_groups': list([
       dict({
-        'date': '2026-08-29',
+        'date': datetime.datetime(2026, 8, 29, 0, 0, tzinfo=zoneinfo.ZoneInfo(key='Europe/Amsterdam')),
         'meta': dict({
           'delivery_costs_excl_tax': 1187500,
           'delivery_costs_incl_tax': 2187500,
@@ -1400,13 +1400,13 @@
         'total': 1250,
       }),
       dict({
-        'date': '2026-08-28',
+        'date': datetime.datetime(2026, 8, 28, 0, 0, tzinfo=zoneinfo.ZoneInfo(key='Europe/Amsterdam')),
         'meta': dict({
         }),
         'total': 1180,
       }),
       dict({
-        'date': '2026-08-01',
+        'date': datetime.datetime(2026, 8, 1, 0, 0, tzinfo=zoneinfo.ZoneInfo(key='Europe/Amsterdam')),
         'meta': dict({
           'delivery_costs_excl_tax': 32490000,
           'delivery_costs_incl_tax': 59850000,
@@ -1414,7 +1414,7 @@
         'total': 34200,
       }),
       dict({
-        'date': '2026-01-01',
+        'date': datetime.datetime(2026, 1, 1, 0, 0, tzinfo=zoneinfo.ZoneInfo(key='Europe/Amsterdam')),
         'meta': dict({
           'delivery_costs_excl_tax': 296400000,
           'delivery_costs_incl_tax': 546000000,
@@ -1476,7 +1476,7 @@
         }),
         'start': datetime.datetime(2026, 8, 31, 22, 0, tzinfo=datetime.timezone.utc),
         'total': 7700,
-        'type': 'days',
+        'type': <MeasurementGroupType.DAYS: 'days'>,
       }),
     ]),
   })
@@ -1594,7 +1594,7 @@
         }),
         'start': datetime.datetime(2026, 9, 23, 22, 0, tzinfo=datetime.timezone.utc),
         'total': 400,
-        'type': 'hours',
+        'type': <MeasurementGroupType.HOURS: 'hours'>,
       }),
     ]),
   })
@@ -1616,7 +1616,7 @@
         }),
         'start': datetime.datetime(2026, 9, 24, 22, 0, tzinfo=datetime.timezone.utc),
         'total': 0,
-        'type': 'hours',
+        'type': <MeasurementGroupType.HOURS: 'hours'>,
       }),
     ]),
   })
@@ -1734,7 +1734,7 @@
         }),
         'start': datetime.datetime(2026, 9, 25, 22, 0, tzinfo=datetime.timezone.utc),
         'total': 0,
-        'type': 'hours',
+        'type': <MeasurementGroupType.HOURS: 'hours'>,
       }),
     ]),
   })
@@ -1759,7 +1759,7 @@
         }),
         'start': datetime.datetime(2025, 12, 31, 23, 0, tzinfo=datetime.timezone.utc),
         'total': 7700,
-        'type': 'months',
+        'type': <MeasurementGroupType.MONTHS: 'months'>,
       }),
     ]),
   })
@@ -1777,7 +1777,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 25, 16, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 530,
-        'tariff_group': 'high',
+        'tariff_group': <TariffGroup.HIGH: 'high'>,
       }),
       dict({
         'electricity_price': 4907050,
@@ -1788,7 +1788,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 25, 17, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 220,
-        'tariff_group': 'high',
+        'tariff_group': <TariffGroup.HIGH: 'high'>,
       }),
       dict({
         'electricity_price': 4359949,
@@ -1799,7 +1799,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 25, 18, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 61,
-        'tariff_group': 'high',
+        'tariff_group': <TariffGroup.HIGH: 'high'>,
       }),
       dict({
         'electricity_price': 4021905,
@@ -1810,7 +1810,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 25, 19, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 22,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3807371,
@@ -1821,7 +1821,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 25, 20, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 25,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3450180,
@@ -1832,7 +1832,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 25, 21, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 31,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3689246,
@@ -1843,7 +1843,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 25, 22, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 35,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3542139,
@@ -1854,7 +1854,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 25, 23, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 52,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3439018,
@@ -1865,7 +1865,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 0, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 89,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3301259,
@@ -1876,7 +1876,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 1, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 107,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3266229,
@@ -1887,7 +1887,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 2, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 85,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 3265383,
@@ -1898,7 +1898,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 3, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 120,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 3480005,
@@ -1909,7 +1909,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 4, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 141,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3666649,
@@ -1920,7 +1920,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 5, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 135,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3631105,
@@ -1931,7 +1931,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 6, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 124,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3201433,
@@ -1942,7 +1942,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 7, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 227,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 2696895,
@@ -1953,7 +1953,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 8, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 472,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 2033694,
@@ -1964,7 +1964,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 9, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 760,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 1804549,
@@ -1975,7 +1975,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 10, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 1095,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 1532663,
@@ -1986,7 +1986,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 11, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 1196,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 1540982,
@@ -1997,7 +1997,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 12, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 1192,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 2006377,
@@ -2008,7 +2008,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 13, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 1076,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 2823461,
@@ -2019,7 +2019,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 14, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 990,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 3564828,
@@ -2030,7 +2030,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 15, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 700,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3888200,
@@ -2041,7 +2041,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 16, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 378,
-        'tariff_group': 'high',
+        'tariff_group': <TariffGroup.HIGH: 'high'>,
       }),
       dict({
         'electricity_price': 4173609,
@@ -2052,7 +2052,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 17, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 181,
-        'tariff_group': 'high',
+        'tariff_group': <TariffGroup.HIGH: 'high'>,
       }),
       dict({
         'electricity_price': 4047436,
@@ -2063,7 +2063,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 18, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 77,
-        'tariff_group': 'high',
+        'tariff_group': <TariffGroup.HIGH: 'high'>,
       }),
       dict({
         'electricity_price': 3831179,
@@ -2074,7 +2074,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 19, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 78,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3720130,
@@ -2085,7 +2085,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 20, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 94,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3559080,
@@ -2096,7 +2096,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 21, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 105,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3528042,
@@ -2107,7 +2107,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 22, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 119,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3465848,
@@ -2118,7 +2118,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 26, 23, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 134,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3381694,
@@ -2129,7 +2129,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 0, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 154,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3322313,
@@ -2140,7 +2140,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 1, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 174,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3263447,
@@ -2151,7 +2151,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 2, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 183,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3228387,
@@ -2162,7 +2162,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 3, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 203,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3239277,
@@ -2173,7 +2173,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 4, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 217,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3146378,
@@ -2184,7 +2184,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 5, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 232,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 2892823,
@@ -2195,7 +2195,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 6, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 222,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 2094495,
@@ -2206,7 +2206,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 7, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 299,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 1574044,
@@ -2217,7 +2217,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 8, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 507,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 1316920,
@@ -2228,7 +2228,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 9, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 797,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 1322849,
@@ -2239,7 +2239,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 10, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 1093,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 1309961,
@@ -2250,7 +2250,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 11, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 1276,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 1307966,
@@ -2261,7 +2261,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 12, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 1322,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 1308420,
@@ -2272,7 +2272,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 13, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 1353,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 1467020,
@@ -2283,7 +2283,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 14, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 1240,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 2697288,
@@ -2294,7 +2294,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 15, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 952,
-        'tariff_group': 'low',
+        'tariff_group': <TariffGroup.LOW: 'low'>,
       }),
       dict({
         'electricity_price': 3608025,
@@ -2305,7 +2305,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 16, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 578,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3754374,
@@ -2316,7 +2316,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 17, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 338,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3742122,
@@ -2327,7 +2327,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 18, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 283,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3606452,
@@ -2338,7 +2338,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 19, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 323,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3453839,
@@ -2349,7 +2349,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 20, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 337,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
       dict({
         'electricity_price': 3288857,
@@ -2360,7 +2360,7 @@
         'solar_yield': 0,
         'start': datetime.datetime(2026, 9, 27, 21, 0, tzinfo=datetime.timezone.utc),
         'sustainability_score': 330,
-        'tariff_group': 'normal',
+        'tariff_group': <TariffGroup.NORMAL: 'normal'>,
       }),
     ]),
     'surplus_electricity': 0,
@@ -2370,7 +2370,7 @@
       'status_message': '',
       'status_tip': 'Probeer de piek te vermijden',
       'sustainability_score': 378,
-      'type': 'high',
+      'type': <TariffGroup.HIGH: 'high'>,
       'value': 0,
     }),
   })
@@ -2383,10 +2383,12 @@
         'label': 'Thuisbatterij',
         'meta': dict({
           'average_day': 4000000,
+          'backup_power_ac': 0,
           'backup_power_active': False,
           'backup_power_capable': True,
           'backup_power_usable_capacity_wh': 4000,
           'battery_state': 'Discharging',
+          'calibration_active': False,
           'cycle_count': 100,
           'delivery_day': 3000,
           'dynamic_charging_enabled': False,
@@ -2431,19 +2433,27 @@
 # ---
 # name: test_device_reads[battery_control_mode]
   dict({
-    'control_mode': 'self_consumption',
+    'control_mode': <BatteryMode.SELF_CONSUMPTION: 'self_consumption'>,
     'modes': dict({
+      'day_ahead_arbitrage': dict({
+        'available': False,
+        'enabled': False,
+        'unavailability_reason_code': <BatteryUnavailabilityReason.DISALLOWED_BY_PROJECT: 'disallowed_by_project'>,
+      }),
       'dynamic_charging': dict({
         'available': False,
         'enabled': False,
+        'unavailability_reason_code': <BatteryUnavailabilityReason.NO_ACTIVE_ELECTRICITY_CONTRACT: 'no_active_electricity_contract'>,
       }),
       'home_optimization': dict({
         'available': True,
         'enabled': False,
+        'unavailability_reason_code': None,
       }),
       'self_consumption': dict({
         'available': True,
         'enabled': True,
+        'unavailability_reason_code': None,
       }),
     }),
     'processing': False,
@@ -2461,6 +2471,9 @@
       'min_watts': 100,
     }),
     'max_desired_discharge_power_watts': 800,
+    'power_preset': None,
+    'power_presets': list([
+    ]),
   })
 # ---
 # name: test_device_reads[charge_point]
@@ -2480,11 +2493,17 @@
         'end_date': None,
         'label': 'Laadpaal',
         'meta': dict({
+          'average_cost_in_cents': 2500000,
           'charge_point_model_name': 'Example Charger 11',
+          'charged_energy': 600000,
           'charging_cost_total': 1500000000,
+          'first_measured_at': '2026-01-15T08:00:00.000000Z',
+          'flex_result': None,
           'identifier': 'SERIAL0000004',
+          'last_measured_at': '2026-09-29T11:55:00.000000Z',
           'serial_number': 'SERIAL0000004',
           'session_average_cost_in_cents': 2500000,
+          'session_charged_energy': 10000,
           'session_charging_cost_total': 25000000,
           'session_flex_result': 2000000,
           'show_in_contract_screen': True,
@@ -2493,6 +2512,7 @@
         'state': dict({
           'can_charge': True,
           'can_schedule': True,
+          'charge_on_solar_active': False,
           'charge_on_solar_enabled': False,
           'charge_point_session': dict({
             'charged_distance_in_kilometers': 60,
@@ -2511,12 +2531,14 @@
           }),
           'dynamic_load_balancing_health': 'HEALTHY',
           'energy_delivered_session': 10000,
+          'last_known_vehicle_uuid': '00000000-0000-4000-8000-000000000401',
           'overload_protection_active': False,
           'plug_and_charge': False,
+          'plugged_in_at': datetime.datetime(2026, 9, 29, 9, 55, tzinfo=datetime.timezone.utc),
           'power_actual': 11000,
           'processing': False,
-          'start_mode': 'Automatic',
-          'state': 'Charging',
+          'start_mode': <ChargePointStartMode.ALWAYS_FLEX: 'always_flex'>,
+          'state': <ChargePointStatus.CHARGING: 'charging'>,
         }),
         'type': 'charge_point_installation',
         'uuid': '00000000-0000-4000-8000-000000000301',

@@ -11,14 +11,26 @@ from zoneinfo import ZoneInfo
 import orjson
 import pytest
 
-from pyzonneplan.const import BatteryMode, BatteryState, ContractType
-from pyzonneplan.models.account import Account, Address, AddressGroup, Connection, Contract, UserAccount
+from pyzonneplan.const import (
+    BatteryMode,
+    BatteryPowerPreset,
+    BatteryState,
+    BatteryUnavailabilityReason,
+    ChargePointStartMode,
+    ChargePointStatus,
+    ContractType,
+    MeasurementGroupType,
+    TariffGroup,
+)
+from pyzonneplan.models.account import Account, Address, AddressGroup, Connection, ConnectionFeature, Contract, UserAccount
 from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
 from pyzonneplan.models.devices import (
     Battery,
     BatteryChart,
     BatteryControlMode,
+    BatteryHomeOptimization,
     BatteryInstallation,
+    BatteryPowerPresetOption,
     ChargePoint,
     ChargePointInstallation,
     ChargeSchedule,
@@ -27,7 +39,7 @@ from pyzonneplan.models.devices import (
     Vehicle,
 )
 from pyzonneplan.models.prices import ConsumerPrices, Money, PriceChartData, PricePoint, PriceRange, PriceSeries
-from pyzonneplan.models.summary import Summary
+from pyzonneplan.models.summary import Summary, SummaryUsage
 
 from . import load_fixtures
 
@@ -258,7 +270,7 @@ def test_battery_without_readings() -> None:
         ("Hibernating", None),
         (None, None),
     ],
-    ids=["capitalised", "lowercase", "uppercase", "pascal_case", "snake_case", "api_unknown_state", "unknown", "missing"],
+    ids=["capitalised", "lowercase", "uppercase", "pascal_case", "snake_case", "unknown_state", "unknown", "missing"],
 )
 def test_battery_states(value: str | None, expected: BatteryState | None) -> None:
     """Battery and inverter states parse case-insensitively, and are None when missing or unknown."""
@@ -273,7 +285,7 @@ def test_battery_unknown_state_is_logged(caplog: pytest.LogCaptureFixture) -> No
     """An unknown state is logged at debug level."""
     battery = Battery(contract=_contract(ContractType.HOME_BATTERY, meta={"battery_state": "Hibernating"}))
 
-    with caplog.at_level(logging.DEBUG, logger="pyzonneplan.models.devices"):
+    with caplog.at_level(logging.DEBUG, logger="pyzonneplan"):
         assert battery.battery_state is None
 
     assert "Unknown battery state: Hibernating" in caplog.text
@@ -289,6 +301,73 @@ def test_battery_control_mode() -> None:
     assert control_mode.is_enabled(BatteryMode.HOME_OPTIMIZATION) is False
     assert control_mode.is_enabled("unknown") is False
     assert control_mode.processing is False
+    assert control_mode.modes[BatteryMode.SELF_CONSUMPTION].unavailability_reason_code is None
+    assert control_mode.modes[BatteryMode.DAY_AHEAD_ARBITRAGE].unavailability_reason_code is BatteryUnavailabilityReason.DISALLOWED_BY_PROJECT
+
+
+@pytest.mark.parametrize(
+    ("control_mode", "expected"),
+    [
+        ("home_optimization", BatteryMode.HOME_OPTIMIZATION),
+        ("day_ahead_arbitrage", BatteryMode.DAY_AHEAD_ARBITRAGE),
+        ("solar_boost", None),
+        (None, None),
+    ],
+    ids=["known", "day_ahead_arbitrage", "unknown", "missing"],
+)
+def test_battery_control_mode_values(control_mode: str | None, expected: BatteryMode | None) -> None:
+    """The control mode parses to BatteryMode, an unknown one to None; unknown modes stay in ``modes`` but aren't offered."""
+    parsed = BatteryControlMode.from_dict(
+        {
+            "control_mode": control_mode,
+            "modes": {
+                "home_optimization": {"enabled": True, "available": True},
+                "solar_boost": {"enabled": False, "available": True, "unavailability_reason_code": "not_yet_known"},
+            },
+        }
+    )
+
+    assert parsed.control_mode is expected
+    assert parsed.available_modes == [BatteryMode.HOME_OPTIMIZATION]
+    assert parsed.modes["solar_boost"].available is True
+    assert parsed.modes["solar_boost"].unavailability_reason_code is None
+
+
+def test_battery_home_optimization_presets() -> None:
+    """Power presets are unwrapped from their ``data`` envelope and typed."""
+    optimization = BatteryHomeOptimization.from_dict(_data("get_battery_home_optimization_presets.json"))
+
+    assert optimization.power_preset is BatteryPowerPreset.MEDIUM
+    assert optimization.power_presets == [
+        BatteryPowerPresetOption(name=BatteryPowerPreset.LOW, max_desired_charge_power_watts=1500, max_desired_discharge_power_watts=1500),
+        BatteryPowerPresetOption(name=BatteryPowerPreset.MEDIUM, max_desired_charge_power_watts=3000, max_desired_discharge_power_watts=3000),
+        BatteryPowerPresetOption(name=BatteryPowerPreset.HIGH, max_desired_charge_power_watts=5000, max_desired_discharge_power_watts=5000),
+    ]
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {},
+        {"power_preset": None, "power_presets": None},
+        {"power_preset": "turbo", "power_presets": {"data": None}},
+    ],
+    ids=["missing", "null", "unknown_preset"],
+)
+def test_battery_home_optimization_without_presets(payload: dict[str, Any]) -> None:
+    """Older responses without presets, null presets and an unknown preset all parse."""
+    optimization = BatteryHomeOptimization.from_dict(_data("get_battery_home_optimization.json") | payload)
+
+    assert optimization.max_desired_charge_power_watts == 2500
+    assert optimization.power_preset is None
+    assert optimization.power_presets == []
+
+
+def test_battery_power_preset_unknown_name() -> None:
+    """A preset with an unknown name keeps its power settings."""
+    optimization = BatteryHomeOptimization.from_dict({"power_presets": {"data": [{"name": "turbo", "max_desired_charge_power_watts": 9000}]}})
+
+    assert optimization.power_presets == [BatteryPowerPresetOption(name=None, max_desired_charge_power_watts=9000)]
 
 
 def test_battery_chart() -> None:
@@ -314,11 +393,46 @@ def test_charge_point_installation(snapshot: SnapshotAssertion) -> None:
 
     assert charge_point is not None
     assert charge_point.model_name == "Example Charger 11"
-    assert charge_point.state.state == "Charging"
+    assert charge_point.state.state is ChargePointStatus.CHARGING
+    assert charge_point.state.start_mode is ChargePointStartMode.ALWAYS_FLEX
+    assert charge_point.state.plugged_in_at == datetime(2026, 9, 29, 9, 55, tzinfo=UTC)
+    assert charge_point.state.last_known_vehicle_uuid == installation.vehicles[0].uuid
     assert charge_point.state.energy_delivered_session_kwh == Decimal(10)
     assert charge_point.next_schedule == charge_point.charge_schedules[0]
     assert installation.vehicles[0].range_km == 375
     assert _properties(charge_point) == snapshot
+
+
+@pytest.mark.parametrize(
+    ("state", "start_mode", "expected_state", "expected_start_mode"),
+    [
+        ("VehicleDetected", "AlwaysFlex", ChargePointStatus.VEHICLE_DETECTED, ChargePointStartMode.ALWAYS_FLEX),
+        ("Error", "StartWithApp", ChargePointStatus.ERROR, ChargePointStartMode.START_WITH_APP),
+        ("Standby", "PlugAndCharge", ChargePointStatus.STANDBY, ChargePointStartMode.PLUG_AND_CHARGE),
+        ("Offline", "Automatic", None, None),
+        (None, None, None, None),
+    ],
+    ids=["vehicle_detected", "error", "standby", "unknown", "missing"],
+)
+def test_charge_point_state_enums(
+    state: str | None,
+    start_mode: str | None,
+    expected_state: ChargePointStatus | None,
+    expected_start_mode: ChargePointStartMode | None,
+) -> None:
+    """Charge point state and start mode parse to enums, unknown values to None."""
+    parsed = ChargePoint.from_dict({"uuid": "cp-1", "type": ContractType.CHARGE_POINT, "state": {"state": state, "start_mode": start_mode}})
+
+    assert parsed.state.state is expected_state
+    assert parsed.state.start_mode is expected_start_mode
+
+
+def test_unknown_enum_value_is_logged(caplog: pytest.LogCaptureFixture) -> None:
+    """An unknown enum value in a response is logged at debug level."""
+    with caplog.at_level(logging.DEBUG, logger="pyzonneplan"):
+        ChargePoint.from_dict({"uuid": "cp-1", "type": ContractType.CHARGE_POINT, "state": {"start_mode": "Automatic"}})
+
+    assert "Unknown charge point start mode: Automatic" in caplog.text
 
 
 def test_charge_point_without_data() -> None:
@@ -425,7 +539,10 @@ def test_electricity_chart_hourly_measurements_add_up_to_totals() -> None:
     assert sum(measurement.produced for measurement in group.measurements) == group.totals["p"] == 9000
     assert group.delivered_kwh == Decimal("6.000")
     assert group.produced_kwh == Decimal("9.000")
-    assert {measurement.tariff_group for measurement in group.measurements} == {"low", "normal", "high"}
+    assert {measurement.tariff_group for measurement in group.measurements} == set(TariffGroup)
+    assert group.type is MeasurementGroupType.HOURS
+    assert group.delivery_cost == Decimal("2.1889682")
+    assert group.delivery_cost_excl_tax == Decimal("1.5238797")
 
 
 def test_electricity_chart_months_parses_string_values() -> None:
@@ -448,6 +565,9 @@ def test_gas_chart_drops_the_repeated_trailing_hour() -> None:
     assert midnight_utc.volume == 4
     assert sum(measurement.volume for measurement in group.measurements) == group.total == 400
     assert group.total_m3 == Decimal("0.400")
+    assert group.type is MeasurementGroupType.HOURS
+    assert group.delivery_cost == Decimal("0.6689845")
+    assert group.delivery_cost_excl_tax == Decimal("0.3782650")
 
 
 def test_chart_without_data_yet_reports_no_totals() -> None:
@@ -461,9 +581,11 @@ def test_chart_without_data_yet_reports_no_totals() -> None:
 
     assert not electricity.has_data
     assert electricity.delivered_kwh is None
+    assert electricity.delivery_cost is None
     assert electricity.produced_kwh is None
     assert not gas_pending.has_data
     assert gas_pending.total_m3 is None
+    assert gas_pending.delivery_cost is None
     assert len(gas_today.measurements) == 24
     assert not gas_today.has_data
     assert gas_today.total_m3 is None
@@ -498,3 +620,93 @@ def test_summary_prices_in_euro() -> None:
     assert summary.price_per_hour[0].gas_price_euro is None
     assert gas_day_start is not None
     assert gas_day_start.gas_price_euro == Decimal("1.6549336")
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("low", TariffGroup.LOW),
+        ("Normal", TariffGroup.NORMAL),
+        ("HIGH", TariffGroup.HIGH),
+        ("extreme", None),
+        (None, None),
+    ],
+    ids=["low", "capitalised", "uppercase", "unknown", "missing"],
+)
+def test_tariff_groups(value: str | None, expected: TariffGroup | None) -> None:
+    """Tariff groups parse to TariffGroup on every model that has one, and unknown ones to None."""
+    start = "2026-09-25T16:00:00.000000Z"
+    point = PricePoint.from_dict(
+        {
+            "start_date": start,
+            "end_date": "2026-09-25T17:00:00.000000Z",
+            "price_tax_included": {"amount": 1},
+            "price_tax_excluded": {"amount": 1},
+            "tariff_group": value,
+        }
+    )
+    chart = ElectricityChart.from_dict(
+        {
+            "measurement_groups": [
+                {"date": start, "type": "hours", "measurements": [{"date": start, "values": {"d": 1}, "meta": {"tariff_group": value}}]}
+            ]
+        }
+    )
+    summary = Summary.from_dict(
+        {
+            "usage": {"type": value},
+            "price_per_hour": [{"datetime": start, "electricity_price": 1, "electricity_price_excl_tax": 1, "tariff_group": value}],
+        }
+    )
+
+    assert chart.group is not None
+    assert point.tariff_group is expected
+    assert chart.group.measurements[0].tariff_group is expected
+    assert summary.usage.type is expected
+    assert summary.price_per_hour[0].tariff_group is expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("live", MeasurementGroupType.LIVE),
+        ("minutes", MeasurementGroupType.MINUTES),
+        ("days", MeasurementGroupType.DAYS),
+        ("weeks", None),
+    ],
+    ids=["live", "minutes", "days", "unknown"],
+)
+def test_measurement_group_types(value: str, expected: MeasurementGroupType | None) -> None:
+    """Chart group types parse to MeasurementGroupType, an unknown one to None."""
+    electricity = ElectricityChart.from_dict({"measurement_groups": [{"date": "2026-09-01T00:00:00Z", "type": value}]})
+    gas = GasChart.from_dict({"measurement_groups": [{"date": "2026-09-01T00:00:00Z", "type": value}]})
+
+    assert electricity.group is not None
+    assert gas.group is not None
+    assert electricity.group.type is expected
+    assert gas.group.type is expected
+
+
+def test_summary_usage_defaults() -> None:
+    """A summary without usage has no tariff group."""
+    assert SummaryUsage().type is None
+
+
+def test_consumption_summary_dates() -> None:
+    """The consumption summaries' window dates are timezone-aware datetimes."""
+    electricity = ElectricityDelivered.from_dict({"measurement_groups": [{"date": "2026-09-29T22:00:00.000000Z", "totals": {"d": 1000}}]})
+    gas = Gas.from_dict({"measurement_groups": [{"date": "2026-09-29", "total": 1}, {"date": "garbage"}]})
+
+    assert electricity.measurement_groups[0].date == datetime(2026, 9, 29, 22, tzinfo=UTC)
+    assert gas.measurement_groups[0].date == datetime(2026, 9, 29, tzinfo=ZoneInfo("Europe/Amsterdam"))
+    assert gas.measurement_groups[1].date is None
+
+
+def test_account_features() -> None:
+    """Connection features are typed, and a missing first name is allowed."""
+    account = Account.from_dict(_data("get_account_no_p1.json"))
+    electricity = account.connections[0]
+
+    assert account.user_account.first_name is None
+    assert electricity.features[0] == ConnectionFeature(code="E004", label="Verbruikshistorie", start_date=date(2026, 1, 1))
+    assert [feature.code for feature in electricity.features] == ["E004", "S003", "E005"]

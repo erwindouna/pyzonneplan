@@ -6,7 +6,9 @@ from decimal import Decimal
 
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 
-from pyzonneplan.const import MONEY_FACTOR
+from pyzonneplan.const import MONEY_FACTOR, TariffGroup
+
+from ._parse import enum_field
 
 
 @dataclass
@@ -46,7 +48,7 @@ class PricePoint(DataClassORJSONMixin):
     price_tax_included: Money
     price_tax_excluded: Money
     sustainability_score: SustainabilityScore | None = None
-    tariff_group: str | None = None
+    tariff_group: TariffGroup | None = field(default=None, metadata=enum_field(TariffGroup, "tariff group"))
 
 
 @dataclass

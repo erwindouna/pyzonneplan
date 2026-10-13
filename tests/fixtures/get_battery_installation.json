@@ -31,6 +31,8 @@
           "backup_power_capable": true,
           "backup_power_usable_capacity_wh": 4000,
           "backup_power_active": false,
+          "backup_power_ac": 0,
+          "calibration_active": false,
           "total_earned": 1000000000,
           "total_day": 5000000,
           "delivery_day": 3000,

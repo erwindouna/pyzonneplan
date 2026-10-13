@@ -1,7 +1,7 @@
 """Models for /user-accounts/me."""
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from mashumaro.mixins.orjson import DataClassORJSONMixin
@@ -37,6 +37,15 @@ class Contract(DataClassORJSONMixin):
 
 
 @dataclass
+class ConnectionFeature(DataClassORJSONMixin):
+    """A feature enabled on a connection, e.g. ``E004`` "Verbruikshistorie" (usage history)."""
+
+    code: str
+    label: str | None = None
+    start_date: date | None = None
+
+
+@dataclass
 class Connection(DataClassORJSONMixin):
     """A grid connection and the contracts attached to it."""
 
@@ -44,7 +53,7 @@ class Connection(DataClassORJSONMixin):
     ean: str | None = None
     market_segment: str | None = None
     contracts: list[Contract] = field(default_factory=list)
-    features: list[dict[str, Any]] = field(default_factory=list)
+    features: list[ConnectionFeature] = field(default_factory=list)
 
     def contracts_of_type(self, contract_type: str, *, active_only: bool = True) -> list[Contract]:
         """Return the contracts of a given type."""
@@ -111,9 +120,9 @@ class UserAccount(DataClassORJSONMixin):
 
     uuid: str
     email: str
-    first_name: str
     full_name: str
-    initials: str
+    first_name: str | None = None
+    initials: str | None = None
     is_representative: bool = False
 
 
