@@ -12,6 +12,9 @@ import orjson
 import pytest
 
 from pyzonneplan.const import (
+    BatteryActivityDirection,
+    BatteryActivityType,
+    BatteryChartType,
     BatteryMode,
     BatteryPowerPreset,
     BatteryState,
@@ -27,6 +30,7 @@ from pyzonneplan.models.account import Account, Address, AddressGroup, Connectio
 from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
 from pyzonneplan.models.devices import (
     Battery,
+    BatteryActivityChart,
     BatteryChart,
     BatteryControlMode,
     BatteryDayAheadArbitrage,
@@ -403,6 +407,48 @@ def test_battery_chart() -> None:
     assert chart.measurements[0].result_euro == Decimal("0.5")
     assert chart.measurements[0].delivery_kwh == Decimal(3)
     assert chart.measurements[0].production_kwh == Decimal("2.5")
+
+
+def test_battery_activity_chart() -> None:
+    """The recent activity chart flattens its series and converts the state of charge."""
+    chart = BatteryActivityChart.from_dict(_data("get_battery_activity_chart.json")["chart"])
+
+    assert chart.type is BatteryChartType.DEFAULT
+    assert chart.range.start_date == datetime(2026, 9, 24, tzinfo=UTC)
+    assert [point.state_of_charge_percent for point in chart.state_of_charge] == [Decimal(45), Decimal("52.5"), Decimal(60), None]
+    assert [activity.activity_type for activity in chart.activities] == [BatteryActivityType.GRID_OPTIMIZATION, BatteryActivityType.HOME_OPTIMIZATION]
+    assert chart.planned_activities == []
+    assert chart.market_prices == []
+
+
+def test_battery_activity_chart_day_ahead() -> None:
+    """A day-ahead arbitrage chart adds the planned activities and the market prices."""
+    chart = BatteryActivityChart.from_dict(_data("get_battery_activity_chart_day_ahead.json")["chart"])
+
+    assert chart.type is BatteryChartType.DAY_AHEAD_ARBITRAGE
+    assert [planned.direction for planned in chart.planned_activities] == [BatteryActivityDirection.CHARGE, BatteryActivityDirection.DISCHARGE]
+    assert chart.market_prices[0].market_price_tax_included is not None
+    assert chart.market_prices[0].market_price_tax_included.euro == Decimal("0.1825")
+
+
+def test_battery_activity_chart_unknown_values() -> None:
+    """Unknown chart types, activity types and directions are None; missing series are empty."""
+    chart = BatteryActivityChart.from_dict(
+        {
+            "type": "solar",
+            "range": {"start_date": "2026-09-24T00:00:00Z", "end_date": "2026-09-24T03:00:00Z"},
+            "series": {
+                "activity_type": {"data": [{"start_date": "2026-09-24T00:00:00Z", "end_date": "2026-09-24T01:00:00Z", "activity_type": "manual"}]},
+                "planned_activity": {"data": [{"start_date": "2026-09-24T00:00:00Z", "end_date": "2026-09-24T01:00:00Z", "direction": "idle"}]},
+            },
+        }
+    )
+
+    assert chart.type is None
+    assert chart.activities[0].activity_type is None
+    assert chart.planned_activities[0].direction is None
+    assert chart.state_of_charge == []
+    assert BatteryActivityChart.from_dict({"range": chart.range.to_dict()}).market_prices == []
 
 
 def test_charge_point_installation(snapshot: SnapshotAssertion) -> None:
