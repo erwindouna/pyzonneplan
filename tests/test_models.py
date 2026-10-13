@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
@@ -16,15 +16,17 @@ from pyzonneplan.const import (
     BatteryPowerPreset,
     BatteryState,
     BatteryUnavailabilityReason,
+    ChargePointMode,
     ChargePointStartMode,
     ChargePointStatus,
     ContractType,
     MarketTimeResolution,
     MeasurementGroupType,
+    PriceResolution,
     TariffGroup,
 )
-from pyzonneplan.models.account import Account, Address, AddressGroup, Connection, ConnectionFeature, Contract, UserAccount
-from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
+from pyzonneplan.models.account import Account, Address, AddressGroup, AppSettings, Connection, ConnectionFeature, Contract, UserAccount
+from pyzonneplan.models.consumption import ConsumptionInsight, ConsumptionInsightPoint, ElectricityChart, ElectricityDelivered, Gas, GasChart
 from pyzonneplan.models.devices import (
     Battery,
     BatteryChart,
@@ -34,9 +36,12 @@ from pyzonneplan.models.devices import (
     BatteryInstallation,
     BatteryPowerPresetOption,
     BatteryStatus,
+    ChargeOnSolar,
     ChargePoint,
+    ChargePointControlMode,
     ChargePointInstallation,
     ChargeSchedule,
+    P1Installation,
     P1Meter,
     PvInstallation,
     Vehicle,
@@ -222,6 +227,35 @@ def test_device_timestamps(value: str | None, expected: datetime | None) -> None
     if expected is not None:
         assert meter.electricity_last_measured_at is not None
         assert meter.electricity_last_measured_at.tzinfo is not None
+
+
+@pytest.mark.parametrize(
+    ("now", "offline"),
+    [
+        (datetime(2026, 10, 13, 10, 14, tzinfo=UTC), False),
+        (datetime(2026, 10, 13, 10, 16, tzinfo=UTC), True),
+    ],
+    ids=["recent", "stale"],
+)
+def test_p1_installation(now: datetime, *, offline: bool) -> None:
+    """P1Installation flattens the reader's details, converts the main fuse to A and is offline after 15 minutes."""
+    installation = P1Installation.from_dict(_data("get_p1_installation.json"))
+
+    assert installation.dsmr_version == "50"
+    assert installation.number_of_phases == 3
+    assert installation.max_current_per_phase_amps == Decimal(25)
+    assert installation.load_balancing_status == "HEALTHY"
+    assert installation.is_offline(now) is offline
+
+
+def test_p1_installation_without_readings() -> None:
+    """A P1 installation without details has no main fuse and no offline state; a numeric DSMR version is kept as text."""
+    installation = P1Installation.from_dict({"host_device": {"dsmr_version": 50}})
+
+    assert installation.dsmr_version == "50"
+    assert installation.max_current_per_phase_amps is None
+    assert installation.is_offline() is None
+    assert P1Installation.from_dict({"measurement_status": {"last_measured_at": "2026-01-01T00:00:00Z"}}).is_offline() is True
 
 
 def test_pv_installation(snapshot: SnapshotAssertion) -> None:
@@ -412,6 +446,41 @@ def test_battery_day_ahead_arbitrage(payload: dict[str, Any] | None, price_sprea
 
     assert settings.price_spread == price_spread
     assert settings.market_time_resolution is resolution
+
+
+def test_charge_point_control_mode() -> None:
+    """The control mode lists the known available modes; a mode sent as ``{}`` is neither available nor enabled."""
+    control_mode = ChargePointControlMode.from_dict(_data("get_charge_point_control_mode.json"))
+
+    assert control_mode.available_modes == [
+        ChargePointMode.BOOST,
+        ChargePointMode.PLUG_AND_CHARGE,
+        ChargePointMode.DYNAMIC_CHARGING,
+        ChargePointMode.CHARGE_ON_SOLAR,
+    ]
+    assert control_mode.is_enabled(ChargePointMode.CHARGE_ON_SOLAR) is True
+    assert control_mode.is_enabled(ChargePointMode.BOOST) is False
+    assert control_mode.is_enabled(ChargePointMode.SCHEDULED_CHARGING) is False
+    assert control_mode.is_enabled("unknown") is False
+    assert ChargePointControlMode.from_dict({"modes": {"solar_boost": {"available": True}}}).available_modes == []
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        (None, ChargeOnSolar(1400, timedelta(minutes=15), time(10), time(16))),
+        (
+            {"min_charge_duration": {"iso8601": "PT1H30M"}, "allowed_window": {"start_time": {"iso8601": "05:00"}}},
+            ChargeOnSolar(None, timedelta(minutes=90), time(5), None),
+        ),
+        ({"min_charge_duration": {"iso8601": "P1D"}, "allowed_window": {"start_time": {"iso8601": "late"}, "end_time": None}}, ChargeOnSolar()),
+        ({}, ChargeOnSolar()),
+    ],
+    ids=["configured", "partial", "invalid", "missing"],
+)
+def test_charge_on_solar(payload: dict[str, Any] | None, expected: ChargeOnSolar) -> None:
+    """Settings are unwrapped to W, a timedelta and local times; missing or invalid values are None."""
+    assert ChargeOnSolar.from_dict(payload if payload is not None else _data("get_charge_point_charge_on_solar.json")) == expected
 
 
 def test_battery_chart() -> None:
@@ -746,6 +815,37 @@ def test_consumption_summary_dates() -> None:
     assert gas.measurement_groups[1].date is None
 
 
+def test_consumption_insight_conversions() -> None:
+    """Consumption insight volumes are converted from Wh to kWh and dm³ to m³, and amounts to EUR."""
+    electricity = ConsumptionInsight.from_dict(_data("get_electricity_consumption_insight.json")["chart"])
+    gas = ConsumptionInsight.from_dict(_data("get_gas_consumption_insight.json")["chart"])
+
+    assert electricity.granularity is MeasurementGroupType.MONTHS
+    assert electricity.delivery is not None
+    assert electricity.production is not None
+    assert electricity.delivery.total == Decimal(300)
+    assert electricity.production.points[0].average_price == Decimal("-0.23")
+    assert gas.delivery is not None
+    assert gas.delivery.points[1].volume == Decimal(60)
+    assert gas.delivery.average_price == Decimal("1.35")
+    assert gas.production is None
+
+
+def test_consumption_insight_without_usage() -> None:
+    """A captured gas insight without usage has no months and no average price; an unknown or missing volume is None."""
+    gas = ConsumptionInsight.from_dict(_data("get_gas_consumption_insight_empty.json")["chart"])
+    unknown = ConsumptionInsightPoint.from_dict({"date": "2026-09-01T00:00:00+02:00", "volume": {"kwh": 1}})
+    missing = ConsumptionInsightPoint.from_dict({"date": "2026-09-01T00:00:00+02:00"})
+
+    assert gas.delivery is not None
+    assert gas.delivery.points == []
+    assert gas.delivery.total == Decimal(0)
+    assert gas.delivery.average_price is None
+    assert unknown.volume is None
+    assert missing.volume is None
+    assert missing.average_price is None
+
+
 def test_account_features() -> None:
     """Connection features are typed, and a missing first name is allowed."""
     account = Account.from_dict(_data("get_account_no_p1.json"))
@@ -754,3 +854,25 @@ def test_account_features() -> None:
     assert account.user_account.first_name is None
     assert electricity.features[0] == ConnectionFeature(code="E004", label="Verbruikshistorie", start_date=date(2026, 1, 1))
     assert [feature.code for feature in electricity.features] == ["E004", "S003", "E005"]
+
+
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    [
+        ([{"key": "price_resolution", "value": "15-min"}], PriceResolution.QUARTER_HOUR),
+        ([{"key": "price_resolution", "value": "5-min"}], None),
+        ([{"key": "theme", "value": "dark"}], None),
+        (None, None),
+    ],
+    ids=["quarter_hour", "unknown_value", "other_setting", "null"],
+)
+def test_app_settings(data: list[dict[str, str]] | None, expected: PriceResolution | None) -> None:
+    """The price resolution is parsed leniently, and other or missing settings don't break parsing."""
+    assert AppSettings.from_dict(data).price_resolution is expected  # type: ignore[arg-type]
+
+
+def test_app_settings_round_trip() -> None:
+    """AppSettings serializes to and parses from its own dict form too."""
+    settings = AppSettings(settings={"price_resolution": "60-min"})
+
+    assert AppSettings.from_dict(settings.to_dict()) == settings

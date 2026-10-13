@@ -1,4 +1,4 @@
-"""Models for /user-accounts/me."""
+"""Models for /user-accounts/me and /user-accounts/app-settings."""
 
 from dataclasses import dataclass, field
 from datetime import date, datetime
@@ -6,7 +6,9 @@ from typing import Any
 
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 
-from pyzonneplan.const import ContractType
+from pyzonneplan.const import ContractType, PriceResolution
+
+from ._parse import parse_enum
 
 
 @dataclass
@@ -137,3 +139,26 @@ class Account(DataClassORJSONMixin):
     def connections(self) -> list[Connection]:
         """Return every connection across every address group."""
         return [connection for address_group in self.address_groups for connection in address_group.connections]
+
+
+@dataclass
+class AppSettings(DataClassORJSONMixin):
+    """Response of /user-accounts/app-settings: the app settings Zonneplan stores for the account.
+
+    ``settings`` keeps every setting the API sends, keyed by its raw name,
+    also ones the library doesn't know yet.
+    """
+
+    settings: dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any] | list[dict[str, Any]] | None) -> dict[str, Any]:
+        """Turn the API's ``[{"key": ..., "value": ...}]`` list (or null) into ``settings``."""
+        if isinstance(d, dict):
+            return d
+        return {"settings": {item["key"]: item["value"] for item in d or []}}
+
+    @property
+    def price_resolution(self) -> PriceResolution | None:
+        """Return the interval the app shows electricity prices in."""
+        return parse_enum(PriceResolution, self.settings.get("price_resolution"), "price resolution")

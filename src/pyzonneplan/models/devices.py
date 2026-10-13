@@ -9,10 +9,11 @@ device state in each contract's ``meta``, so most models are typed views on a
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime, time, timedelta
 from decimal import Decimal
 from typing import Any
 
+from mashumaro import field_options
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 
 from pyzonneplan.const import (
@@ -22,12 +23,13 @@ from pyzonneplan.const import (
     BatteryPowerPreset,
     BatteryState,
     BatteryUnavailabilityReason,
+    ChargePointMode,
     ChargePointStartMode,
     ChargePointStatus,
     MarketTimeResolution,
 )
 
-from ._parse import DATETIME, enum_field, euro, kwh, parse_enum, to_datetime
+from ._parse import DATETIME, enum_field, euro, kwh, parse_enum, to_datetime, to_time, to_timedelta
 from .account import Contract
 
 
@@ -114,6 +116,65 @@ class P1Meter:
     def gas_last_measured_at(self) -> datetime | None:
         """Return when the meter last reported gas."""
         return to_datetime(self.contract.meta.get("gas_last_measured_at"))
+
+
+# The app shows a P1 reader as offline when it hasn't reported for this long.
+P1_OFFLINE_AFTER = timedelta(minutes=15)
+
+
+@dataclass
+class P1Installation(DataClassORJSONMixin):
+    """Response of /contracts/{uuid}/p1-installation: a P1 reader and the smart meter it reads.
+
+    Modelled from the Zonneplan app's code and demo data; no populated response
+    has been captured. ``dsmr_version`` is raw (the app shows ``50`` as 5.0),
+    ``max_current_per_phase`` (the main fuse) is in 0.01 A.
+    """
+
+    serial_number: str | None = None
+    dsmr_version: str | None = None
+    electricity_meter_identifier: str | None = None
+    gas_meter_identifier: str | None = None
+    number_of_phases: int | None = None
+    max_current_per_phase: int | None = None
+    network_name: str | None = None
+    network_status: str | None = None
+    load_balancing_status: str | None = None
+    first_measured_at: datetime | None = field(default=None, metadata=DATETIME)
+    last_measured_at: datetime | None = field(default=None, metadata=DATETIME)
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``host_device``, ``phase_information``, ``network``, ``measurement_status`` and the connection's load balancing status."""
+        host_device = d.get("host_device") or {}
+        phases = d.get("phase_information") or {}
+        network = d.get("network") or {}
+        measurement_status = d.get("measurement_status") or {}
+        dsmr_version = host_device.get("dsmr_version")
+        return {
+            "serial_number": d.get("serial_number"),
+            "dsmr_version": None if dsmr_version is None else str(dsmr_version),
+            "electricity_meter_identifier": host_device.get("electricity_meter_identifier"),
+            "gas_meter_identifier": host_device.get("gas_meter_identifier"),
+            "number_of_phases": phases.get("number_of_phases"),
+            "max_current_per_phase": phases.get("max_current_per_phase"),
+            "network_name": network.get("name"),
+            "network_status": network.get("status"),
+            "load_balancing_status": (d.get("dynamic_load_balancing_status_for_connection") or {}).get("health_status"),
+            "first_measured_at": measurement_status.get("first_measured_at"),
+            "last_measured_at": measurement_status.get("last_measured_at"),
+        }
+
+    @property
+    def max_current_per_phase_amps(self) -> Decimal | None:
+        """Return the main fuse per phase, in A."""
+        return None if self.max_current_per_phase is None else Decimal(self.max_current_per_phase) / 100
+
+    def is_offline(self, now: datetime | None = None) -> bool | None:
+        """Return whether the reader hasn't reported for 15 minutes, as the app shows it, or ``None`` before its first reading."""
+        if self.last_measured_at is None:
+            return None
+        return self.last_measured_at < (now or datetime.now(UTC)) - P1_OFFLINE_AFTER
 
 
 @dataclass(slots=True)
@@ -611,10 +672,14 @@ class BatteryChart(DataClassORJSONMixin):
 
 @dataclass
 class ChargeSchedule(DataClassORJSONMixin):
-    """A single planned charging window."""
+    """A single planned charging window.
+
+    ``suppress_home_battery`` keeps the home battery from discharging into the car.
+    """
 
     start_time: datetime | None = field(default=None, metadata=DATETIME)
     end_time: datetime | None = field(default=None, metadata=DATETIME)
+    suppress_home_battery: bool | None = None
 
 
 @dataclass
@@ -709,6 +774,65 @@ class ChargePoint(Contract):
     def next_schedule(self) -> ChargeSchedule | None:
         """Return the next planned charging window."""
         return self.charge_schedules[0] if self.charge_schedules else None
+
+
+@dataclass
+class ChargePointControlModeOption(DataClassORJSONMixin):
+    """Whether one charge point control mode is available and enabled."""
+
+    enabled: bool = False
+    available: bool = False
+
+
+@dataclass
+class ChargePointControlMode(DataClassORJSONMixin):
+    """Response of /api/contracts/{uuid}/charge-point/control-mode.
+
+    ``modes`` keeps every mode the API sends, keyed by its raw name, also ones
+    :class:`pyzonneplan.const.ChargePointMode` doesn't know yet.
+    """
+
+    modes: dict[str, ChargePointControlModeOption] = field(default_factory=dict)
+
+    @property
+    def available_modes(self) -> list[ChargePointMode]:
+        """Return the known modes this charge point supports."""
+        return [
+            known
+            for mode, option in self.modes.items()
+            if option.available and (known := parse_enum(ChargePointMode, mode, "charge point control mode")) is not None
+        ]
+
+    def is_enabled(self, mode: str) -> bool:
+        """Return whether a mode is enabled."""
+        option = self.modes.get(mode)
+        return option is not None and option.enabled
+
+
+@dataclass
+class ChargeOnSolar(DataClassORJSONMixin):
+    """Response of the charge_on_solar control-mode endpoint.
+
+    The solar surplus (W) from which the car charges, the shortest time it then
+    charges, and the window of local (Europe/Amsterdam) hours in which charging
+    on solar is active. Each is ``None`` when the API doesn't send it.
+    """
+
+    solar_surplus_threshold_w: int | None = None
+    min_charge_duration: timedelta | None = field(default=None, metadata=field_options(deserialize=to_timedelta))
+    allowed_window_start: time | None = field(default=None, metadata=field_options(deserialize=to_time))
+    allowed_window_end: time | None = field(default=None, metadata=field_options(deserialize=to_time))
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``solar_surplus_threshold.watts``, ``min_charge_duration.iso8601`` and ``allowed_window.{start,end}_time.iso8601``."""
+        window = d.get("allowed_window") or {}
+        return {
+            "solar_surplus_threshold_w": (d.get("solar_surplus_threshold") or {}).get("watts"),
+            "min_charge_duration": (d.get("min_charge_duration") or {}).get("iso8601"),
+            "allowed_window_start": (window.get("start_time") or {}).get("iso8601"),
+            "allowed_window_end": (window.get("end_time") or {}).get("iso8601"),
+        }
 
 
 @dataclass
