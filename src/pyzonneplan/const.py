@@ -12,7 +12,7 @@ AUTHORIZE_CHALLENGE_PATH: Final = "oauth/authorize-challenge"
 TOKEN_PATH: Final = "oauth/token"  # noqa: S105 (a URL path, not a credential)
 
 # Sent by the mobile app; the API rejects requests without them.
-APP_VERSION: Final = "5.10.1"
+APP_VERSION: Final = "6.23.0"
 APP_ENVIRONMENT: Final = "production"
 
 # The API's local time, e.g. for the charge point actions' end times.
