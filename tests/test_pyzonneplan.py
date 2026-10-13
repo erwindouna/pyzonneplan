@@ -246,6 +246,18 @@ async def test_empty_body_returns_none(aresponses: ResponsesMockServer, zonnepla
     assert await zonneplan_client._request("connections/conn-1/charge-points/cp-1/actions/start_boost", method="POST") is None
 
 
+async def test_request_sends_app_headers(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Requests carry the app version and environment the API expects, with the library's own user agent."""
+    aresponses.add(HOST, "/user-accounts/me", "GET", aresponses.Response(text="{}"))
+
+    await zonneplan_client._request("user-accounts/me")
+
+    headers = aresponses.history[0].request.headers
+    assert headers["x-app-version"] == "6.23.0"
+    assert headers["x-app-environment"] == "production"
+    assert headers["user-agent"].startswith("pyzonneplan/")
+
+
 async def test_unexpected_token_response_raises_response_error(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
     """A token response without the expected fields raises ZonneplanResponseError."""
     aresponses.add(HOST, "/oauth/token", "POST", aresponses.Response(text=orjson.dumps({"access_token": "new-access"}).decode()))
@@ -296,6 +308,23 @@ async def test_async_get_consumer_prices_gas_daily(aresponses: ResponsesMockServ
 
     zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
     prices = await zonneplan_client.async_get_consumer_prices(chart=PriceChart.GAS_DAILY)
+
+    assert prices == snapshot
+
+
+async def test_async_get_consumer_prices_for_connection(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion
+) -> None:
+    """A connection's own price chart (captured, values changed) is fetched from its path and parsed like the general one."""
+    aresponses.add(
+        HOST,
+        "/api/connections/conn-1/consumer-prices/charts/electricity-quarter-hourly",
+        "GET",
+        aresponses.Response(text=load_fixtures("get_consumer_prices_connection_quarter_hourly.json")),
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    prices = await zonneplan_client.async_get_consumer_prices(PriceChart.ELECTRICITY_QUARTER_HOURLY, connection_uuid="conn-1")
 
     assert prices == snapshot
 
@@ -443,6 +472,38 @@ async def test_async_get_gas_chart(
     assert chart == snapshot
 
 
+@pytest.mark.parametrize(
+    ("method", "product", "fixture"),
+    [
+        ("async_get_electricity_consumption_insight", "electricity", "get_electricity_consumption_insight.json"),
+        ("async_get_gas_consumption_insight", "gas", "get_gas_consumption_insight.json"),
+    ],
+    ids=["electricity", "gas"],
+)
+async def test_async_get_consumption_insight(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion, *, method: str, product: str, fixture: str
+) -> None:
+    """A consumption insight chart is fetched per month for the date range, converting Wh or dm³ and 1e-7 EUR."""
+    aresponses.add(
+        HOST,
+        f"/api/connections/conn-1/{product}/charts/consumption-insight?start_date=2026-01-01&end_date=2026-12-31&granularity=months",
+        "GET",
+        aresponses.Response(text=load_fixtures(fixture)),
+        match_querystring=True,
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    insight = await getattr(zonneplan_client, method)("conn-1", date(2026, 1, 1), date(2026, 12, 31))
+
+    assert insight == snapshot
+
+
+async def test_async_get_consumption_insight_invalid_range(zonneplan_client: Zonneplan) -> None:
+    """A start after the end is rejected before anything is sent."""
+    with pytest.raises(ValueError, match="start"):
+        await zonneplan_client.async_get_gas_consumption_insight("conn-1", date(2026, 12, 31), date(2026, 1, 1))
+
+
 async def test_async_get_summary(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion) -> None:
     """A real /summary response is unwrapped and parsed, with the price forecast's ``datetime`` as ``start``."""
     aresponses.add(HOST, "/connections/conn-1/summary", "GET", aresponses.Response(text=load_fixtures("get_summary.json")))
@@ -483,8 +544,17 @@ async def test_async_set_locale(aresponses: ResponsesMockServer, zonneplan_clien
             "get_battery_day_ahead_arbitrage.json",
         ),
         ("async_get_charge_point", ("conn-1", "cp-1"), "/connections/conn-1/charge-points/cp-1", "get_charge_point.json"),
+        ("async_get_p1_installation", ("p1-1",), "/contracts/p1-1/p1-installation", "get_p1_installation.json"),
     ],
-    ids=["pv_installation", "battery", "battery_control_mode", "battery_home_optimization", "battery_day_ahead_arbitrage", "charge_point"],
+    ids=[
+        "pv_installation",
+        "battery",
+        "battery_control_mode",
+        "battery_home_optimization",
+        "battery_day_ahead_arbitrage",
+        "charge_point",
+        "p1_installation",
+    ],
 )
 async def test_device_reads(
     aresponses: ResponsesMockServer,
@@ -511,6 +581,19 @@ async def test_async_get_pv_installation_without_panels(aresponses: ResponsesMoc
 
     zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
     assert await zonneplan_client.async_get_pv_installation("conn-1") is None
+
+
+async def test_async_get_p1_installation_without_p1(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Without a P1 installation the API answers 404 (captured), which returns None."""
+    aresponses.add(
+        HOST,
+        "/contracts/p1-1/p1-installation",
+        "GET",
+        aresponses.Response(status=404, text=orjson.dumps({"message": "Not found"}).decode()),
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    assert await zonneplan_client.async_get_p1_installation("p1-1") is None
 
 
 async def test_async_get_battery_chart(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion) -> None:

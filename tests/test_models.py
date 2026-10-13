@@ -24,7 +24,7 @@ from pyzonneplan.const import (
     TariffGroup,
 )
 from pyzonneplan.models.account import Account, Address, AddressGroup, Connection, ConnectionFeature, Contract, UserAccount
-from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
+from pyzonneplan.models.consumption import ConsumptionInsight, ConsumptionInsightPoint, ElectricityChart, ElectricityDelivered, Gas, GasChart
 from pyzonneplan.models.devices import (
     Battery,
     BatteryChart,
@@ -36,6 +36,7 @@ from pyzonneplan.models.devices import (
     ChargePoint,
     ChargePointInstallation,
     ChargeSchedule,
+    P1Installation,
     P1Meter,
     PvInstallation,
     Vehicle,
@@ -221,6 +222,35 @@ def test_device_timestamps(value: str | None, expected: datetime | None) -> None
     if expected is not None:
         assert meter.electricity_last_measured_at is not None
         assert meter.electricity_last_measured_at.tzinfo is not None
+
+
+@pytest.mark.parametrize(
+    ("now", "offline"),
+    [
+        (datetime(2026, 10, 13, 10, 14, tzinfo=UTC), False),
+        (datetime(2026, 10, 13, 10, 16, tzinfo=UTC), True),
+    ],
+    ids=["recent", "stale"],
+)
+def test_p1_installation(now: datetime, *, offline: bool) -> None:
+    """P1Installation flattens the reader's details, converts the main fuse to A and is offline after 15 minutes."""
+    installation = P1Installation.from_dict(_data("get_p1_installation.json"))
+
+    assert installation.dsmr_version == "50"
+    assert installation.number_of_phases == 3
+    assert installation.max_current_per_phase_amps == Decimal(25)
+    assert installation.load_balancing_status == "HEALTHY"
+    assert installation.is_offline(now) is offline
+
+
+def test_p1_installation_without_readings() -> None:
+    """A P1 installation without details has no main fuse and no offline state; a numeric DSMR version is kept as text."""
+    installation = P1Installation.from_dict({"host_device": {"dsmr_version": 50}})
+
+    assert installation.dsmr_version == "50"
+    assert installation.max_current_per_phase_amps is None
+    assert installation.is_offline() is None
+    assert P1Installation.from_dict({"measurement_status": {"last_measured_at": "2026-01-01T00:00:00Z"}}).is_offline() is True
 
 
 def test_pv_installation(snapshot: SnapshotAssertion) -> None:
@@ -719,6 +749,37 @@ def test_consumption_summary_dates() -> None:
     assert electricity.measurement_groups[0].date == datetime(2026, 9, 29, 22, tzinfo=UTC)
     assert gas.measurement_groups[0].date == datetime(2026, 9, 29, tzinfo=ZoneInfo("Europe/Amsterdam"))
     assert gas.measurement_groups[1].date is None
+
+
+def test_consumption_insight_conversions() -> None:
+    """Consumption insight volumes are converted from Wh to kWh and dm³ to m³, and amounts to EUR."""
+    electricity = ConsumptionInsight.from_dict(_data("get_electricity_consumption_insight.json")["chart"])
+    gas = ConsumptionInsight.from_dict(_data("get_gas_consumption_insight.json")["chart"])
+
+    assert electricity.granularity is MeasurementGroupType.MONTHS
+    assert electricity.delivery is not None
+    assert electricity.production is not None
+    assert electricity.delivery.total == Decimal(300)
+    assert electricity.production.points[0].average_price == Decimal("-0.23")
+    assert gas.delivery is not None
+    assert gas.delivery.points[1].volume == Decimal(60)
+    assert gas.delivery.average_price == Decimal("1.35")
+    assert gas.production is None
+
+
+def test_consumption_insight_without_usage() -> None:
+    """A captured gas insight without usage has no months and no average price; an unknown or missing volume is None."""
+    gas = ConsumptionInsight.from_dict(_data("get_gas_consumption_insight_empty.json")["chart"])
+    unknown = ConsumptionInsightPoint.from_dict({"date": "2026-09-01T00:00:00+02:00", "volume": {"kwh": 1}})
+    missing = ConsumptionInsightPoint.from_dict({"date": "2026-09-01T00:00:00+02:00"})
+
+    assert gas.delivery is not None
+    assert gas.delivery.points == []
+    assert gas.delivery.total == Decimal(0)
+    assert gas.delivery.average_price is None
+    assert unknown.volume is None
+    assert missing.volume is None
+    assert missing.average_price is None
 
 
 def test_account_features() -> None:
