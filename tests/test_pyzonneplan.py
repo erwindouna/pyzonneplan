@@ -863,6 +863,40 @@ async def test_async_refresh_token_without_login_raises(zonneplan_client: Zonnep
         await zonneplan_client.async_refresh_token()
 
 
+async def test_async_logout(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Logging out POSTs an empty body with the access token, then forgets the token."""
+    aresponses.add(HOST, "/auth/logout", "POST", aresponses.Response(text=orjson.dumps({"data": None}).decode()))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_logout()
+
+    request = aresponses.history[0].request
+    assert request.headers["authorization"] == "Bearer access"
+    assert await request.json() == {}
+    assert zonneplan_client.token is None
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_async_logout_failure_keeps_token(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """A failed logout raises and keeps the token, so it can be retried."""
+    aresponses.add(HOST, "/auth/logout", "POST", aresponses.Response(status=500, text="{}"))
+
+    token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    zonneplan_client._token = token
+    with pytest.raises(ZonneplanConnectionError):
+        await zonneplan_client.async_logout()
+
+    assert zonneplan_client.token is token
+
+
+async def test_async_logout_without_login(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Logging out before login sends nothing."""
+    await zonneplan_client.async_logout()
+
+    assert zonneplan_client.token is None
+    aresponses.assert_plan_strictly_followed()
+
+
 async def test_request_unauthorized_raises_authentication_error(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
     """A 401 response is surfaced as an authentication error."""
     aresponses.add(HOST, "/user-accounts/me", "GET", aresponses.Response(status=401, text="{}"))

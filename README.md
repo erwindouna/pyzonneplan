@@ -81,6 +81,8 @@ if __name__ == "__main__":
     asyncio.run(main())
 ```
 
+`async_logout()` ends the session on the API and forgets the token, e.g. when the token isn't needed anymore.
+
 ### Available data
 
 | Method | Returns |

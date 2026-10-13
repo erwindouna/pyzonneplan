@@ -26,6 +26,7 @@ from pyzonneplan.const import (
     APP_ENVIRONMENT,
     APP_VERSION,
     AUTHORIZE_CHALLENGE_PATH,
+    LOGOUT_PATH,
     MONEY_FACTOR,
     TOKEN_PATH,
     BatteryMode,
@@ -337,6 +338,19 @@ class Zonneplan:
 
         self._token = await self._async_request_token({"grant_type": "refresh_token", "refresh_token": self._token.refresh_token})
         return self._token
+
+    async def async_logout(self) -> None:
+        """End the session on the API and forget the token; does nothing before login.
+
+        The app sends its push notification token along (``{"token": ...}``)
+        to stop notifications to the device; this client has none, so it sends
+        an empty body. The token is kept when the call fails.
+        """
+        if self._token is None:
+            return
+
+        await self._request(LOGOUT_PATH, method=METH_POST, json_body={})
+        self._token = None
 
     async def _async_request_token(self, grant: dict[str, str]) -> Token:
         """Call the token endpoint and parse the result."""
