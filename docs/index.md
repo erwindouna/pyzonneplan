@@ -68,6 +68,7 @@ if __name__ == "__main__":
 | `async_get_electricity_chart(connection_uuid, day, interval)` | Electricity used and returned per hour, day or month |
 | `async_get_gas_chart(connection_uuid, day, interval)` | Gas used per hour, day or month |
 | `async_get_electricity_delivered(connection_uuid)` / `async_get_gas(connection_uuid)` | P1 totals and live readings (`meters`), or `None` without a P1 meter |
+| `async_get_electricity(connection_uuid)` | The same electricity data from the endpoint the current app uses, or `None` without a P1 meter |
 | `async_get_pv_installation(connection_uuid)` | Every solar inverter on the connection and today's yield, or `None` without solar panels |
 | `async_get_battery(connection_uuid, contract_uuid)` | Home battery state, results and modes |
 | `async_get_battery_chart(contract_uuid, day, interval)` | Home battery results per day or month |

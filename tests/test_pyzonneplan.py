@@ -14,7 +14,7 @@ from aiohttp import ClientConnectionError
 from aresponses import ResponsesMockServer
 from tenacity import wait_none
 
-from pyzonneplan import Zonneplan
+from pyzonneplan import ElectricityDelivered, Zonneplan
 from pyzonneplan.auth import OtpChallenge, Token
 from pyzonneplan.const import BatteryMode, ChartInterval, ConsumptionChart, MarketTimeResolution, PriceChart
 from pyzonneplan.exceptions import (
@@ -347,9 +347,19 @@ async def test_async_get_account_without_p1(aresponses: ResponsesMockServer, zon
     assert not any(connection.has_p1 for connection in account.connections)
 
 
-@pytest.mark.parametrize("path", ["electricity-delivered", "gas"])
-async def test_consumption_summary_without_p1_returns_none(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, path: str) -> None:
-    """Without a P1 meter the summary endpoints answer with a JSON null."""
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("async_get_electricity_delivered", "electricity-delivered"),
+        ("async_get_electricity", "electricity"),
+        ("async_get_gas", "gas"),
+    ],
+    ids=["electricity_delivered", "electricity", "gas"],
+)
+async def test_consumption_summary_without_p1_returns_none(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, method: str, path: str
+) -> None:
+    """Without a P1 meter the summary endpoints answer with a JSON null (captured)."""
     aresponses.add(
         HOST,
         f"/connections/conn-1/{path}",
@@ -358,9 +368,24 @@ async def test_consumption_summary_without_p1_returns_none(aresponses: Responses
     )
 
     zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
-    method = zonneplan_client.async_get_electricity_delivered if path == "electricity-delivered" else zonneplan_client.async_get_gas
 
-    assert await method("conn-1") is None
+    assert await getattr(zonneplan_client, method)("conn-1") is None
+
+
+async def test_async_get_electricity(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """The app's /electricity endpoint is fetched without charts and parsed like electricity-delivered."""
+    aresponses.add(
+        HOST,
+        "/connections/conn-1/electricity?no-charts=1",
+        "GET",
+        aresponses.Response(text=load_fixtures("get_electricity_delivered.json")),
+        match_querystring=True,
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    electricity = await zonneplan_client.async_get_electricity("conn-1")
+
+    assert electricity == ElectricityDelivered.from_dict(orjson.loads(load_fixtures("get_electricity_delivered.json"))["data"])
 
 
 @pytest.mark.parametrize(

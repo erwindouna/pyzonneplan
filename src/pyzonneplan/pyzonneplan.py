@@ -374,6 +374,15 @@ class Zonneplan:
         response = await self._request(f"connections/{connection_uuid}/electricity-delivered")
         return None if response is None else _parse(ElectricityDelivered, response)
 
+    async def async_get_electricity(self, connection_uuid: str) -> ElectricityDelivered | None:
+        """Fetch electricity delivery/production data (P1) for a connection from the endpoint the current app uses.
+
+        Same data as :meth:`async_get_electricity_delivered`, without the
+        charts. Returns ``None`` for connections without a P1 meter.
+        """
+        response = await self._request(f"connections/{connection_uuid}/electricity", params={"no-charts": "1"})
+        return None if response is None else _parse(ElectricityDelivered, response)
+
     async def async_get_gas(self, connection_uuid: str) -> Gas | None:
         """Fetch gas consumption data (P1) for a connection.
 
