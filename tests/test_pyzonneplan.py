@@ -300,6 +300,23 @@ async def test_async_get_consumer_prices_gas_daily(aresponses: ResponsesMockServ
     assert prices == snapshot
 
 
+async def test_async_get_consumer_prices_for_connection(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion
+) -> None:
+    """A connection's own price chart (captured, values changed) is fetched from its path and parsed like the general one."""
+    aresponses.add(
+        HOST,
+        "/api/connections/conn-1/consumer-prices/charts/electricity-quarter-hourly",
+        "GET",
+        aresponses.Response(text=load_fixtures("get_consumer_prices_connection_quarter_hourly.json")),
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    prices = await zonneplan_client.async_get_consumer_prices(PriceChart.ELECTRICITY_QUARTER_HOURLY, connection_uuid="conn-1")
+
+    assert prices == snapshot
+
+
 async def test_async_get_electricity_delivered(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion) -> None:
     """electricity-delivered is parsed from a synthetic fixture.
 
