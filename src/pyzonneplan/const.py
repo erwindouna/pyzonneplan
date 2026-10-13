@@ -67,6 +67,13 @@ class MarketTimeResolution(StrEnum):
     HOUR = "PT60M"
 
 
+class PriceResolution(StrEnum):
+    """The interval the app shows electricity prices in (the ``price_resolution`` app setting)."""
+
+    QUARTER_HOUR = "15-min"
+    HOUR = "60-min"
+
+
 class BatteryState(StrEnum):
     """Home battery and battery inverter states.
 

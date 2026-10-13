@@ -33,6 +33,7 @@ from pyzonneplan.const import (
     ConsumptionChart,
     MarketTimeResolution,
     PriceChart,
+    PriceResolution,
 )
 from pyzonneplan.exceptions import (
     ZonneplanAuthenticationError,
@@ -44,7 +45,7 @@ from pyzonneplan.exceptions import (
     ZonneplanResponseError,
     ZonneplanTimeoutError,
 )
-from pyzonneplan.models.account import Account
+from pyzonneplan.models.account import Account, AppSettings
 from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
 from pyzonneplan.models.devices import (
     BatteryChart,
@@ -359,6 +360,19 @@ class Zonneplan:
         and ``status_tip``.
         """
         await self._request("user-accounts/locale", method=METH_PUT, json_body={"locale": locale})
+
+    async def async_get_app_settings(self) -> AppSettings:
+        """Fetch the app settings Zonneplan stores for the account, such as the price resolution."""
+        response = await self._request("user-accounts/app-settings")
+        return _parse(AppSettings, response)
+
+    async def async_set_price_resolution(self, resolution: str) -> None:
+        """Set the interval the app shows electricity prices in (a :class:`pyzonneplan.const.PriceResolution`).
+
+        The app uses it to choose between the hourly and quarter-hourly price chart.
+        """
+        value = PriceResolution(resolution)
+        await self._request("user-accounts/app-settings", method=METH_PUT, json_body={"settings": {"price_resolution": value.value}})
 
     async def async_get_consumer_prices(self, chart: str = PriceChart.ELECTRICITY_HOURLY) -> ConsumerPrices:
         """Fetch a consumer price chart (see :class:`pyzonneplan.const.PriceChart` for valid ``chart`` values)."""
