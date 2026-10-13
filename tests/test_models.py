@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
@@ -10,7 +11,7 @@ from zoneinfo import ZoneInfo
 import orjson
 import pytest
 
-from pyzonneplan.const import BatteryMode, ContractType
+from pyzonneplan.const import BatteryMode, BatteryState, ContractType
 from pyzonneplan.models.account import Account, Address, AddressGroup, Connection, Contract, UserAccount
 from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
 from pyzonneplan.models.devices import (
@@ -241,6 +242,41 @@ def test_battery_without_readings() -> None:
     battery = Battery(contract=_contract(ContractType.HOME_BATTERY))
     assert battery.state_of_charge_percent is None
     assert battery.is_charging is None
+    assert battery.battery_state is None
+    assert battery.inverter_state is None
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("Charging", BatteryState.CHARGING),
+        ("discharging", BatteryState.DISCHARGING),
+        ("OPERATIVE", BatteryState.OPERATIVE),
+        ("ShuttingDown", BatteryState.SHUTTING_DOWN),
+        ("backup_power_active", BatteryState.BACKUP_POWER_ACTIVE),
+        ("UnknownState", BatteryState.UNKNOWN_STATE),
+        ("Hibernating", None),
+        (None, None),
+    ],
+    ids=["capitalised", "lowercase", "uppercase", "pascal_case", "snake_case", "api_unknown_state", "unknown", "missing"],
+)
+def test_battery_states(value: str | None, expected: BatteryState | None) -> None:
+    """Battery and inverter states parse case-insensitively, and are None when missing or unknown."""
+    battery = Battery(contract=_contract(ContractType.HOME_BATTERY, meta={"battery_state": value, "inverter_state": value}))
+
+    assert battery.battery_state is expected
+    assert battery.inverter_state is expected
+    assert battery.contract.meta["battery_state"] == value
+
+
+def test_battery_unknown_state_is_logged(caplog: pytest.LogCaptureFixture) -> None:
+    """An unknown state is logged at debug level."""
+    battery = Battery(contract=_contract(ContractType.HOME_BATTERY, meta={"battery_state": "Hibernating"}))
+
+    with caplog.at_level(logging.DEBUG, logger="pyzonneplan.models.devices"):
+        assert battery.battery_state is None
+
+    assert "Unknown battery state: Hibernating" in caplog.text
 
 
 def test_battery_control_mode() -> None:

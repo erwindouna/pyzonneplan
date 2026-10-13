@@ -1,6 +1,7 @@
 """Constants for the Zonneplan API client."""
 
 from decimal import Decimal
+from enum import StrEnum
 from typing import Final
 from zoneinfo import ZoneInfo
 
@@ -41,6 +42,31 @@ class BatteryMode:
     SELF_CONSUMPTION: Final = "self_consumption"
     HOME_OPTIMIZATION: Final = "home_optimization"
     DYNAMIC_CHARGING: Final = "dynamic_charging"
+
+
+class BatteryState(StrEnum):
+    """Home battery and battery inverter states.
+
+    The API sends them in PascalCase (``ShuttingDown``); the models parse them
+    case-insensitively and with or without underscores.
+    """
+
+    UNKNOWN_STATE = "unknown_state"
+    OFF = "off"
+    SLEEPING = "sleeping"
+    STARTING = "starting"
+    OPERATIVE = "operative"
+    THROTTLED = "throttled"
+    SHUTTING_DOWN = "shutting_down"
+    FAULT = "fault"
+    STANDBY = "standby"
+    UPDATING = "updating"
+    COOLING = "cooling"
+    PREHEAT = "preheat"
+    CHARGING = "charging"
+    DISCHARGING = "discharging"
+    PERMANENT_FAULT = "permanent_fault"
+    BACKUP_POWER_ACTIVE = "backup_power_active"
 
 
 class ConsumptionChart:

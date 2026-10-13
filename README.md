@@ -99,7 +99,7 @@ if __name__ == "__main__":
 | `async_set_locale(locale)` | Sets the language of the API's texts, e.g. `nl-NL` |
 
 The contract UUIDs come from the account, e.g. `connection.contracts_of_type(ContractType.HOME_BATTERY)`
-(constants such as `ContractType`, `ChartInterval` and `BatteryMode` live in `pyzonneplan.const`).
+(constants such as `ContractType`, `ChartInterval`, `BatteryMode` and `BatteryState` live in `pyzonneplan.const`).
 For a contract the account doesn't have, the battery and charge point methods raise `ZonneplanNotFoundError`.
 Fields keep the API's raw units (1e-7 EUR, Wh, dm³, permille); properties such as `delivered_kwh`,
 `electricity_price_euro` and `state_of_charge_percent` convert them.
