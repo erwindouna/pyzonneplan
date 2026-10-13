@@ -16,7 +16,7 @@ from tenacity import wait_none
 
 from pyzonneplan import ElectricityDelivered, Zonneplan
 from pyzonneplan.auth import OtpChallenge, Token
-from pyzonneplan.const import BatteryMode, ChartInterval, ConsumptionChart, MarketTimeResolution, PriceChart
+from pyzonneplan.const import BatteryMode, ChartInterval, ConsumptionChart, MarketTimeResolution, PriceChart, PriceResolution
 from pyzonneplan.exceptions import (
     ZonneplanAuthenticationError,
     ZonneplanConnectionError,
@@ -523,6 +523,35 @@ async def test_async_set_locale(aresponses: ResponsesMockServer, zonneplan_clien
 
     assert await aresponses.history[0].request.json() == {"locale": "nl-NL"}
     aresponses.assert_plan_strictly_followed()
+
+
+async def test_async_get_app_settings(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """The app settings (captured) are turned from a key/value list into a dict."""
+    aresponses.add(HOST, "/user-accounts/app-settings", "GET", aresponses.Response(text=load_fixtures("get_app_settings.json")))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    settings = await zonneplan_client.async_get_app_settings()
+
+    assert settings.settings == {"price_resolution": "60-min"}
+    assert settings.price_resolution is PriceResolution.HOUR
+
+
+@pytest.mark.parametrize("resolution", [PriceResolution.QUARTER_HOUR, "60-min"], ids=["enum", "string"])
+async def test_async_set_price_resolution(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, resolution: str) -> None:
+    """The price resolution is PUT as an app setting."""
+    aresponses.add(HOST, "/user-accounts/app-settings", "PUT", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_set_price_resolution(resolution)
+
+    assert await aresponses.history[0].request.json() == {"settings": {"price_resolution": str(resolution)}}
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_async_set_price_resolution_unknown(zonneplan_client: Zonneplan) -> None:
+    """An unknown price resolution is rejected before anything is sent."""
+    with pytest.raises(ValueError, match="30-min"):
+        await zonneplan_client.async_set_price_resolution("30-min")
 
 
 @pytest.mark.parametrize(

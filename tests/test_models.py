@@ -21,9 +21,10 @@ from pyzonneplan.const import (
     ContractType,
     MarketTimeResolution,
     MeasurementGroupType,
+    PriceResolution,
     TariffGroup,
 )
-from pyzonneplan.models.account import Account, Address, AddressGroup, Connection, ConnectionFeature, Contract, UserAccount
+from pyzonneplan.models.account import Account, Address, AddressGroup, AppSettings, Connection, ConnectionFeature, Contract, UserAccount
 from pyzonneplan.models.consumption import ConsumptionInsight, ConsumptionInsightPoint, ElectricityChart, ElectricityDelivered, Gas, GasChart
 from pyzonneplan.models.devices import (
     Battery,
@@ -790,3 +791,25 @@ def test_account_features() -> None:
     assert account.user_account.first_name is None
     assert electricity.features[0] == ConnectionFeature(code="E004", label="Verbruikshistorie", start_date=date(2026, 1, 1))
     assert [feature.code for feature in electricity.features] == ["E004", "S003", "E005"]
+
+
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    [
+        ([{"key": "price_resolution", "value": "15-min"}], PriceResolution.QUARTER_HOUR),
+        ([{"key": "price_resolution", "value": "5-min"}], None),
+        ([{"key": "theme", "value": "dark"}], None),
+        (None, None),
+    ],
+    ids=["quarter_hour", "unknown_value", "other_setting", "null"],
+)
+def test_app_settings(data: list[dict[str, str]] | None, expected: PriceResolution | None) -> None:
+    """The price resolution is parsed leniently, and other or missing settings don't break parsing."""
+    assert AppSettings.from_dict(data).price_resolution is expected  # type: ignore[arg-type]
+
+
+def test_app_settings_round_trip() -> None:
+    """AppSettings serializes to and parses from its own dict form too."""
+    settings = AppSettings(settings={"price_resolution": "60-min"})
+
+    assert AppSettings.from_dict(settings.to_dict()) == settings

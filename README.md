@@ -101,6 +101,7 @@ if __name__ == "__main__":
 | `async_get_battery_day_ahead_arbitrage(contract_uuid)` | The price spread (EUR) and market time resolution day-ahead arbitrage trades with |
 | `async_get_charge_point(connection_uuid, contract_uuid)` | Charge point state, schedules and vehicles |
 | `async_set_locale(locale)` | Sets the language of the API's texts, e.g. `nl-NL` |
+| `async_get_app_settings()` / `async_set_price_resolution(resolution)` | The settings the Zonneplan app syncs, and sets the `PriceResolution` the app shows prices in |
 
 The contract UUIDs come from the account, e.g. `connection.contracts_of_type(ContractType.HOME_BATTERY)`
 (constants and enums such as `ContractType`, `ChartInterval`, `BatteryMode`, `BatteryState`, `TariffGroup` and `ChargePointStatus` live in `pyzonneplan.const`; an enum field is `None` when the API sends a value the library doesn't know yet).
