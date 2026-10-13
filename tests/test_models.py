@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
@@ -16,6 +16,7 @@ from pyzonneplan.const import (
     BatteryPowerPreset,
     BatteryState,
     BatteryUnavailabilityReason,
+    ChargePointMode,
     ChargePointStartMode,
     ChargePointStatus,
     ContractType,
@@ -34,7 +35,9 @@ from pyzonneplan.models.devices import (
     BatteryHomeOptimization,
     BatteryInstallation,
     BatteryPowerPresetOption,
+    ChargeOnSolar,
     ChargePoint,
+    ChargePointControlMode,
     ChargePointInstallation,
     ChargeSchedule,
     P1Installation,
@@ -418,6 +421,41 @@ def test_battery_day_ahead_arbitrage(payload: dict[str, Any] | None, price_sprea
 
     assert settings.price_spread == price_spread
     assert settings.market_time_resolution is resolution
+
+
+def test_charge_point_control_mode() -> None:
+    """The control mode lists the known available modes; a mode sent as ``{}`` is neither available nor enabled."""
+    control_mode = ChargePointControlMode.from_dict(_data("get_charge_point_control_mode.json"))
+
+    assert control_mode.available_modes == [
+        ChargePointMode.BOOST,
+        ChargePointMode.PLUG_AND_CHARGE,
+        ChargePointMode.DYNAMIC_CHARGING,
+        ChargePointMode.CHARGE_ON_SOLAR,
+    ]
+    assert control_mode.is_enabled(ChargePointMode.CHARGE_ON_SOLAR) is True
+    assert control_mode.is_enabled(ChargePointMode.BOOST) is False
+    assert control_mode.is_enabled(ChargePointMode.SCHEDULED_CHARGING) is False
+    assert control_mode.is_enabled("unknown") is False
+    assert ChargePointControlMode.from_dict({"modes": {"solar_boost": {"available": True}}}).available_modes == []
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        (None, ChargeOnSolar(1400, timedelta(minutes=15), time(10), time(16))),
+        (
+            {"min_charge_duration": {"iso8601": "PT1H30M"}, "allowed_window": {"start_time": {"iso8601": "05:00"}}},
+            ChargeOnSolar(None, timedelta(minutes=90), time(5), None),
+        ),
+        ({"min_charge_duration": {"iso8601": "P1D"}, "allowed_window": {"start_time": {"iso8601": "late"}, "end_time": None}}, ChargeOnSolar()),
+        ({}, ChargeOnSolar()),
+    ],
+    ids=["configured", "partial", "invalid", "missing"],
+)
+def test_charge_on_solar(payload: dict[str, Any] | None, expected: ChargeOnSolar) -> None:
+    """Settings are unwrapped to W, a timedelta and local times; missing or invalid values are None."""
+    assert ChargeOnSolar.from_dict(payload if payload is not None else _data("get_charge_point_charge_on_solar.json")) == expected
 
 
 def test_battery_chart() -> None:

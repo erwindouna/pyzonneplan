@@ -116,6 +116,16 @@ class ChargePointStartMode(StrEnum):
     START_WITH_APP = "start_with_app"
 
 
+class ChargePointMode(StrEnum):
+    """Charge point control modes (``modes`` of the charge point control-mode endpoint)."""
+
+    BOOST = "boost"
+    PLUG_AND_CHARGE = "plug_and_charge"
+    DYNAMIC_CHARGING = "dynamic_charging"
+    SCHEDULED_CHARGING = "scheduled_charging"
+    CHARGE_ON_SOLAR = "charge_on_solar"
+
+
 class TariffGroup(StrEnum):
     """Price level of an interval compared to the rest of the day."""
 

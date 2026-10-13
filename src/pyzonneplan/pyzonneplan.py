@@ -54,6 +54,8 @@ from pyzonneplan.models.devices import (
     BatteryDayAheadArbitrage,
     BatteryHomeOptimization,
     BatteryInstallation,
+    ChargeOnSolar,
+    ChargePointControlMode,
     ChargePointInstallation,
     ChargeSchedule,
     P1Installation,
@@ -64,7 +66,7 @@ from pyzonneplan.models.summary import Summary
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
-    from datetime import date
+    from datetime import date, time
 
     from mashumaro.mixins.orjson import DataClassORJSONMixin
 
@@ -636,6 +638,71 @@ class Zonneplan:
         """Fetch a charge point's state and schedules, and the account's vehicles."""
         response = await self._request(f"connections/{connection_uuid}/charge-points/{contract_uuid}")
         return _parse(ChargePointInstallation, response)
+
+    async def async_get_charge_point_control_mode(self, contract_uuid: str) -> ChargePointControlMode:
+        """Fetch which control modes a charge point supports and which are enabled."""
+        response = await self._request(f"api/contracts/{contract_uuid}/charge-point/control-mode")
+        return _parse(ChargePointControlMode, response)
+
+    async def async_get_charge_point_charge_on_solar(self, contract_uuid: str) -> ChargeOnSolar:
+        """Fetch the charge on solar settings: surplus threshold, minimum charge time and allowed hours."""
+        response = await self._request(f"api/contracts/{contract_uuid}/charge-point/control-mode/charge_on_solar")
+        return _parse(ChargeOnSolar, response)
+
+    async def async_enable_charge_point_charge_on_solar(
+        self,
+        contract_uuid: str,
+        *,
+        solar_surplus_threshold_w: int | None = None,
+        min_charge_duration: timedelta | None = None,
+        allowed_window_start: time | None = None,
+        allowed_window_end: time | None = None,
+    ) -> None:
+        """Enable charge on solar: the car charges when the solar surplus exceeds ``solar_surplus_threshold_w``.
+
+        Once started, it charges at least ``min_charge_duration`` (whole
+        minutes), and only between the local (Europe/Amsterdam) whole hours
+        ``allowed_window_start`` and ``allowed_window_end``. The API takes all
+        settings at once: omitted ones keep their current value, fetched with
+        :meth:`async_get_charge_point_charge_on_solar` when needed. The app offers
+        500-4140 W, 15-60 minutes and 05:00-23:00, with defaults 2000 W,
+        15 minutes and 05:00-23:00.
+        """
+        if None in (solar_surplus_threshold_w, min_charge_duration, allowed_window_start, allowed_window_end):
+            current = await self.async_get_charge_point_charge_on_solar(contract_uuid)
+            solar_surplus_threshold_w = solar_surplus_threshold_w if solar_surplus_threshold_w is not None else current.solar_surplus_threshold_w
+            min_charge_duration = min_charge_duration if min_charge_duration is not None else current.min_charge_duration
+            allowed_window_start = allowed_window_start if allowed_window_start is not None else current.allowed_window_start
+            allowed_window_end = allowed_window_end if allowed_window_end is not None else current.allowed_window_end
+        if solar_surplus_threshold_w is None or min_charge_duration is None or allowed_window_start is None or allowed_window_end is None:
+            msg = "Charge on solar has no current settings to keep; pass all of them"
+            raise ValueError(msg)
+
+        minutes, remainder = divmod(min_charge_duration, timedelta(minutes=1))
+        if remainder or minutes <= 0:
+            msg = "min_charge_duration must be a positive number of whole minutes"
+            raise ValueError(msg)
+        for bound in (allowed_window_start, allowed_window_end):
+            if bound.minute or bound.second or bound.microsecond or bound.tzinfo is not None:
+                msg = "The allowed window must start and end on a whole local hour, without a timezone"
+                raise ValueError(msg)
+        if allowed_window_end <= allowed_window_start:
+            msg = "allowed_window_end must be after allowed_window_start"
+            raise ValueError(msg)
+
+        await self._request(
+            f"api/contracts/{contract_uuid}/charge-point/control-mode/charge_on_solar/enable",
+            method=METH_PUT,
+            json_body={
+                "solar_surplus_threshold_w": solar_surplus_threshold_w,
+                "min_charge_duration": f"PT{minutes}M",
+                "allowed_window": {"start_time": f"{allowed_window_start.hour:02d}:00", "end_time": f"{allowed_window_end.hour:02d}:00"},
+            },
+        )
+
+    async def async_disable_charge_point_charge_on_solar(self, contract_uuid: str) -> None:
+        """Disable charge on solar."""
+        await self._request(f"api/contracts/{contract_uuid}/charge-point/control-mode/charge_on_solar/disable", method=METH_PUT)
 
     async def _async_charge_point_action(self, connection_uuid: str, contract_uuid: str, action: str, body: dict[str, Any] | None = None) -> None:
         """Send an action to a charge point.

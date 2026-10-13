@@ -77,6 +77,8 @@ if __name__ == "__main__":
 | `async_get_battery_control_mode(contract_uuid)` / `async_get_battery_home_optimization(contract_uuid)` | The battery's control mode, and the charge and discharge power for home optimization with the range each accepts |
 | `async_get_battery_day_ahead_arbitrage(contract_uuid)` | The price spread (EUR) and market time resolution day-ahead arbitrage trades with |
 | `async_get_charge_point(connection_uuid, contract_uuid)` | Charge point state, schedules and vehicles |
+| `async_get_charge_point_control_mode(contract_uuid)` | Which `ChargePointMode`s the charge point supports and which are enabled |
+| `async_get_charge_point_charge_on_solar(contract_uuid)` | The charge on solar settings: surplus threshold (W), minimum charge time and allowed local hours |
 | `async_set_locale(locale)` | Sets the language of the API's texts, e.g. `nl-NL` |
 | `async_get_app_settings()` / `async_set_price_resolution(resolution)` | The settings the Zonneplan app syncs, and sets the `PriceResolution` the app shows prices in |
 
@@ -110,6 +112,7 @@ against live hardware yet. Reports and captured (anonymised) responses are welco
 | `async_start_charge_point_dynamic_session(connection_uuid, contract_uuid, end, *, kilometers or percentage, vehicle_uuid)` | Charges an amount by `end` at the cheapest prices |
 | `async_set_charge_point_schedule(connection_uuid, contract_uuid, schedule, *, vehicle_uuid)` | Replaces the planned charging with `ChargeSchedule` windows; ended windows are dropped |
 | `async_reset_charge_point_schedule(connection_uuid, contract_uuid)` | Clears the planned charging |
+| `async_enable_charge_point_charge_on_solar(contract_uuid, *, solar_surplus_threshold_w, min_charge_duration, allowed_window_start, allowed_window_end)` / `async_disable_...` | Turns charging on solar surplus on (omitted settings keep their current value) or off |
 
 A battery with both modes off trades on the dynamic prices (`BatteryMode.DYNAMIC_CHARGING`). The API doesn't
 switch the other mode off for you; `async_set_battery_control_mode()` does, like the Zonneplan app. Day-ahead
