@@ -2,6 +2,9 @@
 
 from .account import Account, Address, AddressGroup, AppSettings, Connection, ConnectionFeature, Contract, UserAccount
 from .consumption import (
+    ConsumptionInsight,
+    ConsumptionInsightPoint,
+    ConsumptionInsightSeries,
     ElectricityChart,
     ElectricityChartGroup,
     ElectricityChartMeasurement,
@@ -32,6 +35,7 @@ from .devices import (
     DeviceMeasurement,
     DeviceMeasurementGroup,
     DynamicChargingConstraints,
+    P1Installation,
     P1Meter,
     PvInstallation,
     PvInverter,
@@ -63,6 +67,9 @@ __all__ = [
     "Connection",
     "ConnectionFeature",
     "ConsumerPrices",
+    "ConsumptionInsight",
+    "ConsumptionInsightPoint",
+    "ConsumptionInsightSeries",
     "Contract",
     "DeviceMeasurement",
     "DeviceMeasurementGroup",
@@ -78,6 +85,7 @@ __all__ = [
     "GasChartMeasurement",
     "GasMeasurementGroup",
     "Money",
+    "P1Installation",
     "P1Meter",
     "PriceChartData",
     "PricePoint",

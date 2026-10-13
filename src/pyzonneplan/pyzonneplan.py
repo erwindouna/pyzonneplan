@@ -46,7 +46,7 @@ from pyzonneplan.exceptions import (
     ZonneplanTimeoutError,
 )
 from pyzonneplan.models.account import Account, AppSettings
-from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
+from pyzonneplan.models.consumption import ConsumptionInsight, ElectricityChart, ElectricityDelivered, Gas, GasChart
 from pyzonneplan.models.devices import (
     BatteryChart,
     BatteryControlMode,
@@ -54,6 +54,7 @@ from pyzonneplan.models.devices import (
     BatteryHomeOptimization,
     BatteryInstallation,
     ChargePointInstallation,
+    P1Installation,
     PvInstallation,
 )
 from pyzonneplan.models.prices import ConsumerPrices
@@ -374,9 +375,14 @@ class Zonneplan:
         value = PriceResolution(resolution)
         await self._request("user-accounts/app-settings", method=METH_PUT, json_body={"settings": {"price_resolution": value.value}})
 
-    async def async_get_consumer_prices(self, chart: str = PriceChart.ELECTRICITY_HOURLY) -> ConsumerPrices:
-        """Fetch a consumer price chart (see :class:`pyzonneplan.const.PriceChart` for valid ``chart`` values)."""
-        response = await self._request(f"api/consumer-prices/charts/{chart}")
+    async def async_get_consumer_prices(self, chart: str = PriceChart.ELECTRICITY_HOURLY, *, connection_uuid: str | None = None) -> ConsumerPrices:
+        """Fetch a consumer price chart (see :class:`pyzonneplan.const.PriceChart` for valid ``chart`` values).
+
+        With a ``connection_uuid``, fetch the prices of that connection's
+        contract instead of the general ones, as the app does.
+        """
+        prefix = "api" if connection_uuid is None else f"api/connections/{connection_uuid}"
+        response = await self._request(f"{prefix}/consumer-prices/charts/{chart}")
         return _parse(ConsumerPrices, response)
 
     async def async_get_electricity_delivered(self, connection_uuid: str) -> ElectricityDelivered | None:
@@ -386,6 +392,15 @@ class Zonneplan:
         responds with ``null``; use :meth:`async_get_electricity_chart` there.
         """
         response = await self._request(f"connections/{connection_uuid}/electricity-delivered")
+        return None if response is None else _parse(ElectricityDelivered, response)
+
+    async def async_get_electricity(self, connection_uuid: str) -> ElectricityDelivered | None:
+        """Fetch electricity delivery/production data (P1) for a connection from the endpoint the current app uses.
+
+        Same data as :meth:`async_get_electricity_delivered`, without the
+        charts. Returns ``None`` for connections without a P1 meter.
+        """
+        response = await self._request(f"connections/{connection_uuid}/electricity", params={"no-charts": "1"})
         return None if response is None else _parse(ElectricityDelivered, response)
 
     async def async_get_gas(self, connection_uuid: str) -> Gas | None:
@@ -413,10 +428,45 @@ class Zonneplan:
         response = await self._request(f"connections/{connection_uuid}/gas/charts/{interval}", params={"date": day.isoformat()})
         return _parse(GasChart, response)
 
+    async def async_get_electricity_consumption_insight(self, connection_uuid: str, start: date, end: date) -> ConsumptionInsight:
+        """Fetch electricity used and returned per month from ``start`` to ``end`` (local dates, inclusive), with the average price of each.
+
+        The app asks for one calendar year at a time.
+        """
+        return await self._async_get_consumption_insight(connection_uuid, "electricity", start, end)
+
+    async def async_get_gas_consumption_insight(self, connection_uuid: str, start: date, end: date) -> ConsumptionInsight:
+        """Fetch gas used per month (see :meth:`async_get_electricity_consumption_insight`)."""
+        return await self._async_get_consumption_insight(connection_uuid, "gas", start, end)
+
+    async def _async_get_consumption_insight(self, connection_uuid: str, product: str, start: date, end: date) -> ConsumptionInsight:
+        """Fetch a consumption insight chart; the API (and the app) only use months."""
+        if start > end:
+            msg = "start must not be after end"
+            raise ValueError(msg)
+        response = await self._request(
+            f"api/connections/{connection_uuid}/{product}/charts/consumption-insight",
+            params={"start_date": start.isoformat(), "end_date": end.isoformat(), "granularity": "months"},
+        )
+        return _parse(ConsumptionInsight, response, "data", "chart")
+
     async def async_get_summary(self, connection_uuid: str) -> Summary:
         """Fetch the connection summary: live usage (P1 only) and an hourly price forecast of about two days."""
         response = await self._request(f"connections/{connection_uuid}/summary")
         return _parse(Summary, response)
+
+    async def async_get_p1_installation(self, contract_uuid: str) -> P1Installation | None:
+        """Fetch a P1 reader's details: the meter it reads, its main fuse and when it last reported.
+
+        ``contract_uuid`` is the p1_installation contract's. Returns ``None``
+        when the API has no P1 installation for it (HTTP 404), which is also
+        what an unknown contract gives.
+        """
+        try:
+            response = await self._request(f"contracts/{contract_uuid}/p1-installation")
+        except ZonneplanNotFoundError:
+            return None
+        return _parse(P1Installation, response)
 
     async def async_get_pv_installation(self, connection_uuid: str) -> PvInstallation | None:
         """Fetch every solar inverter on a connection and today's combined yield.
