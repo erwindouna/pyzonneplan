@@ -1,8 +1,10 @@
 """Models for the electricity and gas consumption endpoints.
 
-The chart endpoints (``/connections/{uuid}/{electricity-delivered,gas}/charts/{interval}``)
+The chart endpoints (``/connections/{uuid}/{electricity_delivered,gas}/charts/{interval}``)
 are modelled from captured responses. They work without a P1 meter: usage then
-comes from the grid operator's history, which arrives a day or more late.
+comes from the grid operator's history, which arrives a day or more late. The
+library uses ``electricity_delivered`` like the Zonneplan app; the older
+``electricity-delivered`` path returns the same.
 
 The summary endpoints (``/connections/{uuid}/{electricity-delivered,electricity,gas}``)
 return ``null`` without a P1 meter. Their models are reverse-engineered from
@@ -255,7 +257,7 @@ class GasChartGroup(DataClassORJSONMixin):
 
 @dataclass
 class ElectricityChart(DataClassORJSONMixin):
-    """Response of /connections/{uuid}/electricity-delivered/charts/{interval}."""
+    """Response of /connections/{uuid}/electricity_delivered/charts/{interval}."""
 
     measurement_groups: list[ElectricityChartGroup] = field(default_factory=list)
 

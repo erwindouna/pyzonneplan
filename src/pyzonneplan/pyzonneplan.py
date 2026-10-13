@@ -472,7 +472,7 @@ class Zonneplan:
         connection returns an empty chart. Check ``group.has_data`` before
         trusting zeros, since data from the grid operator arrives late.
         """
-        response = await self._request(f"connections/{connection_uuid}/electricity-delivered/charts/{interval}", params={"date": day.isoformat()})
+        response = await self._request(f"connections/{connection_uuid}/electricity_delivered/charts/{interval}", params={"date": day.isoformat()})
         return _parse(ElectricityChart, response)
 
     async def async_get_gas_chart(self, connection_uuid: str, day: date, interval: str = ConsumptionChart.HOURS) -> GasChart:

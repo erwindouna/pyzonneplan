@@ -509,7 +509,7 @@ async def test_async_get_electricity_chart(
     """Captured electricity charts are parsed, with the date sent as a query parameter."""
     aresponses.add(
         HOST,
-        f"/connections/conn-1/electricity-delivered/charts/{interval}?date=2026-09-24",
+        f"/connections/conn-1/electricity_delivered/charts/{interval}?date=2026-09-24",
         "GET",
         aresponses.Response(text=load_fixtures(fixture)),
         match_querystring=True,
