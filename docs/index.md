@@ -63,11 +63,14 @@ if __name__ == "__main__":
 | Method | Returns |
 |---|---|
 | `async_get_account()` | The account, its addresses, connections and contracts |
-| `async_get_consumer_prices(chart)` | Electricity (hourly or quarter-hourly) or daily gas prices, with `price_at()` and cheapest/most expensive helpers |
+| `async_get_consumer_prices(chart, *, connection_uuid)` | Electricity (hourly or quarter-hourly) or daily gas prices, with `price_at()` and cheapest/most expensive helpers; with `connection_uuid` the prices of that connection's contract |
 | `async_get_summary(connection_uuid)` | Live usage (P1 only), the current tariff group and a price forecast of about two days |
 | `async_get_electricity_chart(connection_uuid, day, interval)` | Electricity used and returned per hour, day or month |
 | `async_get_gas_chart(connection_uuid, day, interval)` | Gas used per hour, day or month |
+| `async_get_electricity_consumption_insight(connection_uuid, start, end)` / `async_get_gas_consumption_insight(...)` | Energy used (and electricity returned) per month between two dates, with the average price per kWh or m³ |
 | `async_get_electricity_delivered(connection_uuid)` / `async_get_gas(connection_uuid)` | P1 totals and live readings (`meters`), or `None` without a P1 meter |
+| `async_get_electricity(connection_uuid)` | The same electricity data from the endpoint the current app uses, or `None` without a P1 meter |
+| `async_get_p1_installation(contract_uuid)` | The P1 reader's meter identifiers, DSMR version and main fuse, and whether it is offline, or `None` without one |
 | `async_get_pv_installation(connection_uuid)` | Every solar inverter on the connection and today's yield, or `None` without solar panels |
 | `async_get_battery(connection_uuid, contract_uuid)` | Home battery state, results and modes |
 | `async_get_battery_chart(contract_uuid, day, interval)` | Home battery results per day or month |
@@ -75,6 +78,7 @@ if __name__ == "__main__":
 | `async_get_battery_day_ahead_arbitrage(contract_uuid)` | The price spread (EUR) and market time resolution day-ahead arbitrage trades with |
 | `async_get_charge_point(connection_uuid, contract_uuid)` | Charge point state, schedules and vehicles |
 | `async_set_locale(locale)` | Sets the language of the API's texts, e.g. `nl-NL` |
+| `async_get_app_settings()` / `async_set_price_resolution(resolution)` | The settings the Zonneplan app syncs, and sets the `PriceResolution` the app shows prices in |
 
 The contract UUIDs come from the account, e.g. `connection.contracts_of_type(ContractType.HOME_BATTERY)`
 (constants and enums such as `ContractType`, `ChartInterval`, `BatteryMode`, `BatteryState`, `TariffGroup` and `ChargePointStatus` live in `pyzonneplan.const`; an enum field is `None` when the API sends a value the library doesn't know yet).

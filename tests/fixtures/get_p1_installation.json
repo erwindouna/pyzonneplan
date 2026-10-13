@@ -1,0 +1,29 @@
+{
+  "data": {
+    "host_device": {
+      "electricity_meter_identifier": "E0000000000000000000000000000000",
+      "gas_meter_identifier": "G0000000000000000000000000000000",
+      "dsmr_version": "50"
+    },
+    "network": {
+      "name": "Example WiFi",
+      "status": "connected",
+      "color": "green"
+    },
+    "phase_information": {
+      "number_of_phases": 3,
+      "max_current_per_phase": 2500
+    },
+    "dynamic_load_balancing_status_for_connection": {
+      "health_status": "HEALTHY"
+    },
+    "dynamic_load_balancing_status_for_p1_installation": {
+      "health_status": "HEALTHY"
+    },
+    "serial_number": "ZP-EXAMPLE1",
+    "measurement_status": {
+      "first_measured_at": "2026-01-01T00:00:00.000Z",
+      "last_measured_at": "2026-10-13T10:00:00.000Z"
+    }
+  }
+}
