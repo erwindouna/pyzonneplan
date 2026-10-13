@@ -43,10 +43,50 @@
       'start_time': datetime.datetime(2026, 9, 29, 12, 0, tzinfo=datetime.timezone.utc),
       'suppress_home_battery': None,
     }),
+    'schedules': list([
+      dict({
+        'end_time': datetime.datetime(2026, 9, 29, 14, 0, tzinfo=datetime.timezone.utc),
+        'start_time': datetime.datetime(2026, 9, 29, 12, 0, tzinfo=datetime.timezone.utc),
+        'suppress_home_battery': None,
+      }),
+      dict({
+        'end_time': datetime.datetime(2026, 9, 30, 4, 0, tzinfo=datetime.timezone.utc),
+        'start_time': datetime.datetime(2026, 9, 30, 2, 0, tzinfo=datetime.timezone.utc),
+        'suppress_home_battery': True,
+      }),
+    ]),
     'serial_number': 'SERIAL0000004',
     'session_average_cost': Decimal('0.2500000'),
     'session_cost': Decimal('2.5000000'),
     'session_flex_result': Decimal('0.2000000'),
+  })
+# ---
+# name: test_charge_point_schedules_in_state
+  dict({
+    'charging_cost_total': Decimal('0.3000000'),
+    'is_active': True,
+    'model_name': None,
+    'next_schedule': dict({
+      'end_time': datetime.datetime(2026, 10, 14, 3, 59, 59, tzinfo=datetime.timezone.utc),
+      'start_time': datetime.datetime(2026, 10, 14, 1, 0, tzinfo=datetime.timezone.utc),
+      'suppress_home_battery': None,
+    }),
+    'schedules': list([
+      dict({
+        'end_time': datetime.datetime(2026, 10, 14, 3, 59, 59, tzinfo=datetime.timezone.utc),
+        'start_time': datetime.datetime(2026, 10, 14, 1, 0, tzinfo=datetime.timezone.utc),
+        'suppress_home_battery': None,
+      }),
+      dict({
+        'end_time': datetime.datetime(2026, 10, 14, 5, 59, 59, tzinfo=datetime.timezone.utc),
+        'start_time': datetime.datetime(2026, 10, 14, 5, 0, tzinfo=datetime.timezone.utc),
+        'suppress_home_battery': True,
+      }),
+    ]),
+    'serial_number': 'SERIAL0000005',
+    'session_average_cost': Decimal('0.1500000'),
+    'session_cost': Decimal('0.3000000'),
+    'session_flex_result': None,
   })
 # ---
 # name: test_p1_meter_reads_contract_meta

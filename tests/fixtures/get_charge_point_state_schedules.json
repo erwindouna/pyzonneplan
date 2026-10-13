@@ -1,0 +1,75 @@
+{
+  "data": {
+    "contracts": [
+      {
+        "uuid": "00000000-0000-4000-8000-000000000302",
+        "label": "Laadpaal",
+        "type": "charge_point_installation",
+        "start_date": "2024-01-04T23:00:00.000000Z",
+        "end_date": null,
+        "meta": {
+          "serial_number": "SERIAL0000005",
+          "identifier": "SERIAL0000005",
+          "first_measured_at": "2024-10-20T08:00:01.000000Z",
+          "last_measured_at": "2026-10-13T13:25:00.000000Z",
+          "show_in_contract_screen": true,
+          "session_charging_cost_total": 3000000,
+          "session_flex_result": null,
+          "session_charged_energy": 2000,
+          "session_average_cost_in_cents": 1500000,
+          "charging_cost_total": 3000000,
+          "flex_result": null,
+          "charged_energy": 2000,
+          "average_cost_in_cents": 1500000
+        },
+        "state": {
+          "connectivity_state": true,
+          "state": "Standby",
+          "power_actual": 0,
+          "energy_delivered_session": 0,
+          "can_charge": true,
+          "can_schedule": true,
+          "charging_manually": false,
+          "charging_automatically": false,
+          "plug_and_charge": false,
+          "overload_protection_active": false,
+          "dynamic_charging_enabled": true,
+          "dynamic_charging_flex_enabled": true,
+          "dynamic_charging_flex_suppressed": false,
+          "dynamic_load_balancing_health": "HEALTHY",
+          "charge_schedules": [
+            {
+              "start_time": 1791939600000,
+              "end_time": 1791950399000,
+              "suppress_home_battery": null
+            },
+            {
+              "start_time": 1791954000000,
+              "end_time": 1791957599000,
+              "suppress_home_battery": true
+            }
+          ],
+          "dynamic_charging_user_constraints": {
+            "desired_distance_in_kilometers": 65,
+            "desired_end_time": "2026-10-14T10:00:00.000000Z"
+          },
+          "charge_point_session": null,
+          "last_known_vehicle_uuid": "00000000-0000-4000-8000-000000000402",
+          "start_mode": "AlwaysFlex"
+        },
+        "charge_schedules": []
+      }
+    ],
+    "powerplay": null,
+    "vehicles": [
+      {
+        "uuid": "00000000-0000-4000-8000-000000000402",
+        "label": "Example Hatchback",
+        "logo_url": "https://example.com/vehicles/logos/example.svg",
+        "consumption_wh_per_km": 200,
+        "charge_standard_power_in_w": 11000,
+        "battery_capacity_useable_wh": 50000
+      }
+    ]
+  }
+}

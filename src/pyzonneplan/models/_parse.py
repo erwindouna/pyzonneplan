@@ -2,7 +2,7 @@
 
 import logging
 import re
-from datetime import datetime, time, timedelta
+from datetime import UTC, datetime, time, timedelta
 from decimal import Decimal
 from enum import StrEnum
 from typing import Any
@@ -39,15 +39,26 @@ def enum_field(enum: type[StrEnum], label: str) -> dict[str, Any]:
     return field_options(deserialize=lambda value: parse_enum(enum, value, label))
 
 
+# Epoch numbers above this are microseconds rather than milliseconds (year 5138 in ms).
+_EPOCH_US_THRESHOLD = 10**14
+
+
 def to_datetime(value: Any) -> datetime | None:
     """Parse an API timestamp, or return ``None`` when it's missing or invalid.
 
     Timestamps come in UTC (``...Z``). One without a timezone is read as
     Europe/Amsterdam local time, the format the charge point actions take,
-    so callers always get a timezone-aware datetime.
+    so callers always get a timezone-aware datetime. Charge schedules can also
+    come as epoch numbers: milliseconds, or microseconds when above ``1e14``.
     """
-    if not value:
+    if not value or isinstance(value, bool):
         return None
+    if isinstance(value, int | float):
+        divisor = 1_000_000 if abs(value) > _EPOCH_US_THRESHOLD else 1_000
+        try:
+            return datetime.fromtimestamp(value / divisor, UTC)
+        except (OverflowError, OSError, ValueError):
+            return None
     try:
         parsed = datetime.fromisoformat(value)
     except (TypeError, ValueError):
