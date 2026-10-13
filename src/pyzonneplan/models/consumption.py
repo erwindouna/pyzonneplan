@@ -4,10 +4,15 @@ The chart endpoints (``/connections/{uuid}/{electricity-delivered,gas}/charts/{i
 are modelled from captured responses. They work without a P1 meter: usage then
 comes from the grid operator's history, which arrives a day or more late.
 
-The summary endpoints (``/connections/{uuid}/{electricity-delivered,gas}``)
+The summary endpoints (``/connections/{uuid}/{electricity-delivered,electricity,gas}``)
 return ``null`` without a P1 meter. Their models are reverse-engineered from
 the dotted sensor key-paths (e.g. ``measurement_groups.0.totals.d``,
 ``contracts.0.meta.dsmr_version``) in fsaris/home-assistant-zonneplan-one's
+``const.py``; no populated response has been captured yet. The Zonneplan app's
+demo data gives ``/electricity`` the same shape as ``/electricity-delivered``.
+
+The consumption insight charts (``/api/connections/{uuid}/{electricity,gas}/charts/consumption-insight``)
+are modelled from a captured electricity response and the app's code.
 ``const.py``; no populated response has been captured yet.
 
 The recent power chart (``/api/connections/{uuid}/electricity/charts/recent-power``)
@@ -23,7 +28,7 @@ from mashumaro.mixins.orjson import DataClassORJSONMixin
 
 from pyzonneplan.const import WH_TO_KWH, MeasurementGroupType, TariffGroup
 
-from ._parse import DATETIME, enum_field, euro
+from ._parse import DATETIME, enum_field, euro, kwh
 from .account import Contract
 from .devices import P1Meter
 from .prices import PriceRange
@@ -55,7 +60,7 @@ class ElectricityMeasurementGroup(DataClassORJSONMixin):
 
 @dataclass
 class ElectricityDelivered(DataClassORJSONMixin):
-    """Response of /connections/{uuid}/electricity-delivered.
+    """Response of /connections/{uuid}/electricity-delivered and /connections/{uuid}/electricity.
 
     ``contracts`` are the P1 readers with their live readings, which are more
     current here than in /user-accounts/me.
@@ -270,6 +275,86 @@ class GasChart(DataClassORJSONMixin):
     def group(self) -> GasChartGroup | None:
         """Return the chart's window; the API sends exactly one."""
         return self.measurement_groups[0] if self.measurement_groups else None
+
+
+def _insight_volume(volume: dict[str, int] | None) -> Decimal | None:
+    """Convert a consumption insight volume, ``{"wh": ...}`` or ``{"dm3": ...}``, to kWh or m³."""
+    if not volume:
+        return None
+    if "wh" in volume:
+        return kwh(volume["wh"])
+    if "dm3" in volume:
+        return Decimal(volume["dm3"]) * DM3_TO_M3
+    return None
+
+
+@dataclass
+class ConsumptionInsightPoint(DataClassORJSONMixin):
+    """One month of a consumption insight chart.
+
+    ``volume`` is in kWh for electricity and m³ for gas; ``average_price`` is
+    the average price per kWh or m³ in EUR, negative for electricity returned.
+    """
+
+    start: datetime
+    volume: Decimal | None = None
+    average_price: Decimal | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``volume.wh``/``volume.dm3`` and ``average_cost.amount`` (1e-7 EUR)."""
+        return {
+            "start": d["date"],
+            "volume": _insight_volume(d.get("volume")),
+            "average_price": euro((d.get("average_cost") or {}).get("amount")),
+        }
+
+
+@dataclass
+class ConsumptionInsightSeries(DataClassORJSONMixin):
+    """The months of a consumption insight series, with their total and average price (units as in :class:`ConsumptionInsightPoint`)."""
+
+    total: Decimal | None = None
+    average_price: Decimal | None = None
+    points: list[ConsumptionInsightPoint] = field(default_factory=list)
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``aggregate`` and rename ``data``."""
+        aggregate = d.get("aggregate") or {}
+        return {
+            "total": _insight_volume(aggregate.get("sum_volume")),
+            "average_price": euro((aggregate.get("average_cost") or {}).get("amount")),
+            "points": d.get("data") or [],
+        }
+
+
+@dataclass
+class ConsumptionInsight(DataClassORJSONMixin):
+    """Response of /api/connections/{uuid}/{electricity,gas}/charts/consumption-insight.
+
+    ``delivery`` is the energy used, ``production`` the electricity returned
+    to the grid (gas has none).
+    """
+
+    granularity: MeasurementGroupType | None = field(default=None, metadata=enum_field(MeasurementGroupType, "measurement group type"))
+    start: datetime | None = field(default=None, metadata=DATETIME)
+    end: datetime | None = field(default=None, metadata=DATETIME)
+    delivery: ConsumptionInsightSeries | None = None
+    production: ConsumptionInsightSeries | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``range`` and ``series``."""
+        date_range = d.get("range") or {}
+        series = d.get("series") or {}
+        return {
+            "granularity": d.get("granularity"),
+            "start": date_range.get("start_date"),
+            "end": date_range.get("end_date"),
+            "delivery": series.get("delivery"),
+            "production": series.get("production"),
+        }
 
 
 @dataclass

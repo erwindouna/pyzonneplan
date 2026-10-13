@@ -1,0 +1,22 @@
+{
+  "data": {
+    "chart": {
+      "series": {
+        "home_solar_self_consumption": [
+          {"year_month": "2026-07", "value": {"permille": 812}},
+          {"year_month": "2026-08", "value": {"permille": 765}},
+          {"year_month": "2026-09", "value": null}
+        ],
+        "home_consumption_savings": [
+          {"year_month": "2026-07", "value": {"permille": 584}},
+          {"year_month": "2026-08", "value": {"permille": 521}},
+          {"year_month": "2026-09", "value": null}
+        ]
+      }
+    },
+    "stats": {
+      "year_average_home_solar_self_consumption": {"permille": 788},
+      "year_average_home_consumption_savings": {"permille": 553}
+    }
+  }
+}

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
@@ -12,30 +12,51 @@ import orjson
 import pytest
 
 from pyzonneplan.const import (
+    BatteryActivityDirection,
+    BatteryActivityType,
+    BatteryChartType,
     BatteryMode,
     BatteryPowerPreset,
     BatteryState,
     BatteryUnavailabilityReason,
+    ChargePointMode,
     ChargePointStartMode,
     ChargePointStatus,
     ContractType,
     MarketTimeResolution,
     MeasurementGroupType,
+    PriceResolution,
     TariffGroup,
 )
-from pyzonneplan.models.account import Account, Address, AddressGroup, Connection, ConnectionFeature, Contract, UserAccount
-from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart, RecentPowerChart
+from pyzonneplan.models.account import Account, Address, AddressGroup, AppSettings, Connection, ConnectionFeature, Contract, UserAccount
+from pyzonneplan.models.consumption import (
+    ConsumptionInsight,
+    ConsumptionInsightPoint,
+    ElectricityChart,
+    ElectricityDelivered,
+    Gas,
+    GasChart,
+    RecentPowerChart,
+)
 from pyzonneplan.models.devices import (
     Battery,
+    BatteryActivityChart,
+    BatteryAssetCostsChart,
     BatteryChart,
     BatteryControlMode,
     BatteryDayAheadArbitrage,
     BatteryHomeOptimization,
     BatteryInstallation,
     BatteryPowerPresetOption,
+    BatterySelfSufficiency,
+    BatterySelfSufficiencyStats,
+    BatteryStatus,
+    ChargeOnSolar,
     ChargePoint,
+    ChargePointControlMode,
     ChargePointInstallation,
     ChargeSchedule,
+    P1Installation,
     P1Meter,
     PvInstallation,
     Vehicle,
@@ -223,6 +244,35 @@ def test_device_timestamps(value: str | None, expected: datetime | None) -> None
         assert meter.electricity_last_measured_at.tzinfo is not None
 
 
+@pytest.mark.parametrize(
+    ("now", "offline"),
+    [
+        (datetime(2026, 10, 13, 10, 14, tzinfo=UTC), False),
+        (datetime(2026, 10, 13, 10, 16, tzinfo=UTC), True),
+    ],
+    ids=["recent", "stale"],
+)
+def test_p1_installation(now: datetime, *, offline: bool) -> None:
+    """P1Installation flattens the reader's details, converts the main fuse to A and is offline after 15 minutes."""
+    installation = P1Installation.from_dict(_data("get_p1_installation.json"))
+
+    assert installation.dsmr_version == "50"
+    assert installation.number_of_phases == 3
+    assert installation.max_current_per_phase_amps == Decimal(25)
+    assert installation.load_balancing_status == "HEALTHY"
+    assert installation.is_offline(now) is offline
+
+
+def test_p1_installation_without_readings() -> None:
+    """A P1 installation without details has no main fuse and no offline state; a numeric DSMR version is kept as text."""
+    installation = P1Installation.from_dict({"host_device": {"dsmr_version": 50}})
+
+    assert installation.dsmr_version == "50"
+    assert installation.max_current_per_phase_amps is None
+    assert installation.is_offline() is None
+    assert P1Installation.from_dict({"measurement_status": {"last_measured_at": "2026-01-01T00:00:00Z"}}).is_offline() is True
+
+
 def test_pv_installation(snapshot: SnapshotAssertion) -> None:
     """PvInstallation has a view per inverter and today's combined yield."""
     installation = PvInstallation.from_dict(_data("get_pv_installation.json"))
@@ -258,6 +308,30 @@ def test_battery_without_readings() -> None:
     assert battery.is_charging is None
     assert battery.battery_state is None
     assert battery.inverter_state is None
+
+
+def test_battery_status() -> None:
+    """The light status converts the state of charge and parses the lowercase state and control mode."""
+    status = BatteryStatus.from_dict(_data("get_battery_status.json")["home_battery"])
+
+    assert status.state_of_charge_percent == Decimal("72.4")
+    assert status.power_ac == -1500
+    assert status.state is BatteryState.DISCHARGING
+    assert status.control_mode is BatteryMode.SELF_CONSUMPTION
+    assert status.modem_online is True
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [{}, {"state_of_charge": None, "power_ac": None, "control_mode": "manual", "state": "Hibernating", "modem_online": None}],
+    ids=["empty", "null_and_unknown"],
+)
+def test_battery_status_without_readings(payload: dict[str, Any]) -> None:
+    """Missing readings and unknown states are None."""
+    status = BatteryStatus.from_dict(payload)
+
+    assert status == BatteryStatus()
+    assert status.state_of_charge_percent is None
 
 
 @pytest.mark.parametrize(
@@ -389,6 +463,41 @@ def test_battery_day_ahead_arbitrage(payload: dict[str, Any] | None, price_sprea
     assert settings.market_time_resolution is resolution
 
 
+def test_charge_point_control_mode() -> None:
+    """The control mode lists the known available modes; a mode sent as ``{}`` is neither available nor enabled."""
+    control_mode = ChargePointControlMode.from_dict(_data("get_charge_point_control_mode.json"))
+
+    assert control_mode.available_modes == [
+        ChargePointMode.BOOST,
+        ChargePointMode.PLUG_AND_CHARGE,
+        ChargePointMode.DYNAMIC_CHARGING,
+        ChargePointMode.CHARGE_ON_SOLAR,
+    ]
+    assert control_mode.is_enabled(ChargePointMode.CHARGE_ON_SOLAR) is True
+    assert control_mode.is_enabled(ChargePointMode.BOOST) is False
+    assert control_mode.is_enabled(ChargePointMode.SCHEDULED_CHARGING) is False
+    assert control_mode.is_enabled("unknown") is False
+    assert ChargePointControlMode.from_dict({"modes": {"solar_boost": {"available": True}}}).available_modes == []
+
+
+@pytest.mark.parametrize(
+    ("payload", "expected"),
+    [
+        (None, ChargeOnSolar(1400, timedelta(minutes=15), time(10), time(16))),
+        (
+            {"min_charge_duration": {"iso8601": "PT1H30M"}, "allowed_window": {"start_time": {"iso8601": "05:00"}}},
+            ChargeOnSolar(None, timedelta(minutes=90), time(5), None),
+        ),
+        ({"min_charge_duration": {"iso8601": "P1D"}, "allowed_window": {"start_time": {"iso8601": "late"}, "end_time": None}}, ChargeOnSolar()),
+        ({}, ChargeOnSolar()),
+    ],
+    ids=["configured", "partial", "invalid", "missing"],
+)
+def test_charge_on_solar(payload: dict[str, Any] | None, expected: ChargeOnSolar) -> None:
+    """Settings are unwrapped to W, a timedelta and local times; missing or invalid values are None."""
+    assert ChargeOnSolar.from_dict(payload if payload is not None else _data("get_charge_point_charge_on_solar.json")) == expected
+
+
 def test_battery_chart() -> None:
     """A battery chart converts its result and energy totals, per day and in total."""
     chart = BatteryChart.from_dict(_data("get_battery_chart_days.json")[0])
@@ -403,6 +512,98 @@ def test_battery_chart() -> None:
     assert chart.measurements[0].result_euro == Decimal("0.5")
     assert chart.measurements[0].delivery_kwh == Decimal(3)
     assert chart.measurements[0].production_kwh == Decimal("2.5")
+
+
+def test_battery_activity_chart() -> None:
+    """The recent activity chart flattens its series and converts the state of charge."""
+    chart = BatteryActivityChart.from_dict(_data("get_battery_activity_chart.json")["chart"])
+
+    assert chart.type is BatteryChartType.DEFAULT
+    assert chart.range.start_date == datetime(2026, 9, 24, tzinfo=UTC)
+    assert [point.state_of_charge_percent for point in chart.state_of_charge] == [Decimal(45), Decimal("52.5"), Decimal(60), None]
+    assert [activity.activity_type for activity in chart.activities] == [BatteryActivityType.GRID_OPTIMIZATION, BatteryActivityType.HOME_OPTIMIZATION]
+    assert chart.planned_activities == []
+    assert chart.market_prices == []
+
+
+def test_battery_activity_chart_day_ahead() -> None:
+    """A day-ahead arbitrage chart adds the planned activities and the market prices."""
+    chart = BatteryActivityChart.from_dict(_data("get_battery_activity_chart_day_ahead.json")["chart"])
+
+    assert chart.type is BatteryChartType.DAY_AHEAD_ARBITRAGE
+    assert [planned.direction for planned in chart.planned_activities] == [BatteryActivityDirection.CHARGE, BatteryActivityDirection.DISCHARGE]
+    assert chart.market_prices[0].market_price_tax_included is not None
+    assert chart.market_prices[0].market_price_tax_included.euro == Decimal("0.1825")
+
+
+def test_battery_activity_chart_unknown_values() -> None:
+    """Unknown chart types, activity types and directions are None; missing series are empty."""
+    chart = BatteryActivityChart.from_dict(
+        {
+            "type": "solar",
+            "range": {"start_date": "2026-09-24T00:00:00Z", "end_date": "2026-09-24T03:00:00Z"},
+            "series": {
+                "activity_type": {"data": [{"start_date": "2026-09-24T00:00:00Z", "end_date": "2026-09-24T01:00:00Z", "activity_type": "manual"}]},
+                "planned_activity": {"data": [{"start_date": "2026-09-24T00:00:00Z", "end_date": "2026-09-24T01:00:00Z", "direction": "idle"}]},
+            },
+        }
+    )
+
+    assert chart.type is None
+    assert chart.activities[0].activity_type is None
+    assert chart.planned_activities[0].direction is None
+    assert chart.state_of_charge == []
+    assert BatteryActivityChart.from_dict({"range": chart.range.to_dict()}).market_prices == []
+
+
+def test_battery_asset_costs_chart() -> None:
+    """Asset costs are negative when the battery earned; the earnings properties negate them into EUR."""
+    chart = BatteryAssetCostsChart.from_dict(_data("get_battery_asset_costs_chart.json")["chart"])
+
+    assert chart.granularity == "days"
+    assert [cost.earnings_euro for cost in chart.costs] == [Decimal("0.65"), Decimal("0.425"), Decimal("-0.125")]
+    assert chart.costs[0].start == datetime(2026, 8, 31, 22, tzinfo=UTC)
+    assert chart.earnings_euro == Decimal("0.95")
+    assert chart.average_earnings_euro == Decimal("0.3166667")
+    assert chart.flex_earnings_euro == Decimal("0.2")
+
+
+def test_battery_asset_costs_chart_without_data() -> None:
+    """A chart without costs or aggregate has no earnings."""
+    chart = BatteryAssetCostsChart.from_dict(
+        {
+            "range": {"start_date": "2026-09-01T00:00:00Z", "end_date": "2026-09-30T00:00:00Z"},
+            "series": {"costs": {"data": [{"date": "2026-09-01T00:00:00Z"}]}},
+        }
+    )
+
+    assert chart.costs[0].earnings_euro is None
+    assert chart.earnings_euro is None
+    assert chart.average_earnings_euro is None
+    assert chart.flex_earnings_euro is None
+
+
+def test_battery_self_sufficiency() -> None:
+    """Self-sufficiency values and averages are converted from permille to percent."""
+    self_sufficiency = BatterySelfSufficiency.from_dict(_data("get_battery_self_sufficiency_chart.json"))
+
+    assert [(month.year_month, month.percent) for month in self_sufficiency.home_solar_self_consumption] == [
+        ("2026-07", Decimal("81.2")),
+        ("2026-08", Decimal("76.5")),
+        ("2026-09", None),
+    ]
+    assert self_sufficiency.home_consumption_savings[0].percent == Decimal("58.4")
+    assert self_sufficiency.stats.home_solar_self_consumption_percent == Decimal("78.8")
+    assert self_sufficiency.stats.home_consumption_savings_percent == Decimal("55.3")
+
+
+def test_battery_self_sufficiency_without_data() -> None:
+    """A response without series or stats is empty."""
+    self_sufficiency = BatterySelfSufficiency.from_dict({})
+
+    assert self_sufficiency == BatterySelfSufficiency()
+    assert self_sufficiency.stats.home_solar_self_consumption_percent is None
+    assert BatterySelfSufficiencyStats.from_dict({"year_average_home_consumption_savings": None}).home_consumption_savings_percent is None
 
 
 def test_charge_point_installation(snapshot: SnapshotAssertion) -> None:
@@ -739,6 +940,37 @@ def test_consumption_summary_dates() -> None:
     assert gas.measurement_groups[1].date is None
 
 
+def test_consumption_insight_conversions() -> None:
+    """Consumption insight volumes are converted from Wh to kWh and dm³ to m³, and amounts to EUR."""
+    electricity = ConsumptionInsight.from_dict(_data("get_electricity_consumption_insight.json")["chart"])
+    gas = ConsumptionInsight.from_dict(_data("get_gas_consumption_insight.json")["chart"])
+
+    assert electricity.granularity is MeasurementGroupType.MONTHS
+    assert electricity.delivery is not None
+    assert electricity.production is not None
+    assert electricity.delivery.total == Decimal(300)
+    assert electricity.production.points[0].average_price == Decimal("-0.23")
+    assert gas.delivery is not None
+    assert gas.delivery.points[1].volume == Decimal(60)
+    assert gas.delivery.average_price == Decimal("1.35")
+    assert gas.production is None
+
+
+def test_consumption_insight_without_usage() -> None:
+    """A captured gas insight without usage has no months and no average price; an unknown or missing volume is None."""
+    gas = ConsumptionInsight.from_dict(_data("get_gas_consumption_insight_empty.json")["chart"])
+    unknown = ConsumptionInsightPoint.from_dict({"date": "2026-09-01T00:00:00+02:00", "volume": {"kwh": 1}})
+    missing = ConsumptionInsightPoint.from_dict({"date": "2026-09-01T00:00:00+02:00"})
+
+    assert gas.delivery is not None
+    assert gas.delivery.points == []
+    assert gas.delivery.total == Decimal(0)
+    assert gas.delivery.average_price is None
+    assert unknown.volume is None
+    assert missing.volume is None
+    assert missing.average_price is None
+
+
 def test_account_features() -> None:
     """Connection features are typed, and a missing first name is allowed."""
     account = Account.from_dict(_data("get_account_no_p1.json"))
@@ -747,3 +979,25 @@ def test_account_features() -> None:
     assert account.user_account.first_name is None
     assert electricity.features[0] == ConnectionFeature(code="E004", label="Verbruikshistorie", start_date=date(2026, 1, 1))
     assert [feature.code for feature in electricity.features] == ["E004", "S003", "E005"]
+
+
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    [
+        ([{"key": "price_resolution", "value": "15-min"}], PriceResolution.QUARTER_HOUR),
+        ([{"key": "price_resolution", "value": "5-min"}], None),
+        ([{"key": "theme", "value": "dark"}], None),
+        (None, None),
+    ],
+    ids=["quarter_hour", "unknown_value", "other_setting", "null"],
+)
+def test_app_settings(data: list[dict[str, str]] | None, expected: PriceResolution | None) -> None:
+    """The price resolution is parsed leniently, and other or missing settings don't break parsing."""
+    assert AppSettings.from_dict(data).price_resolution is expected  # type: ignore[arg-type]
+
+
+def test_app_settings_round_trip() -> None:
+    """AppSettings serializes to and parses from its own dict form too."""
+    settings = AppSettings(settings={"price_resolution": "60-min"})
+
+    assert AppSettings.from_dict(settings.to_dict()) == settings
