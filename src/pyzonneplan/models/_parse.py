@@ -1,7 +1,8 @@
 """Lenient parsers the models share: unknown or invalid values become ``None``."""
 
 import logging
-from datetime import datetime
+import re
+from datetime import datetime, time, timedelta
 from decimal import Decimal
 from enum import StrEnum
 from typing import Any
@@ -56,6 +57,26 @@ def to_datetime(value: Any) -> datetime | None:
 
 # Field metadata that parses a timestamp with to_datetime instead of mashumaro's parser.
 DATETIME = field_options(deserialize=to_datetime)
+
+
+_DURATION = re.compile(r"PT(?=\d)(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?")
+
+
+def to_timedelta(value: Any) -> timedelta | None:
+    """Parse an ISO 8601 duration of hours, minutes and seconds (``PT15M``), or return ``None`` when it's missing or invalid."""
+    match = _DURATION.fullmatch(value) if isinstance(value, str) else None
+    if match is None:
+        return None
+    hours, minutes, seconds = (int(part or 0) for part in match.groups())
+    return timedelta(hours=hours, minutes=minutes, seconds=seconds)
+
+
+def to_time(value: Any) -> time | None:
+    """Parse an ISO 8601 time of day (``10:00:00``), or return ``None`` when it's missing or invalid."""
+    try:
+        return time.fromisoformat(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def euro(value: float | None) -> Decimal | None:

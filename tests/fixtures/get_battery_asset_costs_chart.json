@@ -1,0 +1,25 @@
+{
+  "data": {
+    "chart": {
+      "granularity": "days",
+      "range": {
+        "start_date": "2026-08-31T22:00:00.000Z",
+        "end_date": "2026-09-30T21:59:59.999Z"
+      },
+      "series": {
+        "costs": {
+          "data": [
+            {"date": "2026-08-31T22:00:00.000Z", "asset_costs": {"amount": -6500000}},
+            {"date": "2026-09-01T22:00:00.000Z", "asset_costs": {"amount": -4250000}},
+            {"date": "2026-09-02T22:00:00.000Z", "asset_costs": {"amount": 1250000}}
+          ],
+          "aggregate": {
+            "sum_asset_costs": {"amount": -9500000},
+            "average_asset_costs": {"amount": -3166667},
+            "sum_flex_costs": {"amount": -2000000}
+          }
+        }
+      }
+    }
+  }
+}

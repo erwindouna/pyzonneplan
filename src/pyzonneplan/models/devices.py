@@ -9,26 +9,32 @@ device state in each contract's ``meta``, so most models are typed views on a
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime, time, timedelta
 from decimal import Decimal
 from typing import Any
 
+from mashumaro import field_options
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 
 from pyzonneplan.const import (
     MONEY_FACTOR,
     WH_TO_KWH,
+    BatteryActivityDirection,
+    BatteryActivityType,
+    BatteryChartType,
     BatteryMode,
     BatteryPowerPreset,
     BatteryState,
     BatteryUnavailabilityReason,
+    ChargePointMode,
     ChargePointStartMode,
     ChargePointStatus,
     MarketTimeResolution,
 )
 
-from ._parse import DATETIME, enum_field, euro, kwh, parse_enum, to_datetime
+from ._parse import DATETIME, enum_field, euro, kwh, parse_enum, to_datetime, to_time, to_timedelta
 from .account import Contract
+from .prices import Money, PriceRange
 
 
 def _battery_state(value: str | None) -> BatteryState | None:
@@ -114,6 +120,65 @@ class P1Meter:
     def gas_last_measured_at(self) -> datetime | None:
         """Return when the meter last reported gas."""
         return to_datetime(self.contract.meta.get("gas_last_measured_at"))
+
+
+# The app shows a P1 reader as offline when it hasn't reported for this long.
+P1_OFFLINE_AFTER = timedelta(minutes=15)
+
+
+@dataclass
+class P1Installation(DataClassORJSONMixin):
+    """Response of /contracts/{uuid}/p1-installation: a P1 reader and the smart meter it reads.
+
+    Modelled from the Zonneplan app's code and demo data; no populated response
+    has been captured. ``dsmr_version`` is raw (the app shows ``50`` as 5.0),
+    ``max_current_per_phase`` (the main fuse) is in 0.01 A.
+    """
+
+    serial_number: str | None = None
+    dsmr_version: str | None = None
+    electricity_meter_identifier: str | None = None
+    gas_meter_identifier: str | None = None
+    number_of_phases: int | None = None
+    max_current_per_phase: int | None = None
+    network_name: str | None = None
+    network_status: str | None = None
+    load_balancing_status: str | None = None
+    first_measured_at: datetime | None = field(default=None, metadata=DATETIME)
+    last_measured_at: datetime | None = field(default=None, metadata=DATETIME)
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``host_device``, ``phase_information``, ``network``, ``measurement_status`` and the connection's load balancing status."""
+        host_device = d.get("host_device") or {}
+        phases = d.get("phase_information") or {}
+        network = d.get("network") or {}
+        measurement_status = d.get("measurement_status") or {}
+        dsmr_version = host_device.get("dsmr_version")
+        return {
+            "serial_number": d.get("serial_number"),
+            "dsmr_version": None if dsmr_version is None else str(dsmr_version),
+            "electricity_meter_identifier": host_device.get("electricity_meter_identifier"),
+            "gas_meter_identifier": host_device.get("gas_meter_identifier"),
+            "number_of_phases": phases.get("number_of_phases"),
+            "max_current_per_phase": phases.get("max_current_per_phase"),
+            "network_name": network.get("name"),
+            "network_status": network.get("status"),
+            "load_balancing_status": (d.get("dynamic_load_balancing_status_for_connection") or {}).get("health_status"),
+            "first_measured_at": measurement_status.get("first_measured_at"),
+            "last_measured_at": measurement_status.get("last_measured_at"),
+        }
+
+    @property
+    def max_current_per_phase_amps(self) -> Decimal | None:
+        """Return the main fuse per phase, in A."""
+        return None if self.max_current_per_phase is None else Decimal(self.max_current_per_phase) / 100
+
+    def is_offline(self, now: datetime | None = None) -> bool | None:
+        """Return whether the reader hasn't reported for 15 minutes, as the app shows it, or ``None`` before its first reading."""
+        if self.last_measured_at is None:
+            return None
+        return self.last_measured_at < (now or datetime.now(UTC)) - P1_OFFLINE_AFTER
 
 
 @dataclass(slots=True)
@@ -412,6 +477,36 @@ class BatteryInstallation(DataClassORJSONMixin):
 
 
 @dataclass
+class BatteryStatus(DataClassORJSONMixin):
+    """Response of /api/contracts/{uuid}/home-battery/product/status: a battery's light status.
+
+    What the app shows on its home screen, without the full installation.
+    The shape comes from the app's demo mode; it isn't verified against
+    live hardware. ``power_ac`` is positive while charging.
+    """
+
+    state_of_charge: int | None = None
+    power_ac: int | None = None
+    control_mode: BatteryMode | None = field(default=None, metadata=enum_field(BatteryMode, "battery control mode"))
+    state: BatteryState | None = field(default=None, metadata=enum_field(BatteryState, "battery state"))
+    modem_online: bool | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``state_of_charge.permille`` and ``power_ac.watts``."""
+        return {
+            **d,
+            "state_of_charge": (d.get("state_of_charge") or {}).get("permille"),
+            "power_ac": (d.get("power_ac") or {}).get("watts"),
+        }
+
+    @property
+    def state_of_charge_percent(self) -> Decimal | None:
+        """Return the state of charge, in percent."""
+        return None if self.state_of_charge is None else Decimal(self.state_of_charge) / 10
+
+
+@dataclass
 class BatteryControlModeOption(DataClassORJSONMixin):
     """Whether one battery control mode is available and enabled, and if not available, why."""
 
@@ -579,12 +674,237 @@ class BatteryChart(DataClassORJSONMixin):
         return kwh(self.meta.get("production"))
 
 
+def _permille(value: Any) -> int | None:
+    """Return the permille of a ``{"permille": ...}`` value."""
+    return value.get("permille") if isinstance(value, dict) else None
+
+
+def _percent(permille: int | None) -> Decimal | None:
+    """Convert permille to percent."""
+    return None if permille is None else Decimal(permille) / 10
+
+
+@dataclass
+class BatteryAssetCosts(DataClassORJSONMixin):
+    """A home battery's costs (1e-7 EUR) over one day or month of an asset costs chart; negative when it earned."""
+
+    start: datetime
+    amount: int | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Rename ``date`` and flatten ``asset_costs.amount``."""
+        return {"start": d["date"], "amount": (d.get("asset_costs") or {}).get("amount")}
+
+    @property
+    def earnings_euro(self) -> Decimal | None:
+        """Return what the battery earned, in EUR (the costs negated, as the app shows them)."""
+        return None if self.amount is None else -Decimal(self.amount) * MONEY_FACTOR
+
+
+@dataclass
+class BatteryAssetCostsChart(DataClassORJSONMixin):
+    """Response of /api/contracts/{uuid}/home-battery/charts/asset-costs (and asset-costs-cumulative).
+
+    The battery's costs per day or month, negative when it earned money; in
+    the cumulative chart each point is the running total. Amounts are in
+    1e-7 EUR. The shape comes from the Zonneplan app's demo data; it isn't
+    verified against live hardware.
+    """
+
+    range: PriceRange
+    granularity: str | None = None
+    costs: list[BatteryAssetCosts] = field(default_factory=list)
+    sum_asset_costs: int | None = None
+    average_asset_costs: int | None = None
+    sum_flex_costs: int | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``series.costs.data`` and the amounts in ``series.costs.aggregate``."""
+        costs = (d.get("series") or {}).get("costs") or {}
+        aggregate = costs.get("aggregate") or {}
+        return {
+            "range": d["range"],
+            "granularity": d.get("granularity"),
+            "costs": costs.get("data") or [],
+            **{key: (aggregate.get(key) or {}).get("amount") for key in ("sum_asset_costs", "average_asset_costs", "sum_flex_costs")},
+        }
+
+    @property
+    def earnings_euro(self) -> Decimal | None:
+        """Return what the battery earned over the chart, in EUR."""
+        return None if self.sum_asset_costs is None else -Decimal(self.sum_asset_costs) * MONEY_FACTOR
+
+    @property
+    def average_earnings_euro(self) -> Decimal | None:
+        """Return what the battery earned per day or month on average, in EUR."""
+        return None if self.average_asset_costs is None else -Decimal(self.average_asset_costs) * MONEY_FACTOR
+
+    @property
+    def flex_earnings_euro(self) -> Decimal | None:
+        """Return what the battery earned by helping the grid (flex), in EUR."""
+        return None if self.sum_flex_costs is None else -Decimal(self.sum_flex_costs) * MONEY_FACTOR
+
+
+@dataclass
+class BatterySelfSufficiencyMonth(DataClassORJSONMixin):
+    """One month (``year_month``, as the API sends it) of a self-sufficiency series, in permille."""
+
+    year_month: str
+    value: int | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``value.permille``."""
+        return {**d, "value": _permille(d.get("value"))}
+
+    @property
+    def percent(self) -> Decimal | None:
+        """Return the value, in percent."""
+        return _percent(self.value)
+
+
+@dataclass
+class BatterySelfSufficiencyStats(DataClassORJSONMixin):
+    """Response of /api/connections/{uuid}/home-battery/self-sufficiency/stats: a year's averages, in permille.
+
+    How much of the solar power the home used itself, and how much of the
+    home's consumption the battery and solar panels saved.
+    """
+
+    year_average_home_solar_self_consumption: int | None = None
+    year_average_home_consumption_savings: int | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten each ``permille``."""
+        return {key: _permille(d.get(key)) for key in ("year_average_home_solar_self_consumption", "year_average_home_consumption_savings")}
+
+    @property
+    def home_solar_self_consumption_percent(self) -> Decimal | None:
+        """Return the year's average share of solar power the home used itself, in percent."""
+        return _percent(self.year_average_home_solar_self_consumption)
+
+    @property
+    def home_consumption_savings_percent(self) -> Decimal | None:
+        """Return the year's average share of the home's consumption that was saved, in percent."""
+        return _percent(self.year_average_home_consumption_savings)
+
+
+@dataclass
+class BatterySelfSufficiency(DataClassORJSONMixin):
+    """Response of /api/connections/{uuid}/home-battery/charts/self-sufficiency: a year per month, with its averages.
+
+    The shape comes from the Zonneplan app's code and demo data; it isn't
+    verified against live hardware.
+    """
+
+    home_solar_self_consumption: list[BatterySelfSufficiencyMonth] = field(default_factory=list)
+    home_consumption_savings: list[BatterySelfSufficiencyMonth] = field(default_factory=list)
+    stats: BatterySelfSufficiencyStats = field(default_factory=BatterySelfSufficiencyStats)
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``chart.series``."""
+        series = (d.get("chart") or {}).get("series") or {}
+        return {
+            "home_solar_self_consumption": series.get("home_solar_self_consumption") or [],
+            "home_consumption_savings": series.get("home_consumption_savings") or [],
+            "stats": d.get("stats") or {},
+        }
+
+
+@dataclass
+class BatteryStateOfChargePoint(DataClassORJSONMixin):
+    """A home battery's state of charge (permille) at one moment of its recent activity."""
+
+    start: datetime
+    state_of_charge: int | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Rename ``date`` and flatten ``state_of_charge.permille``."""
+        return {"start": d["date"], "state_of_charge": (d.get("state_of_charge") or {}).get("permille")}
+
+    @property
+    def state_of_charge_percent(self) -> Decimal | None:
+        """Return the state of charge, in percent."""
+        return None if self.state_of_charge is None else Decimal(self.state_of_charge) / 10
+
+
+@dataclass
+class BatteryActivity(DataClassORJSONMixin):
+    """A period in which home or grid optimization steered the battery."""
+
+    start_date: datetime
+    end_date: datetime
+    activity_type: BatteryActivityType | None = field(default=None, metadata=enum_field(BatteryActivityType, "battery activity type"))
+
+
+@dataclass
+class BatteryPlannedActivity(DataClassORJSONMixin):
+    """A period in which day-ahead arbitrage plans to charge or discharge the battery."""
+
+    start_date: datetime
+    end_date: datetime
+    direction: BatteryActivityDirection | None = field(default=None, metadata=enum_field(BatteryActivityDirection, "battery activity direction"))
+
+
+@dataclass
+class BatteryMarketPrice(DataClassORJSONMixin):
+    """The day-ahead market price, including tax, of one interval."""
+
+    start_date: datetime
+    end_date: datetime
+    market_price_tax_included: Money | None = None
+
+
+@dataclass
+class BatteryActivityChart(DataClassORJSONMixin):
+    """Response of /api/contracts/{uuid}/home-battery/charts/recent-activity.
+
+    The battery's state of charge and what steered it over the last hours.
+    A ``DAY_AHEAD_ARBITRAGE`` chart also covers the coming hours, with the
+    planned charging and discharging and the market prices. The shape comes
+    from the Zonneplan app's demo data; it isn't verified against live hardware.
+    """
+
+    range: PriceRange
+    type: BatteryChartType | None = field(default=None, metadata=enum_field(BatteryChartType, "battery chart type"))
+    state_of_charge: list[BatteryStateOfChargePoint] = field(default_factory=list)
+    activities: list[BatteryActivity] = field(default_factory=list)
+    planned_activities: list[BatteryPlannedActivity] = field(default_factory=list)
+    market_prices: list[BatteryMarketPrice] = field(default_factory=list)
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten each ``series.<name>.data``."""
+        series = d.get("series") or {}
+
+        def _data(name: str) -> list[dict[str, Any]]:
+            return (series.get(name) or {}).get("data") or []
+
+        return {
+            "range": d["range"],
+            "type": d.get("type"),
+            "state_of_charge": _data("state_of_charge"),
+            "activities": _data("activity_type"),
+            "planned_activities": _data("planned_activity"),
+            "market_prices": _data("market_prices"),
+        }
+
+
 @dataclass
 class ChargeSchedule(DataClassORJSONMixin):
-    """A single planned charging window."""
+    """A single planned charging window.
+
+    ``suppress_home_battery`` keeps the home battery from discharging into the car.
+    """
 
     start_time: datetime | None = field(default=None, metadata=DATETIME)
     end_time: datetime | None = field(default=None, metadata=DATETIME)
+    suppress_home_battery: bool | None = None
 
 
 @dataclass
@@ -679,6 +999,65 @@ class ChargePoint(Contract):
     def next_schedule(self) -> ChargeSchedule | None:
         """Return the next planned charging window."""
         return self.charge_schedules[0] if self.charge_schedules else None
+
+
+@dataclass
+class ChargePointControlModeOption(DataClassORJSONMixin):
+    """Whether one charge point control mode is available and enabled."""
+
+    enabled: bool = False
+    available: bool = False
+
+
+@dataclass
+class ChargePointControlMode(DataClassORJSONMixin):
+    """Response of /api/contracts/{uuid}/charge-point/control-mode.
+
+    ``modes`` keeps every mode the API sends, keyed by its raw name, also ones
+    :class:`pyzonneplan.const.ChargePointMode` doesn't know yet.
+    """
+
+    modes: dict[str, ChargePointControlModeOption] = field(default_factory=dict)
+
+    @property
+    def available_modes(self) -> list[ChargePointMode]:
+        """Return the known modes this charge point supports."""
+        return [
+            known
+            for mode, option in self.modes.items()
+            if option.available and (known := parse_enum(ChargePointMode, mode, "charge point control mode")) is not None
+        ]
+
+    def is_enabled(self, mode: str) -> bool:
+        """Return whether a mode is enabled."""
+        option = self.modes.get(mode)
+        return option is not None and option.enabled
+
+
+@dataclass
+class ChargeOnSolar(DataClassORJSONMixin):
+    """Response of the charge_on_solar control-mode endpoint.
+
+    The solar surplus (W) from which the car charges, the shortest time it then
+    charges, and the window of local (Europe/Amsterdam) hours in which charging
+    on solar is active. Each is ``None`` when the API doesn't send it.
+    """
+
+    solar_surplus_threshold_w: int | None = None
+    min_charge_duration: timedelta | None = field(default=None, metadata=field_options(deserialize=to_timedelta))
+    allowed_window_start: time | None = field(default=None, metadata=field_options(deserialize=to_time))
+    allowed_window_end: time | None = field(default=None, metadata=field_options(deserialize=to_time))
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``solar_surplus_threshold.watts``, ``min_charge_duration.iso8601`` and ``allowed_window.{start,end}_time.iso8601``."""
+        window = d.get("allowed_window") or {}
+        return {
+            "solar_surplus_threshold_w": (d.get("solar_surplus_threshold") or {}).get("watts"),
+            "min_charge_duration": (d.get("min_charge_duration") or {}).get("iso8601"),
+            "allowed_window_start": (window.get("start_time") or {}).get("iso8601"),
+            "allowed_window_end": (window.get("end_time") or {}).get("iso8601"),
+        }
 
 
 @dataclass

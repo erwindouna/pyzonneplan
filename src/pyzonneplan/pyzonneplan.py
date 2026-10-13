@@ -30,10 +30,13 @@ from pyzonneplan.const import (
     MONEY_FACTOR,
     TOKEN_PATH,
     BatteryMode,
+    ChargePointStartMode,
     ChartInterval,
     ConsumptionChart,
     MarketTimeResolution,
     PriceChart,
+    PriceResolution,
+    RecentPowerDuration,
 )
 from pyzonneplan.exceptions import (
     ZonneplanAuthenticationError,
@@ -45,22 +48,32 @@ from pyzonneplan.exceptions import (
     ZonneplanResponseError,
     ZonneplanTimeoutError,
 )
-from pyzonneplan.models.account import Account
-from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
+from pyzonneplan.models.account import Account, AppSettings
+from pyzonneplan.models.consumption import ConsumptionInsight, ElectricityChart, ElectricityDelivered, Gas, GasChart, RecentPowerChart
 from pyzonneplan.models.devices import (
+    BatteryActivityChart,
+    BatteryAssetCostsChart,
     BatteryChart,
     BatteryControlMode,
     BatteryDayAheadArbitrage,
     BatteryHomeOptimization,
     BatteryInstallation,
+    BatterySelfSufficiency,
+    BatterySelfSufficiencyStats,
+    BatteryStatus,
+    ChargeOnSolar,
+    ChargePointControlMode,
     ChargePointInstallation,
+    ChargeSchedule,
+    P1Installation,
     PvInstallation,
 )
 from pyzonneplan.models.prices import ConsumerPrices
 from pyzonneplan.models.summary import Summary
 
 if TYPE_CHECKING:
-    from datetime import date
+    from collections.abc import Iterable
+    from datetime import date, time
 
     from mashumaro.mixins.orjson import DataClassORJSONMixin
 
@@ -84,6 +97,11 @@ def _parse[T: DataClassORJSONMixin](model: type[T], response: Any, *path: str | 
     except (LookupError, TypeError, ValueError) as err:
         msg = f"Unexpected response for {model.__name__}: {err!r}"
         raise ZonneplanResponseError(msg) from err
+
+
+def _api_utc(moment: datetime) -> str:
+    """Format a timezone-aware datetime as the app does: UTC ISO 8601 with milliseconds (``2026-10-13T08:00:00.000Z``)."""
+    return moment.astimezone(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 @dataclass
@@ -374,9 +392,27 @@ class Zonneplan:
         """
         await self._request("user-accounts/locale", method=METH_PUT, json_body={"locale": locale})
 
-    async def async_get_consumer_prices(self, chart: str = PriceChart.ELECTRICITY_HOURLY) -> ConsumerPrices:
-        """Fetch a consumer price chart (see :class:`pyzonneplan.const.PriceChart` for valid ``chart`` values)."""
-        response = await self._request(f"api/consumer-prices/charts/{chart}")
+    async def async_get_app_settings(self) -> AppSettings:
+        """Fetch the app settings Zonneplan stores for the account, such as the price resolution."""
+        response = await self._request("user-accounts/app-settings")
+        return _parse(AppSettings, response)
+
+    async def async_set_price_resolution(self, resolution: str) -> None:
+        """Set the interval the app shows electricity prices in (a :class:`pyzonneplan.const.PriceResolution`).
+
+        The app uses it to choose between the hourly and quarter-hourly price chart.
+        """
+        value = PriceResolution(resolution)
+        await self._request("user-accounts/app-settings", method=METH_PUT, json_body={"settings": {"price_resolution": value.value}})
+
+    async def async_get_consumer_prices(self, chart: str = PriceChart.ELECTRICITY_HOURLY, *, connection_uuid: str | None = None) -> ConsumerPrices:
+        """Fetch a consumer price chart (see :class:`pyzonneplan.const.PriceChart` for valid ``chart`` values).
+
+        With a ``connection_uuid``, fetch the prices of that connection's
+        contract instead of the general ones, as the app does.
+        """
+        prefix = "api" if connection_uuid is None else f"api/connections/{connection_uuid}"
+        response = await self._request(f"{prefix}/consumer-prices/charts/{chart}")
         return _parse(ConsumerPrices, response)
 
     async def async_get_electricity_delivered(self, connection_uuid: str) -> ElectricityDelivered | None:
@@ -387,6 +423,37 @@ class Zonneplan:
         """
         response = await self._request(f"connections/{connection_uuid}/electricity-delivered")
         return None if response is None else _parse(ElectricityDelivered, response)
+
+    async def async_get_electricity(self, connection_uuid: str) -> ElectricityDelivered | None:
+        """Fetch electricity delivery/production data (P1) for a connection from the endpoint the current app uses.
+
+        Same data as :meth:`async_get_electricity_delivered`, without the
+        charts. Returns ``None`` for connections without a P1 meter.
+        """
+        response = await self._request(f"connections/{connection_uuid}/electricity", params={"no-charts": "1"})
+        return None if response is None else _parse(ElectricityDelivered, response)
+
+    async def async_get_electricity_home_consumption(self, connection_uuid: str) -> ElectricityDelivered | None:
+        """Fetch the home's electricity consumption (P1) for a connection, without its charts.
+
+        The app's demo data gives it the shape of :meth:`async_get_electricity_delivered`.
+        Returns ``None`` for connections without a P1 meter, where the API
+        responds with ``null``.
+        """
+        response = await self._request(f"connections/{connection_uuid}/electricity-home-consumption", params={"no-charts": "1"})
+        if response is None or (isinstance(response, dict) and response.get("data") is None):
+            return None
+        return _parse(ElectricityDelivered, response)
+
+    async def async_get_recent_power(self, connection_uuid: str, duration: str = RecentPowerDuration.HOURS_24) -> RecentPowerChart:
+        """Fetch the net power the P1 meter measured over the last ``duration`` (a :class:`pyzonneplan.const.RecentPowerDuration`).
+
+        Without a P1 meter the chart has no measurements.
+        """
+        response = await self._request(
+            f"api/connections/{connection_uuid}/electricity/charts/recent-power", params={"duration": RecentPowerDuration(duration).value}
+        )
+        return _parse(RecentPowerChart, response, "data", "chart")
 
     async def async_get_gas(self, connection_uuid: str) -> Gas | None:
         """Fetch gas consumption data (P1) for a connection.
@@ -413,10 +480,45 @@ class Zonneplan:
         response = await self._request(f"connections/{connection_uuid}/gas/charts/{interval}", params={"date": day.isoformat()})
         return _parse(GasChart, response)
 
+    async def async_get_electricity_consumption_insight(self, connection_uuid: str, start: date, end: date) -> ConsumptionInsight:
+        """Fetch electricity used and returned per month from ``start`` to ``end`` (local dates, inclusive), with the average price of each.
+
+        The app asks for one calendar year at a time.
+        """
+        return await self._async_get_consumption_insight(connection_uuid, "electricity", start, end)
+
+    async def async_get_gas_consumption_insight(self, connection_uuid: str, start: date, end: date) -> ConsumptionInsight:
+        """Fetch gas used per month (see :meth:`async_get_electricity_consumption_insight`)."""
+        return await self._async_get_consumption_insight(connection_uuid, "gas", start, end)
+
+    async def _async_get_consumption_insight(self, connection_uuid: str, product: str, start: date, end: date) -> ConsumptionInsight:
+        """Fetch a consumption insight chart; the API (and the app) only use months."""
+        if start > end:
+            msg = "start must not be after end"
+            raise ValueError(msg)
+        response = await self._request(
+            f"api/connections/{connection_uuid}/{product}/charts/consumption-insight",
+            params={"start_date": start.isoformat(), "end_date": end.isoformat(), "granularity": "months"},
+        )
+        return _parse(ConsumptionInsight, response, "data", "chart")
+
     async def async_get_summary(self, connection_uuid: str) -> Summary:
         """Fetch the connection summary: live usage (P1 only) and an hourly price forecast of about two days."""
         response = await self._request(f"connections/{connection_uuid}/summary")
         return _parse(Summary, response)
+
+    async def async_get_p1_installation(self, contract_uuid: str) -> P1Installation | None:
+        """Fetch a P1 reader's details: the meter it reads, its main fuse and when it last reported.
+
+        ``contract_uuid`` is the p1_installation contract's. Returns ``None``
+        when the API has no P1 installation for it (HTTP 404), which is also
+        what an unknown contract gives.
+        """
+        try:
+            response = await self._request(f"contracts/{contract_uuid}/p1-installation")
+        except ZonneplanNotFoundError:
+            return None
+        return _parse(P1Installation, response)
 
     async def async_get_pv_installation(self, connection_uuid: str) -> PvInstallation | None:
         """Fetch every solar inverter on a connection and today's combined yield.
@@ -432,6 +534,11 @@ class Zonneplan:
         response = await self._request(f"connections/{connection_uuid}/home-battery-installation/{contract_uuid}")
         return _parse(BatteryInstallation, response)
 
+    async def async_get_battery_status(self, contract_uuid: str) -> BatteryStatus:
+        """Fetch a home battery's light status: state of charge, power, state, control mode and modem connectivity."""
+        response = await self._request(f"api/contracts/{contract_uuid}/home-battery/product/status")
+        return _parse(BatteryStatus, response, "data", "home_battery")
+
     async def async_get_battery_chart(self, contract_uuid: str, day: date, interval: str = ChartInterval.DAYS) -> BatteryChart | None:
         """Fetch a home battery's results for the month (``DAYS``) or year (``MONTHS``) of ``day``.
 
@@ -443,6 +550,51 @@ class Zonneplan:
         if isinstance(charts, list) and (not charts or charts[0] is None):
             return None
         return _parse(BatteryChart, response, "data", 0)
+
+    async def async_get_battery_activity_chart(self, contract_uuid: str) -> BatteryActivityChart:
+        """Fetch a home battery's recent state of charge and activity, as the app's battery screen shows it."""
+        response = await self._request(f"api/contracts/{contract_uuid}/home-battery/charts/recent-activity")
+        return _parse(BatteryActivityChart, response, "data", "chart")
+
+    async def async_get_battery_asset_costs_chart(
+        self, contract_uuid: str, start: date, end: date, interval: str = ChartInterval.DAYS
+    ) -> BatteryAssetCostsChart:
+        """Fetch a home battery's costs per day (``DAYS``) or month (``MONTHS``) from ``start`` to ``end``.
+
+        The costs are negative when the battery earned money (see the
+        ``earnings_euro`` properties). The app asks for a month per day or a
+        year per month.
+        """
+        if interval not in (ChartInterval.DAYS, ChartInterval.MONTHS):
+            msg = f"Unknown battery chart interval: {interval}"
+            raise ValueError(msg)
+        response = await self._request(
+            f"api/contracts/{contract_uuid}/home-battery/charts/asset-costs",
+            params={"start_date": start.isoformat(), "end_date": end.isoformat(), "granularity": interval},
+        )
+        return _parse(BatteryAssetCostsChart, response, "data", "chart")
+
+    async def async_get_battery_cumulative_asset_costs_chart(
+        self, contract_uuid: str, start: date | None = None, end: date | None = None
+    ) -> BatteryAssetCostsChart:
+        """Fetch a home battery's running total of costs per day.
+
+        Without ``start`` and ``end`` (as the app calls it) the API picks the
+        range; the app's demo data covers the last 90 days.
+        """
+        params = {key: value.isoformat() for key, value in (("start_date", start), ("end_date", end)) if value is not None}
+        response = await self._request(f"api/contracts/{contract_uuid}/home-battery/charts/asset-costs-cumulative", params=params)
+        return _parse(BatteryAssetCostsChart, response, "data", "chart")
+
+    async def async_get_battery_self_sufficiency_chart(self, connection_uuid: str, year: int) -> BatterySelfSufficiency:
+        """Fetch how self-sufficient the home battery made a connection, per month of ``year`` and on average."""
+        response = await self._request(f"api/connections/{connection_uuid}/home-battery/charts/self-sufficiency", params={"year": str(year)})
+        return _parse(BatterySelfSufficiency, response)
+
+    async def async_get_battery_self_sufficiency_stats(self, connection_uuid: str, year: int) -> BatterySelfSufficiencyStats:
+        """Fetch only the yearly averages of :meth:`async_get_battery_self_sufficiency_chart`."""
+        response = await self._request(f"api/connections/{connection_uuid}/home-battery/self-sufficiency/stats", params={"year": str(year)})
+        return _parse(BatterySelfSufficiencyStats, response, "data", "stats")
 
     async def async_get_battery_control_mode(self, contract_uuid: str) -> BatteryControlMode:
         """Fetch a home battery's control mode and which modes it supports."""
@@ -579,6 +731,71 @@ class Zonneplan:
         response = await self._request(f"connections/{connection_uuid}/charge-points/{contract_uuid}")
         return _parse(ChargePointInstallation, response)
 
+    async def async_get_charge_point_control_mode(self, contract_uuid: str) -> ChargePointControlMode:
+        """Fetch which control modes a charge point supports and which are enabled."""
+        response = await self._request(f"api/contracts/{contract_uuid}/charge-point/control-mode")
+        return _parse(ChargePointControlMode, response)
+
+    async def async_get_charge_point_charge_on_solar(self, contract_uuid: str) -> ChargeOnSolar:
+        """Fetch the charge on solar settings: surplus threshold, minimum charge time and allowed hours."""
+        response = await self._request(f"api/contracts/{contract_uuid}/charge-point/control-mode/charge_on_solar")
+        return _parse(ChargeOnSolar, response)
+
+    async def async_enable_charge_point_charge_on_solar(
+        self,
+        contract_uuid: str,
+        *,
+        solar_surplus_threshold_w: int | None = None,
+        min_charge_duration: timedelta | None = None,
+        allowed_window_start: time | None = None,
+        allowed_window_end: time | None = None,
+    ) -> None:
+        """Enable charge on solar: the car charges when the solar surplus exceeds ``solar_surplus_threshold_w``.
+
+        Once started, it charges at least ``min_charge_duration`` (whole
+        minutes), and only between the local (Europe/Amsterdam) whole hours
+        ``allowed_window_start`` and ``allowed_window_end``. The API takes all
+        settings at once: omitted ones keep their current value, fetched with
+        :meth:`async_get_charge_point_charge_on_solar` when needed. The app offers
+        500-4140 W, 15-60 minutes and 05:00-23:00, with defaults 2000 W,
+        15 minutes and 05:00-23:00.
+        """
+        if None in (solar_surplus_threshold_w, min_charge_duration, allowed_window_start, allowed_window_end):
+            current = await self.async_get_charge_point_charge_on_solar(contract_uuid)
+            solar_surplus_threshold_w = solar_surplus_threshold_w if solar_surplus_threshold_w is not None else current.solar_surplus_threshold_w
+            min_charge_duration = min_charge_duration if min_charge_duration is not None else current.min_charge_duration
+            allowed_window_start = allowed_window_start if allowed_window_start is not None else current.allowed_window_start
+            allowed_window_end = allowed_window_end if allowed_window_end is not None else current.allowed_window_end
+        if solar_surplus_threshold_w is None or min_charge_duration is None or allowed_window_start is None or allowed_window_end is None:
+            msg = "Charge on solar has no current settings to keep; pass all of them"
+            raise ValueError(msg)
+
+        minutes, remainder = divmod(min_charge_duration, timedelta(minutes=1))
+        if remainder or minutes <= 0:
+            msg = "min_charge_duration must be a positive number of whole minutes"
+            raise ValueError(msg)
+        for bound in (allowed_window_start, allowed_window_end):
+            if bound.minute or bound.second or bound.microsecond or bound.tzinfo is not None:
+                msg = "The allowed window must start and end on a whole local hour, without a timezone"
+                raise ValueError(msg)
+        if allowed_window_end <= allowed_window_start:
+            msg = "allowed_window_end must be after allowed_window_start"
+            raise ValueError(msg)
+
+        await self._request(
+            f"api/contracts/{contract_uuid}/charge-point/control-mode/charge_on_solar/enable",
+            method=METH_PUT,
+            json_body={
+                "solar_surplus_threshold_w": solar_surplus_threshold_w,
+                "min_charge_duration": f"PT{minutes}M",
+                "allowed_window": {"start_time": f"{allowed_window_start.hour:02d}:00", "end_time": f"{allowed_window_end.hour:02d}:00"},
+            },
+        )
+
+    async def async_disable_charge_point_charge_on_solar(self, contract_uuid: str) -> None:
+        """Disable charge on solar."""
+        await self._request(f"api/contracts/{contract_uuid}/charge-point/control-mode/charge_on_solar/disable", method=METH_PUT)
+
     async def _async_charge_point_action(self, connection_uuid: str, contract_uuid: str, action: str, body: dict[str, Any] | None = None) -> None:
         """Send an action to a charge point.
 
@@ -594,6 +811,10 @@ class Zonneplan:
     async def async_start_charge_point_boost(self, connection_uuid: str, contract_uuid: str) -> None:
         """Start charging now at full power, regardless of the prices (when the state is ``VehicleDetected``)."""
         await self._async_charge_point_action(connection_uuid, contract_uuid, "start_boost")
+
+    async def async_stop_charge_point_boost(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Stop a boost started with :meth:`async_start_charge_point_boost`."""
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "stop_boost")
 
     async def async_stop_charge_point(self, connection_uuid: str, contract_uuid: str) -> None:
         """Stop charging (when the state is ``Charging``)."""
@@ -612,6 +833,95 @@ class Zonneplan:
         with contextlib.suppress(ZonneplanRequestError):
             await self._async_charge_point_action(connection_uuid, contract_uuid, "stop_dynamic_charging_session")
         await self._async_charge_point_action(connection_uuid, contract_uuid, "reset_schedule")
+
+    async def async_set_charge_point_schedule(
+        self,
+        connection_uuid: str,
+        contract_uuid: str,
+        schedule: Iterable[ChargeSchedule],
+        *,
+        vehicle_uuid: str | None = None,
+    ) -> None:
+        """Replace the planned charging with the windows in ``schedule``.
+
+        Every window needs a timezone-aware ``start_time``; ``end_time`` and
+        ``suppress_home_battery`` (keep the home battery from discharging into
+        the car) are optional. As the app does, windows that have already ended
+        are dropped and a window that started in an earlier hour starts at the
+        current hour, so the windows the charge point reports can be sent back
+        as they are. Use :meth:`async_reset_charge_point_schedule` to clear it.
+        """
+        now = datetime.now(UTC)
+        current_hour = now.replace(minute=0, second=0, microsecond=0)
+        windows: list[dict[str, Any]] = []
+        for window in schedule:
+            start, end = window.start_time, window.end_time
+            if start is None or start.tzinfo is None or (end is not None and end.tzinfo is None):
+                msg = "Every window needs a timezone-aware start_time, and a timezone-aware end_time if any"
+                raise ValueError(msg)
+            if end is not None and end <= start:
+                msg = "A window's end_time must be after its start_time"
+                raise ValueError(msg)
+            if end is not None and end <= now:
+                continue
+            body: dict[str, Any] = {"start_time": _api_utc(max(start, current_hour))}
+            if end is not None:
+                body["end_time"] = _api_utc(end)
+            if window.suppress_home_battery is not None:
+                body["suppress_home_battery"] = window.suppress_home_battery
+            windows.append(body)
+        if not windows:
+            msg = "The schedule has no window that hasn't ended; use async_reset_charge_point_schedule() to clear it"
+            raise ValueError(msg)
+
+        payload: dict[str, Any] = {"schedule": windows}
+        if vehicle_uuid is not None:
+            payload["vehicle"] = {"vehicle_uuid": vehicle_uuid}
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "set_schedule", payload)
+
+    async def async_enable_charge_point_plug_and_charge(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Start charging at full power as soon as a car is plugged in."""
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "enable_plug_and_charge")
+
+    async def async_disable_charge_point_plug_and_charge(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Stop charging on plug-in: sessions are started with the app again."""
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "disable_plug_and_charge")
+
+    async def async_enable_charge_point_always_flex(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Charge automatically at the cheapest prices whenever a car is plugged in."""
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "enable_always_flex")
+
+    async def async_disable_charge_point_always_flex(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Stop charging automatically on cheap prices: sessions are started with the app again."""
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "disable_always_flex")
+
+    async def async_set_charge_point_start_mode(self, connection_uuid: str, contract_uuid: str, mode: str) -> None:
+        """Switch a charge point to a :class:`pyzonneplan.const.ChargePointStartMode`, the way the app does.
+
+        The API has no single call for this: the charge point is fetched first,
+        and the one action that leads from its current start mode to ``mode``
+        is sent (none when it's already in that mode).
+        """
+        if mode not in ChargePointStartMode:
+            msg = f"Unknown charge point start mode: {mode}"
+            raise ValueError(msg)
+        target = ChargePointStartMode(mode)
+        installation = await self.async_get_charge_point(connection_uuid, contract_uuid)
+        current = installation.charge_point.state.start_mode if installation.charge_point else None
+        if current is None:
+            msg = "The charge point's current start mode is unknown"
+            raise ValueError(msg)
+        if current == target:
+            return
+        if target == ChargePointStartMode.PLUG_AND_CHARGE:
+            action = "enable_plug_and_charge"
+        elif target == ChargePointStartMode.ALWAYS_FLEX:
+            action = "enable_always_flex"
+        elif current == ChargePointStartMode.PLUG_AND_CHARGE:
+            action = "disable_plug_and_charge"
+        else:
+            action = "disable_always_flex"
+        await self._async_charge_point_action(connection_uuid, contract_uuid, action)
 
     async def async_start_charge_point_dynamic_session(
         self,

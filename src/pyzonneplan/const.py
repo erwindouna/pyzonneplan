@@ -13,7 +13,7 @@ TOKEN_PATH: Final = "oauth/token"  # noqa: S105 (a URL path, not a credential)
 LOGOUT_PATH: Final = "auth/logout"
 
 # Sent by the mobile app; the API rejects requests without them.
-APP_VERSION: Final = "5.10.1"
+APP_VERSION: Final = "6.23.0"
 APP_ENVIRONMENT: Final = "production"
 
 # The API's local time, e.g. for the charge point actions' end times.
@@ -68,6 +68,34 @@ class MarketTimeResolution(StrEnum):
     HOUR = "PT60M"
 
 
+class BatteryChartType(StrEnum):
+    """The kind of recent activity chart: day-ahead arbitrage adds the planning and market prices."""
+
+    DEFAULT = "default"
+    DAY_AHEAD_ARBITRAGE = "day_ahead_arbitrage"
+
+
+class BatteryActivityType(StrEnum):
+    """What steered a home battery during a period of its recent activity."""
+
+    HOME_OPTIMIZATION = "home_optimization"
+    GRID_OPTIMIZATION = "grid_optimization"
+
+
+class BatteryActivityDirection(StrEnum):
+    """Whether a planned battery activity charges or discharges."""
+
+    CHARGE = "charge"
+    DISCHARGE = "discharge"
+
+
+class PriceResolution(StrEnum):
+    """The interval the app shows electricity prices in (the ``price_resolution`` app setting)."""
+
+    QUARTER_HOUR = "15-min"
+    HOUR = "60-min"
+
+
 class BatteryState(StrEnum):
     """Home battery and battery inverter states.
 
@@ -110,6 +138,16 @@ class ChargePointStartMode(StrEnum):
     START_WITH_APP = "start_with_app"
 
 
+class ChargePointMode(StrEnum):
+    """Charge point control modes (``modes`` of the charge point control-mode endpoint)."""
+
+    BOOST = "boost"
+    PLUG_AND_CHARGE = "plug_and_charge"
+    DYNAMIC_CHARGING = "dynamic_charging"
+    SCHEDULED_CHARGING = "scheduled_charging"
+    CHARGE_ON_SOLAR = "charge_on_solar"
+
+
 class TariffGroup(StrEnum):
     """Price level of an interval compared to the rest of the day."""
 
@@ -126,6 +164,14 @@ class MeasurementGroupType(StrEnum):
     HOURS = "hours"
     DAYS = "days"
     MONTHS = "months"
+
+
+class RecentPowerDuration(StrEnum):
+    """How far back the recent power chart goes, as an ISO 8601 duration."""
+
+    HOURS_12 = "PT12H"
+    HOURS_24 = "PT24H"
+    HOURS_48 = "PT48H"
 
 
 class ConsumptionChart:
