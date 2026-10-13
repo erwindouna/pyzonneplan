@@ -10,12 +10,18 @@
         "meta": {
           "serial_number": "SERIAL0000004",
           "identifier": "SERIAL0000004",
+          "first_measured_at": "2026-01-15T08:00:00.000000Z",
+          "last_measured_at": "2026-09-29T11:55:00.000000Z",
           "charge_point_model_name": "Example Charger 11",
           "show_in_contract_screen": true,
           "session_charging_cost_total": 25000000,
           "charging_cost_total": 1500000000,
           "session_flex_result": 2000000,
-          "session_average_cost_in_cents": 2500000
+          "session_average_cost_in_cents": 2500000,
+          "session_charged_energy": 10000,
+          "flex_result": null,
+          "charged_energy": 600000,
+          "average_cost_in_cents": 2500000
         },
         "state": {
           "connectivity_state": true,
@@ -60,6 +66,7 @@
         ]
       }
     ],
+    "powerplay": null,
     "vehicles": [
       {
         "uuid": "00000000-0000-4000-8000-000000000401",

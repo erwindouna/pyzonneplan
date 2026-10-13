@@ -2443,7 +2443,7 @@
       'dynamic_charging': dict({
         'available': False,
         'enabled': False,
-        'unavailability_reason_code': None,
+        'unavailability_reason_code': <BatteryUnavailabilityReason.NO_ACTIVE_ELECTRICITY_CONTRACT: 'no_active_electricity_contract'>,
       }),
       'home_optimization': dict({
         'available': True,
@@ -2493,11 +2493,17 @@
         'end_date': None,
         'label': 'Laadpaal',
         'meta': dict({
+          'average_cost_in_cents': 2500000,
           'charge_point_model_name': 'Example Charger 11',
+          'charged_energy': 600000,
           'charging_cost_total': 1500000000,
+          'first_measured_at': '2026-01-15T08:00:00.000000Z',
+          'flex_result': None,
           'identifier': 'SERIAL0000004',
+          'last_measured_at': '2026-09-29T11:55:00.000000Z',
           'serial_number': 'SERIAL0000004',
           'session_average_cost_in_cents': 2500000,
+          'session_charged_energy': 10000,
           'session_charging_cost_total': 25000000,
           'session_flex_result': 2000000,
           'show_in_contract_screen': True,

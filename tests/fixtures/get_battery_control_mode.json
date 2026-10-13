@@ -13,7 +13,8 @@
       },
       "dynamic_charging": {
         "enabled": false,
-        "available": false
+        "available": false,
+        "unavailability_reason_code": "no_active_electricity_contract"
       },
       "day_ahead_arbitrage": {
         "enabled": false,
