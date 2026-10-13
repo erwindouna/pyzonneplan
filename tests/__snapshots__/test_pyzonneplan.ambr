@@ -960,6 +960,69 @@
     }),
   })
 # ---
+# name: test_async_get_consumption_insight[electricity]
+  dict({
+    'delivery': dict({
+      'average_price': Decimal('0.2950000'),
+      'points': list([
+        dict({
+          'average_price': Decimal('0.2800000'),
+          'start': datetime.datetime(2026, 9, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+          'volume': Decimal('140.000'),
+        }),
+        dict({
+          'average_price': Decimal('0.3100000'),
+          'start': datetime.datetime(2026, 10, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+          'volume': Decimal('160.000'),
+        }),
+      ]),
+      'total': Decimal('300.000'),
+    }),
+    'end': datetime.datetime(2026, 12, 31, 23, 59, 59, tzinfo=datetime.timezone(datetime.timedelta(seconds=3600))),
+    'granularity': <MeasurementGroupType.MONTHS: 'months'>,
+    'production': dict({
+      'average_price': Decimal('-0.2400000'),
+      'points': list([
+        dict({
+          'average_price': Decimal('-0.2300000'),
+          'start': datetime.datetime(2026, 9, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+          'volume': Decimal('50.000'),
+        }),
+        dict({
+          'average_price': Decimal('-0.2600000'),
+          'start': datetime.datetime(2026, 10, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+          'volume': Decimal('30.000'),
+        }),
+      ]),
+      'total': Decimal('80.000'),
+    }),
+    'start': datetime.datetime(2026, 1, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=3600))),
+  })
+# ---
+# name: test_async_get_consumption_insight[gas]
+  dict({
+    'delivery': dict({
+      'average_price': Decimal('1.3500000'),
+      'points': list([
+        dict({
+          'average_price': Decimal('1.3000000'),
+          'start': datetime.datetime(2026, 9, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+          'volume': Decimal('35.000'),
+        }),
+        dict({
+          'average_price': Decimal('1.3800000'),
+          'start': datetime.datetime(2026, 10, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+          'volume': Decimal('60.000'),
+        }),
+      ]),
+      'total': Decimal('95.000'),
+    }),
+    'end': datetime.datetime(2026, 12, 31, 23, 59, 59, tzinfo=datetime.timezone(datetime.timedelta(seconds=3600))),
+    'granularity': <MeasurementGroupType.MONTHS: 'months'>,
+    'production': None,
+    'start': datetime.datetime(2026, 1, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=3600))),
+  })
+# ---
 # name: test_async_get_electricity_chart[days-get_electricity_chart_days.json]
   dict({
     'measurement_groups': list([

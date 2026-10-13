@@ -2,6 +2,9 @@
 
 from .account import Account, Address, AddressGroup, Connection, ConnectionFeature, Contract, UserAccount
 from .consumption import (
+    ConsumptionInsight,
+    ConsumptionInsightPoint,
+    ConsumptionInsightSeries,
     ElectricityChart,
     ElectricityChartGroup,
     ElectricityChartMeasurement,
@@ -62,6 +65,9 @@ __all__ = [
     "Connection",
     "ConnectionFeature",
     "ConsumerPrices",
+    "ConsumptionInsight",
+    "ConsumptionInsightPoint",
+    "ConsumptionInsightSeries",
     "Contract",
     "DeviceMeasurement",
     "DeviceMeasurementGroup",

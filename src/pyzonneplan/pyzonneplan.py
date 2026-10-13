@@ -45,7 +45,7 @@ from pyzonneplan.exceptions import (
     ZonneplanTimeoutError,
 )
 from pyzonneplan.models.account import Account
-from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
+from pyzonneplan.models.consumption import ConsumptionInsight, ElectricityChart, ElectricityDelivered, Gas, GasChart
 from pyzonneplan.models.devices import (
     BatteryChart,
     BatteryControlMode,
@@ -398,6 +398,28 @@ class Zonneplan:
         """Fetch gas used around a local ``day`` (see :meth:`async_get_electricity_chart`)."""
         response = await self._request(f"connections/{connection_uuid}/gas/charts/{interval}", params={"date": day.isoformat()})
         return _parse(GasChart, response)
+
+    async def async_get_electricity_consumption_insight(self, connection_uuid: str, start: date, end: date) -> ConsumptionInsight:
+        """Fetch electricity used and returned per month from ``start`` to ``end`` (local dates, inclusive), with the average price of each.
+
+        The app asks for one calendar year at a time.
+        """
+        return await self._async_get_consumption_insight(connection_uuid, "electricity", start, end)
+
+    async def async_get_gas_consumption_insight(self, connection_uuid: str, start: date, end: date) -> ConsumptionInsight:
+        """Fetch gas used per month (see :meth:`async_get_electricity_consumption_insight`)."""
+        return await self._async_get_consumption_insight(connection_uuid, "gas", start, end)
+
+    async def _async_get_consumption_insight(self, connection_uuid: str, product: str, start: date, end: date) -> ConsumptionInsight:
+        """Fetch a consumption insight chart; the API (and the app) only use months."""
+        if start > end:
+            msg = "start must not be after end"
+            raise ValueError(msg)
+        response = await self._request(
+            f"api/connections/{connection_uuid}/{product}/charts/consumption-insight",
+            params={"start_date": start.isoformat(), "end_date": end.isoformat(), "granularity": "months"},
+        )
+        return _parse(ConsumptionInsight, response, "data", "chart")
 
     async def async_get_summary(self, connection_uuid: str) -> Summary:
         """Fetch the connection summary: live usage (P1 only) and an hourly price forecast of about two days."""
