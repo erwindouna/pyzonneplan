@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, date, datetime, timedelta
+from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
 
@@ -15,7 +16,7 @@ from tenacity import wait_none
 
 from pyzonneplan import Zonneplan
 from pyzonneplan.auth import OtpChallenge, Token
-from pyzonneplan.const import BatteryMode, ChartInterval, ConsumptionChart, PriceChart
+from pyzonneplan.const import BatteryMode, ChartInterval, ConsumptionChart, MarketTimeResolution, PriceChart
 from pyzonneplan.exceptions import (
     ZonneplanAuthenticationError,
     ZonneplanConnectionError,
@@ -450,9 +451,15 @@ async def test_async_set_locale(aresponses: ResponsesMockServer, zonneplan_clien
             "/api/contracts/bat-1/home-battery/control-mode/home_optimization",
             "get_battery_home_optimization.json",
         ),
+        (
+            "async_get_battery_day_ahead_arbitrage",
+            ("bat-1",),
+            "/api/contracts/bat-1/home-battery/control-mode/day_ahead_arbitrage",
+            "get_battery_day_ahead_arbitrage.json",
+        ),
         ("async_get_charge_point", ("conn-1", "cp-1"), "/connections/conn-1/charge-points/cp-1", "get_charge_point.json"),
     ],
-    ids=["pv_installation", "battery", "battery_control_mode", "battery_home_optimization", "charge_point"],
+    ids=["pv_installation", "battery", "battery_control_mode", "battery_home_optimization", "battery_day_ahead_arbitrage", "charge_point"],
 )
 async def test_device_reads(
     aresponses: ResponsesMockServer,
@@ -572,8 +579,18 @@ async def test_enable_battery_home_optimization_needs_both_limits(zonneplan_clie
             ["disable_home_optimization", "disable_self_consumption"],
         ),
         (BatteryMode.DYNAMIC_CHARGING, [], []),
+        (BatteryMode.DYNAMIC_CHARGING, [BatteryMode.DAY_AHEAD_ARBITRAGE], ["disable_home_optimization", "disable_self_consumption"]),
+        (BatteryMode.SELF_CONSUMPTION, [BatteryMode.DAY_AHEAD_ARBITRAGE], ["enable_self_consumption"]),
     ],
-    ids=["self_consumption", "self_consumption_already_alone", "home_optimization", "dynamic_charging", "dynamic_charging_already"],
+    ids=[
+        "self_consumption",
+        "self_consumption_already_alone",
+        "home_optimization",
+        "dynamic_charging",
+        "dynamic_charging_already",
+        "dynamic_charging_from_day_ahead",
+        "self_consumption_from_day_ahead",
+    ],
 )
 async def test_set_battery_control_mode(
     aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, mode: str, enabled: list[str], actions: list[str]
@@ -583,7 +600,8 @@ async def test_set_battery_control_mode(
         "control_mode": "self_consumption",
         "processing": False,
         "modes": {
-            name.value: {"enabled": name in enabled, "available": True} for name in (BatteryMode.SELF_CONSUMPTION, BatteryMode.HOME_OPTIMIZATION)
+            name.value: {"enabled": name in enabled, "available": True}
+            for name in (BatteryMode.SELF_CONSUMPTION, BatteryMode.HOME_OPTIMIZATION, BatteryMode.DAY_AHEAD_ARBITRAGE)
         },
     }
     aresponses.add(
@@ -597,6 +615,61 @@ async def test_set_battery_control_mode(
 
     assert [entry.request.path.rsplit("/", 1)[-1] for entry in aresponses.history[1:]] == actions
     aresponses.assert_plan_strictly_followed()
+
+
+async def test_set_battery_control_mode_day_ahead(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Day-ahead arbitrage is enabled again with its current settings."""
+    path = "/api/contracts/bat-1/home-battery/control-mode/day_ahead_arbitrage"
+    aresponses.add(HOST, path, "GET", aresponses.Response(text=load_fixtures("get_battery_day_ahead_arbitrage.json")))
+    aresponses.add(HOST, path, "PUT", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_set_battery_control_mode("conn-1", "bat-1", BatteryMode.DAY_AHEAD_ARBITRAGE)
+
+    assert await aresponses.history[1].request.json() == {"price_spread": 800000, "market_time_resolution": "PT15M"}
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_set_battery_control_mode_day_ahead_without_settings(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Day-ahead arbitrage that was never set up can't be enabled without settings."""
+    aresponses.add(
+        HOST,
+        "/api/contracts/bat-1/home-battery/control-mode/day_ahead_arbitrage",
+        "GET",
+        aresponses.Response(text=orjson.dumps({"data": {"configured_price_spread": None, "market_time_resolution": None}}).decode()),
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    with pytest.raises(ValueError, match="no settings"):
+        await zonneplan_client.async_set_battery_control_mode("conn-1", "bat-1", BatteryMode.DAY_AHEAD_ARBITRAGE)
+    aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.parametrize(
+    ("price_spread", "resolution", "body"),
+    [
+        (Decimal("0.08"), MarketTimeResolution.QUARTER_HOUR, {"price_spread": 800000, "market_time_resolution": "PT15M"}),
+        (0.29, "PT60M", {"price_spread": 2900000, "market_time_resolution": "PT60M"}),
+    ],
+    ids=["decimal", "float"],
+)
+async def test_enable_battery_day_ahead_arbitrage(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, *, price_spread: Decimal | float, resolution: str, body: dict[str, int | str]
+) -> None:
+    """The price spread is sent in 1e-7 EUR, without float rounding errors."""
+    aresponses.add(HOST, "/api/contracts/bat-1/home-battery/control-mode/day_ahead_arbitrage", "PUT", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_enable_battery_day_ahead_arbitrage("bat-1", price_spread=price_spread, market_time_resolution=resolution)
+
+    assert await aresponses.history[0].request.json() == body
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_enable_battery_day_ahead_arbitrage_unknown_resolution(zonneplan_client: Zonneplan) -> None:
+    """An unknown market time resolution is rejected before anything is sent."""
+    with pytest.raises(ValueError, match="PT30M"):
+        await zonneplan_client.async_enable_battery_day_ahead_arbitrage("bat-1", price_spread=Decimal("0.08"), market_time_resolution="PT30M")
 
 
 async def test_set_battery_control_mode_unknown(zonneplan_client: Zonneplan) -> None:

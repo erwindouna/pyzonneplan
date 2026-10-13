@@ -2459,6 +2459,12 @@
     'processing': False,
   })
 # ---
+# name: test_device_reads[battery_day_ahead_arbitrage]
+  dict({
+    'market_time_resolution': <MarketTimeResolution.QUARTER_HOUR: 'PT15M'>,
+    'price_spread': Decimal('0.0800000'),
+  })
+# ---
 # name: test_device_reads[battery_home_optimization]
   dict({
     'max_desired_charge_power_limits': dict({

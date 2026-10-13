@@ -19,6 +19,7 @@ from pyzonneplan.const import (
     ChargePointStartMode,
     ChargePointStatus,
     ContractType,
+    MarketTimeResolution,
     MeasurementGroupType,
     TariffGroup,
 )
@@ -28,6 +29,7 @@ from pyzonneplan.models.devices import (
     Battery,
     BatteryChart,
     BatteryControlMode,
+    BatteryDayAheadArbitrage,
     BatteryHomeOptimization,
     BatteryInstallation,
     BatteryPowerPresetOption,
@@ -368,6 +370,23 @@ def test_battery_power_preset_unknown_name() -> None:
     optimization = BatteryHomeOptimization.from_dict({"power_presets": {"data": [{"name": "turbo", "max_desired_charge_power_watts": 9000}]}})
 
     assert optimization.power_presets == [BatteryPowerPresetOption(name=None, max_desired_charge_power_watts=9000)]
+
+
+@pytest.mark.parametrize(
+    ("payload", "price_spread", "resolution"),
+    [
+        (None, Decimal("0.08"), MarketTimeResolution.QUARTER_HOUR),
+        ({"configured_price_spread": None, "market_time_resolution": None}, None, None),
+        ({"configured_price_spread": {"amount": 1200000}, "market_time_resolution": {"iso8601": "PT30M"}}, Decimal("0.12"), None),
+    ],
+    ids=["configured", "not_set_up", "unknown_resolution"],
+)
+def test_battery_day_ahead_arbitrage(payload: dict[str, Any] | None, price_spread: Decimal | None, resolution: MarketTimeResolution | None) -> None:
+    """The price spread is converted to EUR and the resolution parsed; missing or unknown values are None."""
+    settings = BatteryDayAheadArbitrage.from_dict(payload if payload is not None else _data("get_battery_day_ahead_arbitrage.json"))
+
+    assert settings.price_spread == price_spread
+    assert settings.market_time_resolution is resolution
 
 
 def test_battery_chart() -> None:

@@ -72,6 +72,7 @@ if __name__ == "__main__":
 | `async_get_battery(connection_uuid, contract_uuid)` | Home battery state, results and modes |
 | `async_get_battery_chart(contract_uuid, day, interval)` | Home battery results per day or month |
 | `async_get_battery_control_mode(contract_uuid)` / `async_get_battery_home_optimization(contract_uuid)` | The battery's control mode, and the charge and discharge power for home optimization with the range each accepts |
+| `async_get_battery_day_ahead_arbitrage(contract_uuid)` | The price spread (EUR) and market time resolution day-ahead arbitrage trades with |
 | `async_get_charge_point(connection_uuid, contract_uuid)` | Charge point state, schedules and vehicles |
 | `async_set_locale(locale)` | Sets the language of the API's texts, e.g. `nl-NL` |
 
@@ -94,6 +95,7 @@ against live hardware yet. Reports and captured (anonymised) responses are welco
 | `async_enable_battery_self_consumption(connection_uuid, contract_uuid)` / `async_disable_...` | Turns self consumption mode on or off |
 | `async_enable_battery_home_optimization(connection_uuid, contract_uuid, *, max_charge_power_w, max_discharge_power_w)` / `async_disable_...` | Turns home optimization mode on (with new power limits, or the current ones) or off |
 | `async_set_battery_backup_reserve(connection_uuid, contract_uuid, reserved_wh)` | Reserves energy for backup power |
+| `async_enable_battery_day_ahead_arbitrage(contract_uuid, *, price_spread, market_time_resolution)` | Turns day-ahead arbitrage on: the battery trades when day-ahead prices differ at least `price_spread` (EUR) |
 | `async_set_battery_control_mode(connection_uuid, contract_uuid, mode)` | Switches to a `BatteryMode`, turning the other modes off the way the app does |
 | `async_start_charge_point_boost(connection_uuid, contract_uuid)` / `async_stop_charge_point(...)` | Starts charging now at full power, or stops charging |
 | `async_resume_charge_point_auto_charging(connection_uuid, contract_uuid)` | Lets the charge point charge on cheap prices again after a manual stop |
@@ -101,7 +103,8 @@ against live hardware yet. Reports and captured (anonymised) responses are welco
 | `async_reset_charge_point_schedule(connection_uuid, contract_uuid)` | Clears the planned charging |
 
 A battery with both modes off trades on the dynamic prices (`BatteryMode.DYNAMIC_CHARGING`). The API doesn't
-switch the other mode off for you; `async_set_battery_control_mode()` does, like the Zonneplan app. The battery
+switch the other mode off for you; `async_set_battery_control_mode()` does, like the Zonneplan app. Day-ahead
+arbitrage has no disable call: any other battery action except the backup reserve ends it. The battery
 and charge point confirm a change asynchronously; until then their state reports `processing`.
 Actions are sent once and never retried.
 

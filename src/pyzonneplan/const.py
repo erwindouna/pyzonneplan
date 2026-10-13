@@ -60,6 +60,13 @@ class BatteryPowerPreset(StrEnum):
     HIGH = "high"
 
 
+class MarketTimeResolution(StrEnum):
+    """Market time resolution day-ahead arbitrage trades on, as an ISO 8601 duration."""
+
+    QUARTER_HOUR = "PT15M"
+    HOUR = "PT60M"
+
+
 class BatteryState(StrEnum):
     """Home battery and battery inverter states.
 
