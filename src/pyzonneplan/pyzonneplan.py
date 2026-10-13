@@ -54,6 +54,7 @@ from pyzonneplan.models.devices import (
     BatteryDayAheadArbitrage,
     BatteryHomeOptimization,
     BatteryInstallation,
+    BatteryStatus,
     ChargeOnSolar,
     ChargePointControlMode,
     ChargePointInstallation,
@@ -491,6 +492,11 @@ class Zonneplan:
         """Fetch a home battery's state (``contract_uuid`` of its home_battery_installation contract)."""
         response = await self._request(f"connections/{connection_uuid}/home-battery-installation/{contract_uuid}")
         return _parse(BatteryInstallation, response)
+
+    async def async_get_battery_status(self, contract_uuid: str) -> BatteryStatus:
+        """Fetch a home battery's light status: state of charge, power, state, control mode and modem connectivity."""
+        response = await self._request(f"api/contracts/{contract_uuid}/home-battery/product/status")
+        return _parse(BatteryStatus, response, "data", "home_battery")
 
     async def async_get_battery_chart(self, contract_uuid: str, day: date, interval: str = ChartInterval.DAYS) -> BatteryChart | None:
         """Fetch a home battery's results for the month (``DAYS``) or year (``MONTHS``) of ``day``.

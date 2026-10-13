@@ -473,6 +473,36 @@ class BatteryInstallation(DataClassORJSONMixin):
 
 
 @dataclass
+class BatteryStatus(DataClassORJSONMixin):
+    """Response of /api/contracts/{uuid}/home-battery/product/status: a battery's light status.
+
+    What the app shows on its home screen, without the full installation.
+    The shape comes from the app's demo mode; it isn't verified against
+    live hardware. ``power_ac`` is positive while charging.
+    """
+
+    state_of_charge: int | None = None
+    power_ac: int | None = None
+    control_mode: BatteryMode | None = field(default=None, metadata=enum_field(BatteryMode, "battery control mode"))
+    state: BatteryState | None = field(default=None, metadata=enum_field(BatteryState, "battery state"))
+    modem_online: bool | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``state_of_charge.permille`` and ``power_ac.watts``."""
+        return {
+            **d,
+            "state_of_charge": (d.get("state_of_charge") or {}).get("permille"),
+            "power_ac": (d.get("power_ac") or {}).get("watts"),
+        }
+
+    @property
+    def state_of_charge_percent(self) -> Decimal | None:
+        """Return the state of charge, in percent."""
+        return None if self.state_of_charge is None else Decimal(self.state_of_charge) / 10
+
+
+@dataclass
 class BatteryControlModeOption(DataClassORJSONMixin):
     """Whether one battery control mode is available and enabled, and if not available, why."""
 

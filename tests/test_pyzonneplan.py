@@ -562,6 +562,7 @@ async def test_async_set_price_resolution_unknown(zonneplan_client: Zonneplan) -
     [
         ("async_get_pv_installation", ("conn-1",), "/connections/conn-1/pv-installation", "get_pv_installation.json"),
         ("async_get_battery", ("conn-1", "bat-1"), "/connections/conn-1/home-battery-installation/bat-1", "get_battery_installation.json"),
+        ("async_get_battery_status", ("bat-1",), "/api/contracts/bat-1/home-battery/product/status", "get_battery_status.json"),
         ("async_get_battery_control_mode", ("bat-1",), "/api/contracts/bat-1/home-battery/control-mode", "get_battery_control_mode.json"),
         (
             "async_get_battery_home_optimization",
@@ -593,6 +594,7 @@ async def test_async_set_price_resolution_unknown(zonneplan_client: Zonneplan) -
     ids=[
         "pv_installation",
         "battery",
+        "battery_status",
         "battery_control_mode",
         "battery_home_optimization",
         "battery_day_ahead_arbitrage",

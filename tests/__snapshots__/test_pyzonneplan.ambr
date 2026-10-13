@@ -2671,6 +2671,15 @@
     ]),
   })
 # ---
+# name: test_device_reads[battery_status]
+  dict({
+    'control_mode': <BatteryMode.SELF_CONSUMPTION: 'self_consumption'>,
+    'modem_online': True,
+    'power_ac': -1500,
+    'state': <BatteryState.DISCHARGING: 'discharging'>,
+    'state_of_charge': 724,
+  })
+# ---
 # name: test_device_reads[charge_point]
   dict({
     'contracts': list([

@@ -73,6 +73,7 @@ if __name__ == "__main__":
 | `async_get_p1_installation(contract_uuid)` | The P1 reader's meter identifiers, DSMR version and main fuse, and whether it is offline, or `None` without one |
 | `async_get_pv_installation(connection_uuid)` | Every solar inverter on the connection and today's yield, or `None` without solar panels |
 | `async_get_battery(connection_uuid, contract_uuid)` | Home battery state, results and modes |
+| `async_get_battery_status(contract_uuid)` | A lighter home battery status: state of charge, power, state, control mode and whether its modem is online |
 | `async_get_battery_chart(contract_uuid, day, interval)` | Home battery results per day or month |
 | `async_get_battery_control_mode(contract_uuid)` / `async_get_battery_home_optimization(contract_uuid)` | The battery's control mode, and the charge and discharge power for home optimization with the range each accepts |
 | `async_get_battery_day_ahead_arbitrage(contract_uuid)` | The price spread (EUR) and market time resolution day-ahead arbitrage trades with |

@@ -35,6 +35,7 @@ from pyzonneplan.models.devices import (
     BatteryHomeOptimization,
     BatteryInstallation,
     BatteryPowerPresetOption,
+    BatteryStatus,
     ChargeOnSolar,
     ChargePoint,
     ChargePointControlMode,
@@ -292,6 +293,30 @@ def test_battery_without_readings() -> None:
     assert battery.is_charging is None
     assert battery.battery_state is None
     assert battery.inverter_state is None
+
+
+def test_battery_status() -> None:
+    """The light status converts the state of charge and parses the lowercase state and control mode."""
+    status = BatteryStatus.from_dict(_data("get_battery_status.json")["home_battery"])
+
+    assert status.state_of_charge_percent == Decimal("72.4")
+    assert status.power_ac == -1500
+    assert status.state is BatteryState.DISCHARGING
+    assert status.control_mode is BatteryMode.SELF_CONSUMPTION
+    assert status.modem_online is True
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [{}, {"state_of_charge": None, "power_ac": None, "control_mode": "manual", "state": "Hibernating", "modem_online": None}],
+    ids=["empty", "null_and_unknown"],
+)
+def test_battery_status_without_readings(payload: dict[str, Any]) -> None:
+    """Missing readings and unknown states are None."""
+    status = BatteryStatus.from_dict(payload)
+
+    assert status == BatteryStatus()
+    assert status.state_of_charge_percent is None
 
 
 @pytest.mark.parametrize(
