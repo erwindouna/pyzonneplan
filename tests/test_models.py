@@ -252,10 +252,13 @@ def test_battery_without_readings() -> None:
         ("Charging", BatteryState.CHARGING),
         ("discharging", BatteryState.DISCHARGING),
         ("OPERATIVE", BatteryState.OPERATIVE),
-        ("Standby", None),
+        ("ShuttingDown", BatteryState.SHUTTING_DOWN),
+        ("backup_power_active", BatteryState.BACKUP_POWER_ACTIVE),
+        ("UnknownState", BatteryState.UNKNOWN_STATE),
+        ("Hibernating", None),
         (None, None),
     ],
-    ids=["capitalised", "lowercase", "uppercase", "unknown", "missing"],
+    ids=["capitalised", "lowercase", "uppercase", "pascal_case", "snake_case", "api_unknown_state", "unknown", "missing"],
 )
 def test_battery_states(value: str | None, expected: BatteryState | None) -> None:
     """Battery and inverter states parse case-insensitively, and are None when missing or unknown."""
@@ -268,12 +271,12 @@ def test_battery_states(value: str | None, expected: BatteryState | None) -> Non
 
 def test_battery_unknown_state_is_logged(caplog: pytest.LogCaptureFixture) -> None:
     """An unknown state is logged at debug level."""
-    battery = Battery(contract=_contract(ContractType.HOME_BATTERY, meta={"battery_state": "Standby"}))
+    battery = Battery(contract=_contract(ContractType.HOME_BATTERY, meta={"battery_state": "Hibernating"}))
 
     with caplog.at_level(logging.DEBUG, logger="pyzonneplan.models.devices"):
         assert battery.battery_state is None
 
-    assert "Unknown battery state: Standby" in caplog.text
+    assert "Unknown battery state: Hibernating" in caplog.text
 
 
 def test_battery_control_mode() -> None:

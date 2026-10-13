@@ -35,14 +35,15 @@ def _kwh(value: int | None) -> Decimal | None:
 
 
 def _battery_state(value: str | None) -> BatteryState | None:
-    """Parse a battery state case-insensitively, or return ``None`` when it's missing or unknown."""
+    """Parse a battery state case-insensitively and with or without underscores, or return ``None`` when it's missing or unknown."""
     if value is None:
         return None
-    try:
-        return BatteryState(str(value).lower())
-    except ValueError:
-        _LOGGER.debug("Unknown battery state: %s", value)
-        return None
+    normalised = str(value).replace("_", "").lower()
+    for state in BatteryState:
+        if state.value.replace("_", "") == normalised:
+            return state
+    _LOGGER.debug("Unknown battery state: %s", value)
+    return None
 
 
 def _datetime(value: str | None) -> datetime | None:
