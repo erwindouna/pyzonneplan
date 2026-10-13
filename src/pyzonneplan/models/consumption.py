@@ -4,11 +4,12 @@ The chart endpoints (``/connections/{uuid}/{electricity-delivered,gas}/charts/{i
 are modelled from captured responses. They work without a P1 meter: usage then
 comes from the grid operator's history, which arrives a day or more late.
 
-The summary endpoints (``/connections/{uuid}/{electricity-delivered,gas}``)
+The summary endpoints (``/connections/{uuid}/{electricity-delivered,electricity,gas}``)
 return ``null`` without a P1 meter. Their models are reverse-engineered from
 the dotted sensor key-paths (e.g. ``measurement_groups.0.totals.d``,
 ``contracts.0.meta.dsmr_version``) in fsaris/home-assistant-zonneplan-one's
-``const.py``; no populated response has been captured yet.
+``const.py``; no populated response has been captured yet. The Zonneplan app's
+demo data gives ``/electricity`` the same shape as ``/electricity-delivered``.
 
 The consumption insight charts (``/api/connections/{uuid}/{electricity,gas}/charts/consumption-insight``)
 are modelled from a captured electricity response and the app's code.
@@ -54,7 +55,7 @@ class ElectricityMeasurementGroup(DataClassORJSONMixin):
 
 @dataclass
 class ElectricityDelivered(DataClassORJSONMixin):
-    """Response of /connections/{uuid}/electricity-delivered.
+    """Response of /connections/{uuid}/electricity-delivered and /connections/{uuid}/electricity.
 
     ``contracts`` are the P1 readers with their live readings, which are more
     current here than in /user-accounts/me.
