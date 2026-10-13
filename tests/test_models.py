@@ -24,7 +24,7 @@ from pyzonneplan.const import (
     TariffGroup,
 )
 from pyzonneplan.models.account import Account, Address, AddressGroup, Connection, ConnectionFeature, Contract, UserAccount
-from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
+from pyzonneplan.models.consumption import ConsumptionInsight, ConsumptionInsightPoint, ElectricityChart, ElectricityDelivered, Gas, GasChart
 from pyzonneplan.models.devices import (
     Battery,
     BatteryChart,
@@ -749,6 +749,37 @@ def test_consumption_summary_dates() -> None:
     assert electricity.measurement_groups[0].date == datetime(2026, 9, 29, 22, tzinfo=UTC)
     assert gas.measurement_groups[0].date == datetime(2026, 9, 29, tzinfo=ZoneInfo("Europe/Amsterdam"))
     assert gas.measurement_groups[1].date is None
+
+
+def test_consumption_insight_conversions() -> None:
+    """Consumption insight volumes are converted from Wh to kWh and dm³ to m³, and amounts to EUR."""
+    electricity = ConsumptionInsight.from_dict(_data("get_electricity_consumption_insight.json")["chart"])
+    gas = ConsumptionInsight.from_dict(_data("get_gas_consumption_insight.json")["chart"])
+
+    assert electricity.granularity is MeasurementGroupType.MONTHS
+    assert electricity.delivery is not None
+    assert electricity.production is not None
+    assert electricity.delivery.total == Decimal(300)
+    assert electricity.production.points[0].average_price == Decimal("-0.23")
+    assert gas.delivery is not None
+    assert gas.delivery.points[1].volume == Decimal(60)
+    assert gas.delivery.average_price == Decimal("1.35")
+    assert gas.production is None
+
+
+def test_consumption_insight_without_usage() -> None:
+    """A captured gas insight without usage has no months and no average price; an unknown or missing volume is None."""
+    gas = ConsumptionInsight.from_dict(_data("get_gas_consumption_insight_empty.json")["chart"])
+    unknown = ConsumptionInsightPoint.from_dict({"date": "2026-09-01T00:00:00+02:00", "volume": {"kwh": 1}})
+    missing = ConsumptionInsightPoint.from_dict({"date": "2026-09-01T00:00:00+02:00"})
+
+    assert gas.delivery is not None
+    assert gas.delivery.points == []
+    assert gas.delivery.total == Decimal(0)
+    assert gas.delivery.average_price is None
+    assert unknown.volume is None
+    assert missing.volume is None
+    assert missing.average_price is None
 
 
 def test_account_features() -> None:

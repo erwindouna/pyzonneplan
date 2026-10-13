@@ -447,6 +447,38 @@ async def test_async_get_gas_chart(
     assert chart == snapshot
 
 
+@pytest.mark.parametrize(
+    ("method", "product", "fixture"),
+    [
+        ("async_get_electricity_consumption_insight", "electricity", "get_electricity_consumption_insight.json"),
+        ("async_get_gas_consumption_insight", "gas", "get_gas_consumption_insight.json"),
+    ],
+    ids=["electricity", "gas"],
+)
+async def test_async_get_consumption_insight(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion, *, method: str, product: str, fixture: str
+) -> None:
+    """A consumption insight chart is fetched per month for the date range, converting Wh or dm³ and 1e-7 EUR."""
+    aresponses.add(
+        HOST,
+        f"/api/connections/conn-1/{product}/charts/consumption-insight?start_date=2026-01-01&end_date=2026-12-31&granularity=months",
+        "GET",
+        aresponses.Response(text=load_fixtures(fixture)),
+        match_querystring=True,
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    insight = await getattr(zonneplan_client, method)("conn-1", date(2026, 1, 1), date(2026, 12, 31))
+
+    assert insight == snapshot
+
+
+async def test_async_get_consumption_insight_invalid_range(zonneplan_client: Zonneplan) -> None:
+    """A start after the end is rejected before anything is sent."""
+    with pytest.raises(ValueError, match="start"):
+        await zonneplan_client.async_get_gas_consumption_insight("conn-1", date(2026, 12, 31), date(2026, 1, 1))
+
+
 async def test_async_get_summary(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion) -> None:
     """A real /summary response is unwrapped and parsed, with the price forecast's ``datetime`` as ``start``."""
     aresponses.add(HOST, "/connections/conn-1/summary", "GET", aresponses.Response(text=load_fixtures("get_summary.json")))

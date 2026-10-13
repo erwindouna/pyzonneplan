@@ -90,6 +90,7 @@ if __name__ == "__main__":
 | `async_get_summary(connection_uuid)` | Live usage (P1 only), the current tariff group and a price forecast of about two days |
 | `async_get_electricity_chart(connection_uuid, day, interval)` | Electricity used and returned per hour, day or month |
 | `async_get_gas_chart(connection_uuid, day, interval)` | Gas used per hour, day or month |
+| `async_get_electricity_consumption_insight(connection_uuid, start, end)` / `async_get_gas_consumption_insight(...)` | Energy used (and electricity returned) per month between two dates, with the average price per kWh or m³ |
 | `async_get_electricity_delivered(connection_uuid)` / `async_get_gas(connection_uuid)` | P1 totals and live readings (`meters`), or `None` without a P1 meter |
 | `async_get_p1_installation(contract_uuid)` | The P1 reader's meter identifiers, DSMR version and main fuse, and whether it is offline, or `None` without one |
 | `async_get_pv_installation(connection_uuid)` | Every solar inverter on the connection and today's yield, or `None` without solar panels |

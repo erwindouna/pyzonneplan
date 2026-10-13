@@ -1,0 +1,73 @@
+{
+  "data": {
+    "chart": {
+      "granularity": "months",
+      "range": {
+        "end_date": "2026-12-31T23:59:59+01:00",
+        "start_date": "2026-01-01T00:00:00+01:00"
+      },
+      "series": {
+        "delivery": {
+          "aggregate": {
+            "average_cost": {
+              "amount": 2950000
+            },
+            "sum_volume": {
+              "wh": 300000
+            }
+          },
+          "data": [
+            {
+              "average_cost": {
+                "amount": 2800000
+              },
+              "date": "2026-09-01T00:00:00+02:00",
+              "volume": {
+                "wh": 140000
+              }
+            },
+            {
+              "average_cost": {
+                "amount": 3100000
+              },
+              "date": "2026-10-01T00:00:00+02:00",
+              "volume": {
+                "wh": 160000
+              }
+            }
+          ]
+        },
+        "production": {
+          "aggregate": {
+            "average_cost": {
+              "amount": -2400000
+            },
+            "sum_volume": {
+              "wh": 80000
+            }
+          },
+          "data": [
+            {
+              "average_cost": {
+                "amount": -2300000
+              },
+              "date": "2026-09-01T00:00:00+02:00",
+              "volume": {
+                "wh": 50000
+              }
+            },
+            {
+              "average_cost": {
+                "amount": -2600000
+              },
+              "date": "2026-10-01T00:00:00+02:00",
+              "volume": {
+                "wh": 30000
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
