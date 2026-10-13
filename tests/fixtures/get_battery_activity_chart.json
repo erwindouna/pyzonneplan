@@ -1,0 +1,27 @@
+{
+  "data": {
+    "chart": {
+      "type": "default",
+      "range": {
+        "start_date": "2026-09-24T00:00:00.000Z",
+        "end_date": "2026-09-24T03:00:00.000Z"
+      },
+      "series": {
+        "state_of_charge": {
+          "data": [
+            {"date": "2026-09-24T00:00:00.000Z", "state_of_charge": {"permille": 450}},
+            {"date": "2026-09-24T01:00:00.000Z", "state_of_charge": {"permille": 525}},
+            {"date": "2026-09-24T02:00:00.000Z", "state_of_charge": {"permille": 600}},
+            {"date": "2026-09-24T03:00:00.000Z", "state_of_charge": null}
+          ]
+        },
+        "activity_type": {
+          "data": [
+            {"start_date": "2026-09-24T00:00:00.000Z", "end_date": "2026-09-24T01:00:00.000Z", "activity_type": "grid_optimization"},
+            {"start_date": "2026-09-24T01:00:00.000Z", "end_date": "2026-09-24T03:00:00.000Z", "activity_type": "home_optimization"}
+          ]
+        }
+      }
+    }
+  }
+}

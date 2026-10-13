@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
@@ -14,9 +14,9 @@ from aiohttp import ClientConnectionError
 from aresponses import ResponsesMockServer
 from tenacity import wait_none
 
-from pyzonneplan import Zonneplan
+from pyzonneplan import ElectricityDelivered, Zonneplan
 from pyzonneplan.auth import OtpChallenge, Token
-from pyzonneplan.const import BatteryMode, ChartInterval, ConsumptionChart, MarketTimeResolution, PriceChart
+from pyzonneplan.const import BatteryMode, ChargePointStartMode, ChartInterval, ConsumptionChart, MarketTimeResolution, PriceChart, PriceResolution
 from pyzonneplan.exceptions import (
     ZonneplanAuthenticationError,
     ZonneplanConnectionError,
@@ -27,10 +27,13 @@ from pyzonneplan.exceptions import (
     ZonneplanResponseError,
     ZonneplanTimeoutError,
 )
+from pyzonneplan.models import ChargeSchedule
 
 from . import load_fixtures
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from syrupy.assertion import SnapshotAssertion
 
 HOST = "app-api.zonneplan.nl"
@@ -246,6 +249,18 @@ async def test_empty_body_returns_none(aresponses: ResponsesMockServer, zonnepla
     assert await zonneplan_client._request("connections/conn-1/charge-points/cp-1/actions/start_boost", method="POST") is None
 
 
+async def test_request_sends_app_headers(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Requests carry the app version and environment the API expects, with the library's own user agent."""
+    aresponses.add(HOST, "/user-accounts/me", "GET", aresponses.Response(text="{}"))
+
+    await zonneplan_client._request("user-accounts/me")
+
+    headers = aresponses.history[0].request.headers
+    assert headers["x-app-version"] == "6.23.0"
+    assert headers["x-app-environment"] == "production"
+    assert headers["user-agent"].startswith("pyzonneplan/")
+
+
 async def test_unexpected_token_response_raises_response_error(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
     """A token response without the expected fields raises ZonneplanResponseError."""
     aresponses.add(HOST, "/oauth/token", "POST", aresponses.Response(text=orjson.dumps({"access_token": "new-access"}).decode()))
@@ -300,6 +315,23 @@ async def test_async_get_consumer_prices_gas_daily(aresponses: ResponsesMockServ
     assert prices == snapshot
 
 
+async def test_async_get_consumer_prices_for_connection(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion
+) -> None:
+    """A connection's own price chart (captured, values changed) is fetched from its path and parsed like the general one."""
+    aresponses.add(
+        HOST,
+        "/api/connections/conn-1/consumer-prices/charts/electricity-quarter-hourly",
+        "GET",
+        aresponses.Response(text=load_fixtures("get_consumer_prices_connection_quarter_hourly.json")),
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    prices = await zonneplan_client.async_get_consumer_prices(PriceChart.ELECTRICITY_QUARTER_HOURLY, connection_uuid="conn-1")
+
+    assert prices == snapshot
+
+
 async def test_async_get_electricity_delivered(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion) -> None:
     """electricity-delivered is parsed from a synthetic fixture.
 
@@ -347,9 +379,19 @@ async def test_async_get_account_without_p1(aresponses: ResponsesMockServer, zon
     assert not any(connection.has_p1 for connection in account.connections)
 
 
-@pytest.mark.parametrize("path", ["electricity-delivered", "gas"])
-async def test_consumption_summary_without_p1_returns_none(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, path: str) -> None:
-    """Without a P1 meter the summary endpoints answer with a JSON null."""
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("async_get_electricity_delivered", "electricity-delivered"),
+        ("async_get_electricity", "electricity"),
+        ("async_get_gas", "gas"),
+    ],
+    ids=["electricity_delivered", "electricity", "gas"],
+)
+async def test_consumption_summary_without_p1_returns_none(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, method: str, path: str
+) -> None:
+    """Without a P1 meter the summary endpoints answer with a JSON null (captured)."""
     aresponses.add(
         HOST,
         f"/connections/conn-1/{path}",
@@ -358,9 +400,24 @@ async def test_consumption_summary_without_p1_returns_none(aresponses: Responses
     )
 
     zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
-    method = zonneplan_client.async_get_electricity_delivered if path == "electricity-delivered" else zonneplan_client.async_get_gas
 
-    assert await method("conn-1") is None
+    assert await getattr(zonneplan_client, method)("conn-1") is None
+
+
+async def test_async_get_electricity(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """The app's /electricity endpoint is fetched without charts and parsed like electricity-delivered."""
+    aresponses.add(
+        HOST,
+        "/connections/conn-1/electricity?no-charts=1",
+        "GET",
+        aresponses.Response(text=load_fixtures("get_electricity_delivered.json")),
+        match_querystring=True,
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    electricity = await zonneplan_client.async_get_electricity("conn-1")
+
+    assert electricity == ElectricityDelivered.from_dict(orjson.loads(load_fixtures("get_electricity_delivered.json"))["data"])
 
 
 @pytest.mark.parametrize(
@@ -418,6 +475,38 @@ async def test_async_get_gas_chart(
     assert chart == snapshot
 
 
+@pytest.mark.parametrize(
+    ("method", "product", "fixture"),
+    [
+        ("async_get_electricity_consumption_insight", "electricity", "get_electricity_consumption_insight.json"),
+        ("async_get_gas_consumption_insight", "gas", "get_gas_consumption_insight.json"),
+    ],
+    ids=["electricity", "gas"],
+)
+async def test_async_get_consumption_insight(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion, *, method: str, product: str, fixture: str
+) -> None:
+    """A consumption insight chart is fetched per month for the date range, converting Wh or dm³ and 1e-7 EUR."""
+    aresponses.add(
+        HOST,
+        f"/api/connections/conn-1/{product}/charts/consumption-insight?start_date=2026-01-01&end_date=2026-12-31&granularity=months",
+        "GET",
+        aresponses.Response(text=load_fixtures(fixture)),
+        match_querystring=True,
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    insight = await getattr(zonneplan_client, method)("conn-1", date(2026, 1, 1), date(2026, 12, 31))
+
+    assert insight == snapshot
+
+
+async def test_async_get_consumption_insight_invalid_range(zonneplan_client: Zonneplan) -> None:
+    """A start after the end is rejected before anything is sent."""
+    with pytest.raises(ValueError, match="start"):
+        await zonneplan_client.async_get_gas_consumption_insight("conn-1", date(2026, 12, 31), date(2026, 1, 1))
+
+
 async def test_async_get_summary(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion) -> None:
     """A real /summary response is unwrapped and parsed, with the price forecast's ``datetime`` as ``start``."""
     aresponses.add(HOST, "/connections/conn-1/summary", "GET", aresponses.Response(text=load_fixtures("get_summary.json")))
@@ -439,11 +528,53 @@ async def test_async_set_locale(aresponses: ResponsesMockServer, zonneplan_clien
     aresponses.assert_plan_strictly_followed()
 
 
+async def test_async_get_app_settings(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """The app settings (captured) are turned from a key/value list into a dict."""
+    aresponses.add(HOST, "/user-accounts/app-settings", "GET", aresponses.Response(text=load_fixtures("get_app_settings.json")))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    settings = await zonneplan_client.async_get_app_settings()
+
+    assert settings.settings == {"price_resolution": "60-min"}
+    assert settings.price_resolution is PriceResolution.HOUR
+
+
+@pytest.mark.parametrize("resolution", [PriceResolution.QUARTER_HOUR, "60-min"], ids=["enum", "string"])
+async def test_async_set_price_resolution(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, resolution: str) -> None:
+    """The price resolution is PUT as an app setting."""
+    aresponses.add(HOST, "/user-accounts/app-settings", "PUT", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_set_price_resolution(resolution)
+
+    assert await aresponses.history[0].request.json() == {"settings": {"price_resolution": str(resolution)}}
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_async_set_price_resolution_unknown(zonneplan_client: Zonneplan) -> None:
+    """An unknown price resolution is rejected before anything is sent."""
+    with pytest.raises(ValueError, match="30-min"):
+        await zonneplan_client.async_set_price_resolution("30-min")
+
+
 @pytest.mark.parametrize(
     ("method", "args", "path", "fixture"),
     [
         ("async_get_pv_installation", ("conn-1",), "/connections/conn-1/pv-installation", "get_pv_installation.json"),
         ("async_get_battery", ("conn-1", "bat-1"), "/connections/conn-1/home-battery-installation/bat-1", "get_battery_installation.json"),
+        ("async_get_battery_status", ("bat-1",), "/api/contracts/bat-1/home-battery/product/status", "get_battery_status.json"),
+        (
+            "async_get_battery_activity_chart",
+            ("bat-1",),
+            "/api/contracts/bat-1/home-battery/charts/recent-activity",
+            "get_battery_activity_chart.json",
+        ),
+        (
+            "async_get_battery_activity_chart",
+            ("bat-1",),
+            "/api/contracts/bat-1/home-battery/charts/recent-activity",
+            "get_battery_activity_chart_day_ahead.json",
+        ),
         ("async_get_battery_control_mode", ("bat-1",), "/api/contracts/bat-1/home-battery/control-mode", "get_battery_control_mode.json"),
         (
             "async_get_battery_home_optimization",
@@ -458,8 +589,34 @@ async def test_async_set_locale(aresponses: ResponsesMockServer, zonneplan_clien
             "get_battery_day_ahead_arbitrage.json",
         ),
         ("async_get_charge_point", ("conn-1", "cp-1"), "/connections/conn-1/charge-points/cp-1", "get_charge_point.json"),
+        ("async_get_p1_installation", ("p1-1",), "/contracts/p1-1/p1-installation", "get_p1_installation.json"),
+        (
+            "async_get_charge_point_control_mode",
+            ("cp-1",),
+            "/api/contracts/cp-1/charge-point/control-mode",
+            "get_charge_point_control_mode.json",
+        ),
+        (
+            "async_get_charge_point_charge_on_solar",
+            ("cp-1",),
+            "/api/contracts/cp-1/charge-point/control-mode/charge_on_solar",
+            "get_charge_point_charge_on_solar.json",
+        ),
     ],
-    ids=["pv_installation", "battery", "battery_control_mode", "battery_home_optimization", "battery_day_ahead_arbitrage", "charge_point"],
+    ids=[
+        "pv_installation",
+        "battery",
+        "battery_status",
+        "battery_activity_chart",
+        "battery_activity_chart_day_ahead",
+        "battery_control_mode",
+        "battery_home_optimization",
+        "battery_day_ahead_arbitrage",
+        "charge_point",
+        "p1_installation",
+        "charge_point_control_mode",
+        "charge_point_charge_on_solar",
+    ],
 )
 async def test_device_reads(
     aresponses: ResponsesMockServer,
@@ -486,6 +643,19 @@ async def test_async_get_pv_installation_without_panels(aresponses: ResponsesMoc
 
     zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
     assert await zonneplan_client.async_get_pv_installation("conn-1") is None
+
+
+async def test_async_get_p1_installation_without_p1(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Without a P1 installation the API answers 404 (captured), which returns None."""
+    aresponses.add(
+        HOST,
+        "/contracts/p1-1/p1-installation",
+        "GET",
+        aresponses.Response(status=404, text=orjson.dumps({"message": "Not found"}).decode()),
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    assert await zonneplan_client.async_get_p1_installation("p1-1") is None
 
 
 async def test_async_get_battery_chart(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, snapshot: SnapshotAssertion) -> None:
@@ -751,6 +921,11 @@ async def test_set_battery_control_mode_unknown(zonneplan_client: Zonneplan) -> 
         ("async_start_charge_point_boost", "start_boost"),
         ("async_stop_charge_point", "stop_charging"),
         ("async_resume_charge_point_auto_charging", "unsuppress_always_flex"),
+        ("async_stop_charge_point_boost", "stop_boost"),
+        ("async_enable_charge_point_plug_and_charge", "enable_plug_and_charge"),
+        ("async_disable_charge_point_plug_and_charge", "disable_plug_and_charge"),
+        ("async_enable_charge_point_always_flex", "enable_always_flex"),
+        ("async_disable_charge_point_always_flex", "disable_always_flex"),
     ],
 )
 async def test_charge_point_actions(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, method: str, action: str) -> None:
@@ -775,6 +950,210 @@ async def test_reset_charge_point_schedule(aresponses: ResponsesMockServer, zonn
     await zonneplan_client.async_reset_charge_point_schedule("conn-1", "cp-1")
 
     aresponses.assert_plan_strictly_followed()
+
+
+async def test_enable_charge_point_charge_on_solar(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Settings are sent the way the app sends them: whole minutes as an ISO 8601 duration, whole hours as HH:00."""
+    aresponses.add(HOST, "/api/contracts/cp-1/charge-point/control-mode/charge_on_solar/enable", "PUT", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_enable_charge_point_charge_on_solar(
+        "cp-1", solar_surplus_threshold_w=2000, min_charge_duration=timedelta(minutes=30), allowed_window_start=time(5), allowed_window_end=time(23)
+    )
+
+    assert await aresponses.history[0].request.json() == {
+        "solar_surplus_threshold_w": 2000,
+        "min_charge_duration": "PT30M",
+        "allowed_window": {"start_time": "05:00", "end_time": "23:00"},
+    }
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_enable_charge_point_charge_on_solar_keeps_current_settings(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Omitted settings keep their current value."""
+    path = "/api/contracts/cp-1/charge-point/control-mode/charge_on_solar"
+    aresponses.add(HOST, path, "GET", aresponses.Response(text=load_fixtures("get_charge_point_charge_on_solar.json")))
+    aresponses.add(HOST, f"{path}/enable", "PUT", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_enable_charge_point_charge_on_solar("cp-1", min_charge_duration=timedelta(hours=1))
+
+    assert await aresponses.history[1].request.json() == {
+        "solar_surplus_threshold_w": 1400,
+        "min_charge_duration": "PT60M",
+        "allowed_window": {"start_time": "10:00", "end_time": "16:00"},
+    }
+    aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"min_charge_duration": timedelta(minutes=15, seconds=30)}, "whole minutes"),
+        ({"min_charge_duration": timedelta(0)}, "whole minutes"),
+        ({"allowed_window_start": time(5, 30)}, "whole local hour"),
+        ({"allowed_window_end": time(23, tzinfo=UTC)}, "whole local hour"),
+        ({"allowed_window_start": time(16), "allowed_window_end": time(10)}, "after"),
+    ],
+    ids=["partial_minute", "zero_duration", "start_not_on_hour", "end_with_timezone", "end_before_start"],
+)
+async def test_enable_charge_point_charge_on_solar_invalid(zonneplan_client: Zonneplan, kwargs: dict[str, Any], match: str) -> None:
+    """Settings the API can't take are rejected before anything is sent."""
+    settings: dict[str, Any] = {
+        "solar_surplus_threshold_w": 2000,
+        "min_charge_duration": timedelta(minutes=15),
+        "allowed_window_start": time(5),
+        "allowed_window_end": time(23),
+    }
+    with pytest.raises(ValueError, match=match):
+        await zonneplan_client.async_enable_charge_point_charge_on_solar("cp-1", **(settings | kwargs))
+
+
+async def test_enable_charge_point_charge_on_solar_without_current_settings(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Omitted settings can't be kept when charge on solar has none yet."""
+    aresponses.add(
+        HOST,
+        "/api/contracts/cp-1/charge-point/control-mode/charge_on_solar",
+        "GET",
+        aresponses.Response(
+            text=orjson.dumps({"data": {"solar_surplus_threshold": None, "min_charge_duration": None, "allowed_window": None}}).decode()
+        ),
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    with pytest.raises(ValueError, match="no current settings"):
+        await zonneplan_client.async_enable_charge_point_charge_on_solar("cp-1", solar_surplus_threshold_w=2000)
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_disable_charge_point_charge_on_solar(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Charge on solar is disabled with a PUT without a body."""
+    aresponses.add(HOST, "/api/contracts/cp-1/charge-point/control-mode/charge_on_solar/disable", "PUT", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_disable_charge_point_charge_on_solar("cp-1")
+
+    assert await aresponses.history[0].request.read() == b""
+    aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "vehicle"),
+    [({"vehicle_uuid": "v-1"}, {"vehicle": {"vehicle_uuid": "v-1"}}), ({}, {})],
+    ids=["vehicle", "no_vehicle"],
+)
+async def test_set_charge_point_schedule(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, kwargs: dict[str, str], vehicle: dict[str, dict[str, str]]
+) -> None:
+    """Windows are sent in UTC with milliseconds; ended ones are dropped and one from an earlier hour starts at the current hour."""
+    aresponses.add(HOST, "/connections/conn-1/charge-points/cp-1/actions/set_schedule", "POST", aresponses.Response(status=204))
+    amsterdam = ZoneInfo("Europe/Amsterdam")
+    current_hour = datetime.now(UTC).replace(minute=0, second=0, microsecond=0)
+    tomorrow = (current_hour + timedelta(days=1)).astimezone(amsterdam)
+    schedule = [
+        ChargeSchedule(start_time=current_hour - timedelta(hours=3), end_time=current_hour - timedelta(hours=1)),
+        ChargeSchedule(start_time=current_hour - timedelta(hours=2), end_time=current_hour + timedelta(hours=2)),
+        ChargeSchedule(start_time=tomorrow, end_time=tomorrow + timedelta(hours=2), suppress_home_battery=True),
+        ChargeSchedule(start_time=tomorrow + timedelta(hours=5)),
+    ]
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_set_charge_point_schedule("conn-1", "cp-1", schedule, **kwargs)
+
+    def utc(moment: datetime) -> str:
+        return moment.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+    assert await aresponses.history[0].request.json() == {
+        "schedule": [
+            {"start_time": utc(current_hour), "end_time": utc(current_hour + timedelta(hours=2))},
+            {"start_time": utc(tomorrow), "end_time": utc(tomorrow + timedelta(hours=2)), "suppress_home_battery": True},
+            {"start_time": utc(tomorrow + timedelta(hours=5))},
+        ],
+        **vehicle,
+    }
+    aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.parametrize(
+    ("window", "match"),
+    [
+        (ChargeSchedule(end_time=datetime(2030, 1, 1, 12, tzinfo=UTC)), "timezone-aware"),
+        (ChargeSchedule(start_time=datetime(2030, 1, 1, 12)), "timezone-aware"),
+        (ChargeSchedule(start_time=datetime(2030, 1, 1, 12, tzinfo=UTC), end_time=datetime(2030, 1, 1, 14)), "timezone-aware"),
+        (ChargeSchedule(start_time=datetime(2030, 1, 1, 12, tzinfo=UTC), end_time=datetime(2030, 1, 1, 12, tzinfo=UTC)), "after"),
+        (ChargeSchedule(start_time=datetime(2020, 1, 1, 12, tzinfo=UTC), end_time=datetime(2020, 1, 1, 14, tzinfo=UTC)), "reset"),
+    ],
+    ids=["no_start", "naive_start", "naive_end", "end_not_after_start", "only_ended"],
+)
+async def test_set_charge_point_schedule_invalid(zonneplan_client: Zonneplan, window: ChargeSchedule, match: str) -> None:
+    """An invalid schedule, or one with only ended windows, is rejected before anything is sent."""
+    with pytest.raises(ValueError, match=match):
+        await zonneplan_client.async_set_charge_point_schedule("conn-1", "cp-1", [window])
+
+
+@pytest.mark.parametrize(
+    ("current", "mode", "actions"),
+    [
+        ("AlwaysFlex", ChargePointStartMode.PLUG_AND_CHARGE, ["enable_plug_and_charge"]),
+        ("AlwaysFlex", ChargePointStartMode.START_WITH_APP, ["disable_always_flex"]),
+        ("PlugAndCharge", ChargePointStartMode.ALWAYS_FLEX, ["enable_always_flex"]),
+        ("PlugAndCharge", ChargePointStartMode.START_WITH_APP, ["disable_plug_and_charge"]),
+        ("StartWithApp", ChargePointStartMode.ALWAYS_FLEX, ["enable_always_flex"]),
+        ("StartWithApp", ChargePointStartMode.PLUG_AND_CHARGE, ["enable_plug_and_charge"]),
+        ("StartWithApp", ChargePointStartMode.START_WITH_APP, []),
+    ],
+    ids=[
+        "always_flex_to_plug_and_charge",
+        "always_flex_to_start_with_app",
+        "plug_and_charge_to_always_flex",
+        "plug_and_charge_to_start_with_app",
+        "start_with_app_to_always_flex",
+        "start_with_app_to_plug_and_charge",
+        "already",
+    ],
+)
+async def test_set_charge_point_start_mode(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, current: str, mode: str, actions: list[str]
+) -> None:
+    """Switching start mode sends the one action the app sends from the current mode."""
+    installation = orjson.loads(load_fixtures("get_charge_point.json"))
+    installation["data"]["contracts"][0]["state"]["start_mode"] = current
+    aresponses.add(HOST, "/connections/conn-1/charge-points/cp-1", "GET", aresponses.Response(text=orjson.dumps(installation).decode()))
+    for action in actions:
+        aresponses.add(HOST, f"/connections/conn-1/charge-points/cp-1/actions/{action}", "POST", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_set_charge_point_start_mode("conn-1", "cp-1", mode)
+
+    assert [entry.request.path.rsplit("/", 1)[-1] for entry in aresponses.history[1:]] == actions
+    aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        pytest.param(lambda contracts: contracts.clear(), id="no_charge_point"),
+        pytest.param(lambda contracts: contracts[0]["state"].update(start_mode="Manual"), id="unknown_mode"),
+    ],
+)
+async def test_set_charge_point_start_mode_current_unknown(
+    aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, change: Callable[[list[dict[str, Any]]], None]
+) -> None:
+    """Without a known current start mode, nothing is sent."""
+    installation = orjson.loads(load_fixtures("get_charge_point.json"))
+    change(installation["data"]["contracts"])
+    aresponses.add(HOST, "/connections/conn-1/charge-points/cp-1", "GET", aresponses.Response(text=orjson.dumps(installation).decode()))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    with pytest.raises(ValueError, match="unknown"):
+        await zonneplan_client.async_set_charge_point_start_mode("conn-1", "cp-1", ChargePointStartMode.ALWAYS_FLEX)
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_set_charge_point_start_mode_unknown(zonneplan_client: Zonneplan) -> None:
+    """An unknown start mode is rejected before anything is sent."""
+    with pytest.raises(ValueError, match="Unknown charge point start mode"):
+        await zonneplan_client.async_set_charge_point_start_mode("conn-1", "cp-1", "boost")
 
 
 @pytest.mark.parametrize(
