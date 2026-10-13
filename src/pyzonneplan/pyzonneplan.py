@@ -360,9 +360,14 @@ class Zonneplan:
         """
         await self._request("user-accounts/locale", method=METH_PUT, json_body={"locale": locale})
 
-    async def async_get_consumer_prices(self, chart: str = PriceChart.ELECTRICITY_HOURLY) -> ConsumerPrices:
-        """Fetch a consumer price chart (see :class:`pyzonneplan.const.PriceChart` for valid ``chart`` values)."""
-        response = await self._request(f"api/consumer-prices/charts/{chart}")
+    async def async_get_consumer_prices(self, chart: str = PriceChart.ELECTRICITY_HOURLY, *, connection_uuid: str | None = None) -> ConsumerPrices:
+        """Fetch a consumer price chart (see :class:`pyzonneplan.const.PriceChart` for valid ``chart`` values).
+
+        With a ``connection_uuid``, fetch the prices of that connection's
+        contract instead of the general ones, as the app does.
+        """
+        prefix = "api" if connection_uuid is None else f"api/connections/{connection_uuid}"
+        response = await self._request(f"{prefix}/consumer-prices/charts/{chart}")
         return _parse(ConsumerPrices, response)
 
     async def async_get_electricity_delivered(self, connection_uuid: str) -> ElectricityDelivered | None:

@@ -63,7 +63,7 @@ if __name__ == "__main__":
 | Method | Returns |
 |---|---|
 | `async_get_account()` | The account, its addresses, connections and contracts |
-| `async_get_consumer_prices(chart)` | Electricity (hourly or quarter-hourly) or daily gas prices, with `price_at()` and cheapest/most expensive helpers |
+| `async_get_consumer_prices(chart, *, connection_uuid)` | Electricity (hourly or quarter-hourly) or daily gas prices, with `price_at()` and cheapest/most expensive helpers; with `connection_uuid` the prices of that connection's contract |
 | `async_get_summary(connection_uuid)` | Live usage (P1 only), the current tariff group and a price forecast of about two days |
 | `async_get_electricity_chart(connection_uuid, day, interval)` | Electricity used and returned per hour, day or month |
 | `async_get_gas_chart(connection_uuid, day, interval)` | Gas used per hour, day or month |
