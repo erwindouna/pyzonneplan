@@ -10,7 +10,6 @@ the dotted sensor key-paths (e.g. ``measurement_groups.0.totals.d``,
 ``contracts.0.meta.dsmr_version``) in fsaris/home-assistant-zonneplan-one's
 ``const.py``; no populated response has been captured yet. The Zonneplan app's
 demo data gives ``/electricity`` the same shape as ``/electricity-delivered``.
-``const.py``; no populated response has been captured yet.
 
 The consumption insight charts (``/api/connections/{uuid}/{electricity,gas}/charts/consumption-insight``)
 are modelled from a captured electricity response and the app's code.
