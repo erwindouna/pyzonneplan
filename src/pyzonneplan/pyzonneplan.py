@@ -7,6 +7,7 @@ import contextlib
 import socket
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from http import HTTPStatus
 from importlib import metadata
 from typing import TYPE_CHECKING, Any, NoReturn, Self
@@ -25,10 +26,12 @@ from pyzonneplan.const import (
     APP_ENVIRONMENT,
     APP_VERSION,
     AUTHORIZE_CHALLENGE_PATH,
+    MONEY_FACTOR,
     TOKEN_PATH,
     BatteryMode,
     ChartInterval,
     ConsumptionChart,
+    MarketTimeResolution,
     PriceChart,
 )
 from pyzonneplan.exceptions import (
@@ -46,6 +49,7 @@ from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivere
 from pyzonneplan.models.devices import (
     BatteryChart,
     BatteryControlMode,
+    BatteryDayAheadArbitrage,
     BatteryHomeOptimization,
     BatteryInstallation,
     ChargePointInstallation,
@@ -436,6 +440,28 @@ class Zonneplan:
         response = await self._request(f"api/contracts/{contract_uuid}/home-battery/control-mode/home_optimization")
         return _parse(BatteryHomeOptimization, response)
 
+    async def async_get_battery_day_ahead_arbitrage(self, contract_uuid: str) -> BatteryDayAheadArbitrage:
+        """Fetch the price spread and market time resolution day-ahead arbitrage trades with."""
+        response = await self._request(f"api/contracts/{contract_uuid}/home-battery/control-mode/day_ahead_arbitrage")
+        return _parse(BatteryDayAheadArbitrage, response)
+
+    async def async_enable_battery_day_ahead_arbitrage(
+        self, contract_uuid: str, *, price_spread: Decimal | float, market_time_resolution: str
+    ) -> None:
+        """Enable day-ahead arbitrage: the battery trades on the day-ahead prices when they differ at least ``price_spread`` (EUR).
+
+        ``market_time_resolution`` is a :class:`pyzonneplan.const.MarketTimeResolution`;
+        the app picks it from the electricity contract and defaults the spread to 0.08.
+        There is no call to disable it: any other battery action, except
+        setting the backup reserve, ends day-ahead arbitrage.
+        """
+        resolution = MarketTimeResolution(market_time_resolution)
+        await self._request(
+            f"api/contracts/{contract_uuid}/home-battery/control-mode/day_ahead_arbitrage",
+            method=METH_PUT,
+            json_body={"price_spread": round(Decimal(str(price_spread)) / MONEY_FACTOR), "market_time_resolution": resolution.value},
+        )
+
     async def _async_battery_action(self, connection_uuid: str, contract_uuid: str, action: str, body: dict[str, Any] | None = None) -> None:
         """Send an action to a home battery.
 
@@ -502,20 +528,36 @@ class Zonneplan:
         the one that was on (for dynamic charging, disable both). The current
         modes are fetched first. If a later step fails, the earlier ones stay
         applied; home optimization keeps its current power limits.
+
+        Day-ahead arbitrage is enabled with its current settings (see
+        :meth:`async_enable_battery_day_ahead_arbitrage` to change them). Leaving
+        it takes an action, so switching from it to dynamic charging disables
+        both other modes even when they are already off, as the app does.
         """
-        if mode not in (BatteryMode.SELF_CONSUMPTION, BatteryMode.HOME_OPTIMIZATION, BatteryMode.DYNAMIC_CHARGING):
+        if mode not in BatteryMode:
             msg = f"Unknown battery control mode: {mode}"
             raise ValueError(msg)
 
+        if mode == BatteryMode.DAY_AHEAD_ARBITRAGE:
+            settings = await self.async_get_battery_day_ahead_arbitrage(contract_uuid)
+            if settings.price_spread is None or settings.market_time_resolution is None:
+                msg = "Day-ahead arbitrage has no settings yet; use async_enable_battery_day_ahead_arbitrage()"
+                raise ValueError(msg)
+            await self.async_enable_battery_day_ahead_arbitrage(
+                contract_uuid, price_spread=settings.price_spread, market_time_resolution=settings.market_time_resolution
+            )
+            return
+
         current = await self.async_get_battery_control_mode(contract_uuid)
+        leave_day_ahead = mode == BatteryMode.DYNAMIC_CHARGING and current.is_enabled(BatteryMode.DAY_AHEAD_ARBITRAGE)
         if mode == BatteryMode.SELF_CONSUMPTION:
             await self.async_enable_battery_self_consumption(connection_uuid, contract_uuid)
         elif mode == BatteryMode.HOME_OPTIMIZATION:
             await self.async_enable_battery_home_optimization(connection_uuid, contract_uuid)
 
-        if mode != BatteryMode.HOME_OPTIMIZATION and current.is_enabled(BatteryMode.HOME_OPTIMIZATION):
+        if mode != BatteryMode.HOME_OPTIMIZATION and (leave_day_ahead or current.is_enabled(BatteryMode.HOME_OPTIMIZATION)):
             await self.async_disable_battery_home_optimization(connection_uuid, contract_uuid)
-        if mode != BatteryMode.SELF_CONSUMPTION and current.is_enabled(BatteryMode.SELF_CONSUMPTION):
+        if mode != BatteryMode.SELF_CONSUMPTION and (leave_day_ahead or current.is_enabled(BatteryMode.SELF_CONSUMPTION)):
             await self.async_disable_battery_self_consumption(connection_uuid, contract_uuid)
 
     async def async_get_charge_point(self, connection_uuid: str, contract_uuid: str) -> ChargePointInstallation:

@@ -24,6 +24,7 @@ from pyzonneplan.const import (
     BatteryUnavailabilityReason,
     ChargePointStartMode,
     ChargePointStatus,
+    MarketTimeResolution,
 )
 
 from ._parse import DATETIME, enum_field, euro, kwh, parse_enum, to_datetime
@@ -489,6 +490,27 @@ class BatteryHomeOptimization(DataClassORJSONMixin):
         if isinstance(presets, dict):
             presets = presets.get("data")
         return {**d, "power_presets": presets or []}
+
+
+@dataclass
+class BatteryDayAheadArbitrage(DataClassORJSONMixin):
+    """Response of the day_ahead_arbitrage control-mode endpoint.
+
+    The smallest price spread (EUR) the battery trades on, and the market time
+    resolution it trades with. ``None`` until day-ahead arbitrage was set up.
+    """
+
+    price_spread: Decimal | None = None
+    market_time_resolution: MarketTimeResolution | None = field(default=None, metadata=enum_field(MarketTimeResolution, "market time resolution"))
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``configured_price_spread.amount`` (1e-7 EUR) and ``market_time_resolution.iso8601``."""
+        resolution = d.get("market_time_resolution")
+        return {
+            "price_spread": euro((d.get("configured_price_spread") or {}).get("amount")),
+            "market_time_resolution": resolution.get("iso8601") if isinstance(resolution, dict) else resolution,
+        }
 
 
 @dataclass
