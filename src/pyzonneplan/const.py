@@ -10,6 +10,7 @@ API_URL: Final = "app-api.zonneplan.nl"
 
 AUTHORIZE_CHALLENGE_PATH: Final = "oauth/authorize-challenge"
 TOKEN_PATH: Final = "oauth/token"  # noqa: S105 (a URL path, not a credential)
+LOGOUT_PATH: Final = "auth/logout"
 
 # Sent by the mobile app; the API rejects requests without them.
 APP_VERSION: Final = "6.23.0"
