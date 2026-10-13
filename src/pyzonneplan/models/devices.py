@@ -29,6 +29,7 @@ from pyzonneplan.const import (
 
 from ._parse import DATETIME, enum_field, euro, kwh, parse_enum, to_datetime
 from .account import Contract
+from .prices import PriceRange
 
 
 def _battery_state(value: str | None) -> BatteryState | None:
@@ -577,6 +578,147 @@ class BatteryChart(DataClassORJSONMixin):
     def production_kwh(self) -> Decimal | None:
         """Return the energy discharged over the chart, in kWh."""
         return kwh(self.meta.get("production"))
+
+
+def _permille(value: Any) -> int | None:
+    """Return the permille of a ``{"permille": ...}`` value."""
+    return value.get("permille") if isinstance(value, dict) else None
+
+
+def _percent(permille: int | None) -> Decimal | None:
+    """Convert permille to percent."""
+    return None if permille is None else Decimal(permille) / 10
+
+
+@dataclass
+class BatteryAssetCosts(DataClassORJSONMixin):
+    """A home battery's costs (1e-7 EUR) over one day or month of an asset costs chart; negative when it earned."""
+
+    start: datetime
+    amount: int | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Rename ``date`` and flatten ``asset_costs.amount``."""
+        return {"start": d["date"], "amount": (d.get("asset_costs") or {}).get("amount")}
+
+    @property
+    def earnings_euro(self) -> Decimal | None:
+        """Return what the battery earned, in EUR (the costs negated, as the app shows them)."""
+        return None if self.amount is None else -Decimal(self.amount) * MONEY_FACTOR
+
+
+@dataclass
+class BatteryAssetCostsChart(DataClassORJSONMixin):
+    """Response of /api/contracts/{uuid}/home-battery/charts/asset-costs (and asset-costs-cumulative).
+
+    The battery's costs per day or month, negative when it earned money; in
+    the cumulative chart each point is the running total. Amounts are in
+    1e-7 EUR. The shape comes from the Zonneplan app's demo data; it isn't
+    verified against live hardware.
+    """
+
+    range: PriceRange
+    granularity: str | None = None
+    costs: list[BatteryAssetCosts] = field(default_factory=list)
+    sum_asset_costs: int | None = None
+    average_asset_costs: int | None = None
+    sum_flex_costs: int | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``series.costs.data`` and the amounts in ``series.costs.aggregate``."""
+        costs = (d.get("series") or {}).get("costs") or {}
+        aggregate = costs.get("aggregate") or {}
+        return {
+            "range": d["range"],
+            "granularity": d.get("granularity"),
+            "costs": costs.get("data") or [],
+            **{key: (aggregate.get(key) or {}).get("amount") for key in ("sum_asset_costs", "average_asset_costs", "sum_flex_costs")},
+        }
+
+    @property
+    def earnings_euro(self) -> Decimal | None:
+        """Return what the battery earned over the chart, in EUR."""
+        return None if self.sum_asset_costs is None else -Decimal(self.sum_asset_costs) * MONEY_FACTOR
+
+    @property
+    def average_earnings_euro(self) -> Decimal | None:
+        """Return what the battery earned per day or month on average, in EUR."""
+        return None if self.average_asset_costs is None else -Decimal(self.average_asset_costs) * MONEY_FACTOR
+
+    @property
+    def flex_earnings_euro(self) -> Decimal | None:
+        """Return what the battery earned by helping the grid (flex), in EUR."""
+        return None if self.sum_flex_costs is None else -Decimal(self.sum_flex_costs) * MONEY_FACTOR
+
+
+@dataclass
+class BatterySelfSufficiencyMonth(DataClassORJSONMixin):
+    """One month (``year_month``, as the API sends it) of a self-sufficiency series, in permille."""
+
+    year_month: str
+    value: int | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``value.permille``."""
+        return {**d, "value": _permille(d.get("value"))}
+
+    @property
+    def percent(self) -> Decimal | None:
+        """Return the value, in percent."""
+        return _percent(self.value)
+
+
+@dataclass
+class BatterySelfSufficiencyStats(DataClassORJSONMixin):
+    """Response of /api/connections/{uuid}/home-battery/self-sufficiency/stats: a year's averages, in permille.
+
+    How much of the solar power the home used itself, and how much of the
+    home's consumption the battery and solar panels saved.
+    """
+
+    year_average_home_solar_self_consumption: int | None = None
+    year_average_home_consumption_savings: int | None = None
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten each ``permille``."""
+        return {key: _permille(d.get(key)) for key in ("year_average_home_solar_self_consumption", "year_average_home_consumption_savings")}
+
+    @property
+    def home_solar_self_consumption_percent(self) -> Decimal | None:
+        """Return the year's average share of solar power the home used itself, in percent."""
+        return _percent(self.year_average_home_solar_self_consumption)
+
+    @property
+    def home_consumption_savings_percent(self) -> Decimal | None:
+        """Return the year's average share of the home's consumption that was saved, in percent."""
+        return _percent(self.year_average_home_consumption_savings)
+
+
+@dataclass
+class BatterySelfSufficiency(DataClassORJSONMixin):
+    """Response of /api/connections/{uuid}/home-battery/charts/self-sufficiency: a year per month, with its averages.
+
+    The shape comes from the Zonneplan app's code and demo data; it isn't
+    verified against live hardware.
+    """
+
+    home_solar_self_consumption: list[BatterySelfSufficiencyMonth] = field(default_factory=list)
+    home_consumption_savings: list[BatterySelfSufficiencyMonth] = field(default_factory=list)
+    stats: BatterySelfSufficiencyStats = field(default_factory=BatterySelfSufficiencyStats)
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``chart.series``."""
+        series = (d.get("chart") or {}).get("series") or {}
+        return {
+            "home_solar_self_consumption": series.get("home_solar_self_consumption") or [],
+            "home_consumption_savings": series.get("home_consumption_savings") or [],
+            "stats": d.get("stats") or {},
+        }
 
 
 @dataclass

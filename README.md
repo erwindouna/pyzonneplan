@@ -94,6 +94,8 @@ if __name__ == "__main__":
 | `async_get_pv_installation(connection_uuid)` | Every solar inverter on the connection and today's yield, or `None` without solar panels |
 | `async_get_battery(connection_uuid, contract_uuid)` | Home battery state, results and modes |
 | `async_get_battery_chart(contract_uuid, day, interval)` | Home battery results per day or month |
+| `async_get_battery_asset_costs_chart(contract_uuid, start, end, interval)` / `async_get_battery_cumulative_asset_costs_chart(contract_uuid)` | Home battery costs (negative = earned, see `earnings_euro`) per day or month, or as a running total, as the app's history screen shows them |
+| `async_get_battery_self_sufficiency_chart(connection_uuid, year)` / `async_get_battery_self_sufficiency_stats(connection_uuid, year)` | How much solar power the home used itself and how much consumption it saved, per month of a year and on average |
 | `async_get_battery_control_mode(contract_uuid)` / `async_get_battery_home_optimization(contract_uuid)` | The battery's control mode, and the charge and discharge power for home optimization with the range each accepts |
 | `async_get_battery_day_ahead_arbitrage(contract_uuid)` | The price spread (EUR) and market time resolution day-ahead arbitrage trades with |
 | `async_get_charge_point(connection_uuid, contract_uuid)` | Charge point state, schedules and vehicles |

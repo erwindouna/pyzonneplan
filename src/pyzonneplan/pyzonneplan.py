@@ -47,11 +47,14 @@ from pyzonneplan.exceptions import (
 from pyzonneplan.models.account import Account
 from pyzonneplan.models.consumption import ElectricityChart, ElectricityDelivered, Gas, GasChart
 from pyzonneplan.models.devices import (
+    BatteryAssetCostsChart,
     BatteryChart,
     BatteryControlMode,
     BatteryDayAheadArbitrage,
     BatteryHomeOptimization,
     BatteryInstallation,
+    BatterySelfSufficiency,
+    BatterySelfSufficiencyStats,
     ChargePointInstallation,
     PvInstallation,
 )
@@ -429,6 +432,46 @@ class Zonneplan:
         if isinstance(charts, list) and (not charts or charts[0] is None):
             return None
         return _parse(BatteryChart, response, "data", 0)
+
+    async def async_get_battery_asset_costs_chart(
+        self, contract_uuid: str, start: date, end: date, interval: str = ChartInterval.DAYS
+    ) -> BatteryAssetCostsChart:
+        """Fetch a home battery's costs per day (``DAYS``) or month (``MONTHS``) from ``start`` to ``end``.
+
+        The costs are negative when the battery earned money (see the
+        ``earnings_euro`` properties). The app asks for a month per day or a
+        year per month.
+        """
+        if interval not in (ChartInterval.DAYS, ChartInterval.MONTHS):
+            msg = f"Unknown battery chart interval: {interval}"
+            raise ValueError(msg)
+        response = await self._request(
+            f"api/contracts/{contract_uuid}/home-battery/charts/asset-costs",
+            params={"start_date": start.isoformat(), "end_date": end.isoformat(), "granularity": interval},
+        )
+        return _parse(BatteryAssetCostsChart, response, "data", "chart")
+
+    async def async_get_battery_cumulative_asset_costs_chart(
+        self, contract_uuid: str, start: date | None = None, end: date | None = None
+    ) -> BatteryAssetCostsChart:
+        """Fetch a home battery's running total of costs per day.
+
+        Without ``start`` and ``end`` (as the app calls it) the API picks the
+        range; the app's demo data covers the last 90 days.
+        """
+        params = {key: value.isoformat() for key, value in (("start_date", start), ("end_date", end)) if value is not None}
+        response = await self._request(f"api/contracts/{contract_uuid}/home-battery/charts/asset-costs-cumulative", params=params)
+        return _parse(BatteryAssetCostsChart, response, "data", "chart")
+
+    async def async_get_battery_self_sufficiency_chart(self, connection_uuid: str, year: int) -> BatterySelfSufficiency:
+        """Fetch how self-sufficient the home battery made a connection, per month of ``year`` and on average."""
+        response = await self._request(f"api/connections/{connection_uuid}/home-battery/charts/self-sufficiency", params={"year": str(year)})
+        return _parse(BatterySelfSufficiency, response)
+
+    async def async_get_battery_self_sufficiency_stats(self, connection_uuid: str, year: int) -> BatterySelfSufficiencyStats:
+        """Fetch only the yearly averages of :meth:`async_get_battery_self_sufficiency_chart`."""
+        response = await self._request(f"api/connections/{connection_uuid}/home-battery/self-sufficiency/stats", params={"year": str(year)})
+        return _parse(BatterySelfSufficiencyStats, response, "data", "stats")
 
     async def async_get_battery_control_mode(self, contract_uuid: str) -> BatteryControlMode:
         """Fetch a home battery's control mode and which modes it supports."""

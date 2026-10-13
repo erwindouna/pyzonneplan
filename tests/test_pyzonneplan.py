@@ -504,6 +504,73 @@ async def test_async_get_battery_chart(aresponses: ResponsesMockServer, zonnepla
     assert chart == snapshot
 
 
+@pytest.mark.parametrize(
+    ("method", "args", "path", "fixture"),
+    [
+        (
+            "async_get_battery_asset_costs_chart",
+            ("bat-1", date(2026, 9, 1), date(2026, 9, 30)),
+            "/api/contracts/bat-1/home-battery/charts/asset-costs?start_date=2026-09-01&end_date=2026-09-30&granularity=days",
+            "get_battery_asset_costs_chart.json",
+        ),
+        (
+            "async_get_battery_asset_costs_chart",
+            ("bat-1", date(2026, 1, 1), date(2026, 12, 31), ChartInterval.MONTHS),
+            "/api/contracts/bat-1/home-battery/charts/asset-costs?start_date=2026-01-01&end_date=2026-12-31&granularity=months",
+            "get_battery_asset_costs_chart.json",
+        ),
+        (
+            "async_get_battery_cumulative_asset_costs_chart",
+            ("bat-1",),
+            "/api/contracts/bat-1/home-battery/charts/asset-costs-cumulative",
+            "get_battery_asset_costs_cumulative_chart.json",
+        ),
+        (
+            "async_get_battery_cumulative_asset_costs_chart",
+            ("bat-1", date(2026, 6, 27), date(2026, 9, 24)),
+            "/api/contracts/bat-1/home-battery/charts/asset-costs-cumulative?start_date=2026-06-27&end_date=2026-09-24",
+            "get_battery_asset_costs_cumulative_chart.json",
+        ),
+        (
+            "async_get_battery_self_sufficiency_chart",
+            ("conn-1", 2026),
+            "/api/connections/conn-1/home-battery/charts/self-sufficiency?year=2026",
+            "get_battery_self_sufficiency_chart.json",
+        ),
+        (
+            "async_get_battery_self_sufficiency_stats",
+            ("conn-1", 2026),
+            "/api/connections/conn-1/home-battery/self-sufficiency/stats?year=2026",
+            "get_battery_self_sufficiency_stats.json",
+        ),
+    ],
+    ids=["asset_costs_days", "asset_costs_months", "cumulative", "cumulative_range", "self_sufficiency", "self_sufficiency_stats"],
+)
+async def test_battery_earnings_charts(
+    aresponses: ResponsesMockServer,
+    zonneplan_client: Zonneplan,
+    snapshot: SnapshotAssertion,
+    *,
+    method: str,
+    args: tuple[Any, ...],
+    path: str,
+    fixture: str,
+) -> None:
+    """Each battery earnings chart is fetched with its query parameters and parsed into its model."""
+    aresponses.add(HOST, path, "GET", aresponses.Response(text=load_fixtures(fixture)), match_querystring=True)
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    result = await getattr(zonneplan_client, method)(*args)
+
+    assert result == snapshot
+
+
+async def test_battery_asset_costs_chart_unknown_interval(zonneplan_client: Zonneplan) -> None:
+    """An unknown interval is rejected before anything is sent."""
+    with pytest.raises(ValueError, match="hours"):
+        await zonneplan_client.async_get_battery_asset_costs_chart("bat-1", date(2026, 9, 1), date(2026, 9, 1), "hours")
+
+
 @pytest.mark.parametrize("data", [[], [None]], ids=["empty", "null_chart"])
 async def test_async_get_battery_chart_empty(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan, data: list[None]) -> None:
     """A response without a chart returns None."""
