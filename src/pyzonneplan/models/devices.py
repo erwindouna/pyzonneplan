@@ -640,10 +640,14 @@ class BatteryChart(DataClassORJSONMixin):
 
 @dataclass
 class ChargeSchedule(DataClassORJSONMixin):
-    """A single planned charging window."""
+    """A single planned charging window.
+
+    ``suppress_home_battery`` keeps the home battery from discharging into the car.
+    """
 
     start_time: datetime | None = field(default=None, metadata=DATETIME)
     end_time: datetime | None = field(default=None, metadata=DATETIME)
+    suppress_home_battery: bool | None = None
 
 
 @dataclass
