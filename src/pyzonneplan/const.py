@@ -138,6 +138,13 @@ class ChargePointStartMode(StrEnum):
     START_WITH_APP = "start_with_app"
 
 
+class LoadBalancingHealth(StrEnum):
+    """Health of a charge point's dynamic load balancing (``state.dynamic_load_balancing_health``, sent in upper case)."""
+
+    HEALTHY = "healthy"
+    UNHEALTHY = "unhealthy"
+
+
 class ChargePointMode(StrEnum):
     """Charge point control modes (``modes`` of the charge point control-mode endpoint)."""
 

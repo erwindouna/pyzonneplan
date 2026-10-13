@@ -51,7 +51,8 @@
           },
           "charge_point_session": {
             "start_time": "2026-09-29T10:00:00.000000Z",
-            "charged_distance_in_kilometers": 60
+            "charged_distance_in_kilometers": 60,
+            "active_vehicle_uuid": "00000000-0000-4000-8000-000000000401"
           }
         },
         "charge_schedules": [

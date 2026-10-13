@@ -1,8 +1,8 @@
 """Models for the P1, PV, battery and charge point endpoints.
 
 The shapes come from fsaris/home-assistant-zonneplan-one (its sensor key-paths)
-and the payloads users posted in its issues (#75 charge point, #266 battery);
-they are not verified against live hardware here. Device endpoints wrap their
+and the payloads users posted in its issues (#75, #110 and #140 charge point,
+#266 battery); they are not verified against live hardware here. Device endpoints wrap their
 values in ``{"contracts": [...], "measurement_groups": [...]}``, with the
 device state in each contract's ``meta``, so most models are typed views on a
 :class:`Contract`, like the ones returned by /user-accounts/me.
@@ -29,6 +29,7 @@ from pyzonneplan.const import (
     ChargePointMode,
     ChargePointStartMode,
     ChargePointStatus,
+    LoadBalancingHealth,
     MarketTimeResolution,
 )
 
@@ -900,6 +901,7 @@ class ChargeSchedule(DataClassORJSONMixin):
     """A single planned charging window.
 
     ``suppress_home_battery`` keeps the home battery from discharging into the car.
+    The API sends the times as ISO strings or as epoch milliseconds.
     """
 
     start_time: datetime | None = field(default=None, metadata=DATETIME)
@@ -925,6 +927,7 @@ class ChargePointSession(DataClassORJSONMixin):
 
     start_time: datetime | None = field(default=None, metadata=DATETIME)
     charged_distance_in_kilometers: int | None = None
+    active_vehicle_uuid: str | None = None
 
 
 @dataclass
@@ -933,6 +936,7 @@ class ChargePointState(DataClassORJSONMixin):
 
     ``processing`` stays true after an action until the charge point confirms it.
     ``power_actual`` is in W, ``energy_delivered_session`` in Wh.
+    ``charge_schedules`` holds the planned charging windows, the list the app reads.
     """
 
     state: ChargePointStatus | None = field(default=None, metadata=enum_field(ChargePointStatus, "charge point state"))
@@ -957,19 +961,37 @@ class ChargePointState(DataClassORJSONMixin):
     charge_point_session: ChargePointSession | None = None
     plugged_in_at: datetime | None = field(default=None, metadata=DATETIME)
     last_known_vehicle_uuid: str | None = None
+    charge_schedules: list[ChargeSchedule] = field(default_factory=list)
 
     @property
     def energy_delivered_session_kwh(self) -> Decimal | None:
         """Return the energy charged in the current session, in kWh."""
         return kwh(self.energy_delivered_session)
 
+    @property
+    def load_balancing_health(self) -> LoadBalancingHealth | None:
+        """Return ``dynamic_load_balancing_health`` as an enum, ``None`` when missing or unknown."""
+        return parse_enum(LoadBalancingHealth, self.dynamic_load_balancing_health, "load balancing health")
+
 
 @dataclass
 class ChargePoint(Contract):
-    """A charge_point_installation contract with its live ``state`` and planned schedules."""
+    """A charge_point_installation contract with its live ``state`` and planned schedules.
+
+    Schedules come in ``state.charge_schedules`` (what the app reads) and, in
+    older payloads, at contract level in ``charge_schedules``;
+    :attr:`schedules` picks the right one.
+    """
 
     state: ChargePointState = field(default_factory=ChargePointState)
     charge_schedules: list[ChargeSchedule] = field(default_factory=list)
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Drop a ``"state": null`` so the default empty state is used."""
+        if "state" in d and d["state"] is None:
+            return {key: value for key, value in d.items() if key != "state"}
+        return d
 
     @property
     def session_cost(self) -> Decimal | None:
@@ -978,7 +1000,11 @@ class ChargePoint(Contract):
 
     @property
     def charging_cost_total(self) -> Decimal | None:
-        """Return the lifetime charging cost, in EUR."""
+        """Return the API's ``charging_cost_total``, in EUR.
+
+        Despite its name, payloads show it equal to the session cost; what
+        period it covers is not documented.
+        """
         return euro(self.meta.get("charging_cost_total"))
 
     @property
@@ -996,9 +1022,15 @@ class ChargePoint(Contract):
         return euro(self.meta.get("session_average_cost_in_cents"))
 
     @property
+    def schedules(self) -> list[ChargeSchedule]:
+        """Return the planned charging windows: the state's list, or the contract-level one when that is empty."""
+        return self.state.charge_schedules or self.charge_schedules
+
+    @property
     def next_schedule(self) -> ChargeSchedule | None:
         """Return the next planned charging window."""
-        return self.charge_schedules[0] if self.charge_schedules else None
+        schedules = self.schedules
+        return schedules[0] if schedules else None
 
 
 @dataclass
@@ -1068,6 +1100,8 @@ class Vehicle(DataClassORJSONMixin):
     label: str | None = None
     battery_capacity_useable_wh: int | None = None
     consumption_wh_per_km: int | None = None
+    charge_standard_power_in_w: int | None = None
+    logo_url: str | None = None
 
     @property
     def range_km(self) -> int | None:

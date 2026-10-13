@@ -23,6 +23,7 @@ from pyzonneplan.const import (
     ChargePointStartMode,
     ChargePointStatus,
     ContractType,
+    LoadBalancingHealth,
     MarketTimeResolution,
     MeasurementGroupType,
     PriceResolution,
@@ -55,6 +56,7 @@ from pyzonneplan.models.devices import (
     ChargePoint,
     ChargePointControlMode,
     ChargePointInstallation,
+    ChargePointState,
     ChargeSchedule,
     P1Installation,
     P1Meter,
@@ -226,14 +228,19 @@ def test_p1_meters_from_consumption_summaries() -> None:
     [
         ("2026-09-29T10:00:00.000000Z", datetime(2026, 9, 29, 10, tzinfo=UTC)),
         ("2026-09-29 12:00:00", datetime(2026, 9, 29, 12, tzinfo=ZoneInfo("Europe/Amsterdam"))),
+        (1713225600000, datetime(2024, 4, 16, tzinfo=UTC)),
+        (1713225600000.0, datetime(2024, 4, 16, tzinfo=UTC)),
+        (1713225600000000, datetime(2024, 4, 16, tzinfo=UTC)),
         ("", None),
         ("not a date", None),
         (None, None),
+        (True, None),
+        (10**30, None),
     ],
-    ids=["utc", "naive_is_local", "empty", "invalid", "missing"],
+    ids=["utc", "naive_is_local", "epoch_ms", "epoch_ms_float", "epoch_us", "empty", "invalid", "missing", "bool", "out_of_range"],
 )
-def test_device_timestamps(value: str | None, expected: datetime | None) -> None:
-    """Device timestamps are timezone-aware, reading a naive one as Amsterdam time, and None when empty or invalid."""
+def test_device_timestamps(value: str | float | None, expected: datetime | None) -> None:
+    """Device timestamps are timezone-aware (ISO strings or epoch ms/µs), reading a naive one as Amsterdam time, and None when empty or invalid."""
     meter = P1Meter(contract=_contract(ContractType.P1_INSTALLATION, meta={"electricity_last_measured_at": value}))
     schedule = ChargeSchedule.from_dict({"start_time": value})
 
@@ -618,9 +625,64 @@ def test_charge_point_installation(snapshot: SnapshotAssertion) -> None:
     assert charge_point.state.plugged_in_at == datetime(2026, 9, 29, 9, 55, tzinfo=UTC)
     assert charge_point.state.last_known_vehicle_uuid == installation.vehicles[0].uuid
     assert charge_point.state.energy_delivered_session_kwh == Decimal(10)
+    assert charge_point.state.load_balancing_health is LoadBalancingHealth.HEALTHY
+    assert charge_point.state.charge_point_session is not None
+    assert charge_point.state.charge_point_session.active_vehicle_uuid == installation.vehicles[0].uuid
+    assert charge_point.state.charge_schedules == []
+    assert charge_point.schedules == charge_point.charge_schedules
     assert charge_point.next_schedule == charge_point.charge_schedules[0]
     assert installation.vehicles[0].range_km == 375
     assert _properties(charge_point) == snapshot
+
+
+def test_charge_point_schedules_in_state(snapshot: SnapshotAssertion) -> None:
+    """Schedules in ``state`` (epoch ms) win over the contract-level list, and a missing session is None."""
+    installation = ChargePointInstallation.from_dict(_data("get_charge_point_state_schedules.json"))
+    charge_point = installation.charge_point
+
+    assert charge_point is not None
+    assert charge_point.charge_schedules == []
+    assert charge_point.schedules == charge_point.state.charge_schedules
+    assert charge_point.next_schedule == ChargeSchedule(
+        start_time=datetime(2026, 10, 14, 1, tzinfo=UTC),
+        end_time=datetime(2026, 10, 14, 3, 59, 59, tzinfo=UTC),
+    )
+    assert charge_point.state.charge_point_session is None
+    assert installation.vehicles[0] == Vehicle(
+        uuid="00000000-0000-4000-8000-000000000402",
+        label="Example Hatchback",
+        battery_capacity_useable_wh=50000,
+        consumption_wh_per_km=200,
+        charge_standard_power_in_w=11000,
+        logo_url="https://example.com/vehicles/logos/example.svg",
+    )
+    assert _properties(charge_point) == snapshot
+
+
+def test_charge_point_state_null() -> None:
+    """A ``"state": null`` gives the default empty state."""
+    charge_point = ChargePoint.from_dict({"uuid": "cp-1", "type": ContractType.CHARGE_POINT, "state": None})
+
+    assert charge_point.state == ChargePointState()
+    assert charge_point.next_schedule is None
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("HEALTHY", LoadBalancingHealth.HEALTHY),
+        ("UNHEALTHY", LoadBalancingHealth.UNHEALTHY),
+        ("DEGRADED", None),
+        (None, None),
+    ],
+    ids=["healthy", "unhealthy", "unknown", "missing"],
+)
+def test_charge_point_load_balancing_health(value: str | None, expected: LoadBalancingHealth | None) -> None:
+    """The load balancing health keeps the raw string and parses to an enum, unknown values to None."""
+    state = ChargePointState.from_dict({"dynamic_load_balancing_health": value})
+
+    assert state.dynamic_load_balancing_health == value
+    assert state.load_balancing_health is expected
 
 
 @pytest.mark.parametrize(
