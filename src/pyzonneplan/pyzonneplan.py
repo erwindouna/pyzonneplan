@@ -29,6 +29,7 @@ from pyzonneplan.const import (
     MONEY_FACTOR,
     TOKEN_PATH,
     BatteryMode,
+    ChargePointStartMode,
     ChartInterval,
     ConsumptionChart,
     MarketTimeResolution,
@@ -53,12 +54,14 @@ from pyzonneplan.models.devices import (
     BatteryHomeOptimization,
     BatteryInstallation,
     ChargePointInstallation,
+    ChargeSchedule,
     PvInstallation,
 )
 from pyzonneplan.models.prices import ConsumerPrices
 from pyzonneplan.models.summary import Summary
 
 if TYPE_CHECKING:
+    from collections.abc import Iterable
     from datetime import date
 
     from mashumaro.mixins.orjson import DataClassORJSONMixin
@@ -83,6 +86,11 @@ def _parse[T: DataClassORJSONMixin](model: type[T], response: Any, *path: str | 
     except (LookupError, TypeError, ValueError) as err:
         msg = f"Unexpected response for {model.__name__}: {err!r}"
         raise ZonneplanResponseError(msg) from err
+
+
+def _api_utc(moment: datetime) -> str:
+    """Format a timezone-aware datetime as the app does: UTC ISO 8601 with milliseconds (``2026-10-13T08:00:00.000Z``)."""
+    return moment.astimezone(UTC).isoformat(timespec="milliseconds").replace("+00:00", "Z")
 
 
 @dataclass
@@ -581,6 +589,10 @@ class Zonneplan:
         """Start charging now at full power, regardless of the prices (when the state is ``VehicleDetected``)."""
         await self._async_charge_point_action(connection_uuid, contract_uuid, "start_boost")
 
+    async def async_stop_charge_point_boost(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Stop a boost started with :meth:`async_start_charge_point_boost`."""
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "stop_boost")
+
     async def async_stop_charge_point(self, connection_uuid: str, contract_uuid: str) -> None:
         """Stop charging (when the state is ``Charging``)."""
         await self._async_charge_point_action(connection_uuid, contract_uuid, "stop_charging")
@@ -598,6 +610,95 @@ class Zonneplan:
         with contextlib.suppress(ZonneplanRequestError):
             await self._async_charge_point_action(connection_uuid, contract_uuid, "stop_dynamic_charging_session")
         await self._async_charge_point_action(connection_uuid, contract_uuid, "reset_schedule")
+
+    async def async_set_charge_point_schedule(
+        self,
+        connection_uuid: str,
+        contract_uuid: str,
+        schedule: Iterable[ChargeSchedule],
+        *,
+        vehicle_uuid: str | None = None,
+    ) -> None:
+        """Replace the planned charging with the windows in ``schedule``.
+
+        Every window needs a timezone-aware ``start_time``; ``end_time`` and
+        ``suppress_home_battery`` (keep the home battery from discharging into
+        the car) are optional. As the app does, windows that have already ended
+        are dropped and a window that started in an earlier hour starts at the
+        current hour, so the windows the charge point reports can be sent back
+        as they are. Use :meth:`async_reset_charge_point_schedule` to clear it.
+        """
+        now = datetime.now(UTC)
+        current_hour = now.replace(minute=0, second=0, microsecond=0)
+        windows: list[dict[str, Any]] = []
+        for window in schedule:
+            start, end = window.start_time, window.end_time
+            if start is None or start.tzinfo is None or (end is not None and end.tzinfo is None):
+                msg = "Every window needs a timezone-aware start_time, and a timezone-aware end_time if any"
+                raise ValueError(msg)
+            if end is not None and end <= start:
+                msg = "A window's end_time must be after its start_time"
+                raise ValueError(msg)
+            if end is not None and end <= now:
+                continue
+            body: dict[str, Any] = {"start_time": _api_utc(max(start, current_hour))}
+            if end is not None:
+                body["end_time"] = _api_utc(end)
+            if window.suppress_home_battery is not None:
+                body["suppress_home_battery"] = window.suppress_home_battery
+            windows.append(body)
+        if not windows:
+            msg = "The schedule has no window that hasn't ended; use async_reset_charge_point_schedule() to clear it"
+            raise ValueError(msg)
+
+        payload: dict[str, Any] = {"schedule": windows}
+        if vehicle_uuid is not None:
+            payload["vehicle"] = {"vehicle_uuid": vehicle_uuid}
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "set_schedule", payload)
+
+    async def async_enable_charge_point_plug_and_charge(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Start charging at full power as soon as a car is plugged in."""
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "enable_plug_and_charge")
+
+    async def async_disable_charge_point_plug_and_charge(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Stop charging on plug-in: sessions are started with the app again."""
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "disable_plug_and_charge")
+
+    async def async_enable_charge_point_always_flex(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Charge automatically at the cheapest prices whenever a car is plugged in."""
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "enable_always_flex")
+
+    async def async_disable_charge_point_always_flex(self, connection_uuid: str, contract_uuid: str) -> None:
+        """Stop charging automatically on cheap prices: sessions are started with the app again."""
+        await self._async_charge_point_action(connection_uuid, contract_uuid, "disable_always_flex")
+
+    async def async_set_charge_point_start_mode(self, connection_uuid: str, contract_uuid: str, mode: str) -> None:
+        """Switch a charge point to a :class:`pyzonneplan.const.ChargePointStartMode`, the way the app does.
+
+        The API has no single call for this: the charge point is fetched first,
+        and the one action that leads from its current start mode to ``mode``
+        is sent (none when it's already in that mode).
+        """
+        if mode not in ChargePointStartMode:
+            msg = f"Unknown charge point start mode: {mode}"
+            raise ValueError(msg)
+        target = ChargePointStartMode(mode)
+        installation = await self.async_get_charge_point(connection_uuid, contract_uuid)
+        current = installation.charge_point.state.start_mode if installation.charge_point else None
+        if current is None:
+            msg = "The charge point's current start mode is unknown"
+            raise ValueError(msg)
+        if current == target:
+            return
+        if target == ChargePointStartMode.PLUG_AND_CHARGE:
+            action = "enable_plug_and_charge"
+        elif target == ChargePointStartMode.ALWAYS_FLEX:
+            action = "enable_always_flex"
+        elif current == ChargePointStartMode.PLUG_AND_CHARGE:
+            action = "disable_plug_and_charge"
+        else:
+            action = "disable_always_flex"
+        await self._async_charge_point_action(connection_uuid, contract_uuid, action)
 
     async def async_start_charge_point_dynamic_session(
         self,

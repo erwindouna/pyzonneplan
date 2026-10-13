@@ -2490,10 +2490,12 @@
           dict({
             'end_time': datetime.datetime(2026, 9, 29, 14, 0, tzinfo=datetime.timezone.utc),
             'start_time': datetime.datetime(2026, 9, 29, 12, 0, tzinfo=datetime.timezone.utc),
+            'suppress_home_battery': None,
           }),
           dict({
             'end_time': datetime.datetime(2026, 9, 30, 4, 0, tzinfo=datetime.timezone.utc),
             'start_time': datetime.datetime(2026, 9, 30, 2, 0, tzinfo=datetime.timezone.utc),
+            'suppress_home_battery': True,
           }),
         ]),
         'end_date': None,

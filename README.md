@@ -121,8 +121,13 @@ against live hardware yet. Reports and captured (anonymised) responses are welco
 | `async_enable_battery_day_ahead_arbitrage(contract_uuid, *, price_spread, market_time_resolution)` | Turns day-ahead arbitrage on: the battery trades when day-ahead prices differ at least `price_spread` (EUR) |
 | `async_set_battery_control_mode(connection_uuid, contract_uuid, mode)` | Switches to a `BatteryMode`, turning the other modes off the way the app does |
 | `async_start_charge_point_boost(connection_uuid, contract_uuid)` / `async_stop_charge_point(...)` | Starts charging now at full power, or stops charging |
+| `async_stop_charge_point_boost(connection_uuid, contract_uuid)` | Stops a boost |
+| `async_enable_charge_point_plug_and_charge(connection_uuid, contract_uuid)` / `async_disable_...` | Turns charging at full power on plug-in on or off |
+| `async_enable_charge_point_always_flex(connection_uuid, contract_uuid)` / `async_disable_...` | Turns charging automatically on cheap prices on or off |
+| `async_set_charge_point_start_mode(connection_uuid, contract_uuid, mode)` | Switches to a `ChargePointStartMode`, sending the action the app sends from the current mode |
 | `async_resume_charge_point_auto_charging(connection_uuid, contract_uuid)` | Lets the charge point charge on cheap prices again after a manual stop |
 | `async_start_charge_point_dynamic_session(connection_uuid, contract_uuid, end, *, kilometers or percentage, vehicle_uuid)` | Charges an amount by `end` at the cheapest prices |
+| `async_set_charge_point_schedule(connection_uuid, contract_uuid, schedule, *, vehicle_uuid)` | Replaces the planned charging with `ChargeSchedule` windows; ended windows are dropped |
 | `async_reset_charge_point_schedule(connection_uuid, contract_uuid)` | Clears the planned charging |
 
 A battery with both modes off trades on the dynamic prices (`BatteryMode.DYNAMIC_CHARGING`). The API doesn't
