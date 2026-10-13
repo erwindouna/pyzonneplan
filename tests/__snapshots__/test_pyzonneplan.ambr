@@ -2560,6 +2560,40 @@
     ]),
   })
 # ---
+# name: test_device_reads[charge_point_charge_on_solar]
+  dict({
+    'allowed_window_end': datetime.time(16, 0),
+    'allowed_window_start': datetime.time(10, 0),
+    'min_charge_duration': datetime.timedelta(seconds=900),
+    'solar_surplus_threshold_w': 1400,
+  })
+# ---
+# name: test_device_reads[charge_point_control_mode]
+  dict({
+    'modes': dict({
+      'boost': dict({
+        'available': True,
+        'enabled': False,
+      }),
+      'charge_on_solar': dict({
+        'available': True,
+        'enabled': True,
+      }),
+      'dynamic_charging': dict({
+        'available': True,
+        'enabled': True,
+      }),
+      'plug_and_charge': dict({
+        'available': True,
+        'enabled': False,
+      }),
+      'scheduled_charging': dict({
+        'available': False,
+        'enabled': False,
+      }),
+    }),
+  })
+# ---
 # name: test_device_reads[pv_installation]
   dict({
     'contracts': list([

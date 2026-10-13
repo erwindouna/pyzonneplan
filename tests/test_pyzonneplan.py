@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, date, datetime, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any
 from zoneinfo import ZoneInfo
@@ -458,8 +458,29 @@ async def test_async_set_locale(aresponses: ResponsesMockServer, zonneplan_clien
             "get_battery_day_ahead_arbitrage.json",
         ),
         ("async_get_charge_point", ("conn-1", "cp-1"), "/connections/conn-1/charge-points/cp-1", "get_charge_point.json"),
+        (
+            "async_get_charge_point_control_mode",
+            ("cp-1",),
+            "/api/contracts/cp-1/charge-point/control-mode",
+            "get_charge_point_control_mode.json",
+        ),
+        (
+            "async_get_charge_point_charge_on_solar",
+            ("cp-1",),
+            "/api/contracts/cp-1/charge-point/control-mode/charge_on_solar",
+            "get_charge_point_charge_on_solar.json",
+        ),
     ],
-    ids=["pv_installation", "battery", "battery_control_mode", "battery_home_optimization", "battery_day_ahead_arbitrage", "charge_point"],
+    ids=[
+        "pv_installation",
+        "battery",
+        "battery_control_mode",
+        "battery_home_optimization",
+        "battery_day_ahead_arbitrage",
+        "charge_point",
+        "charge_point_control_mode",
+        "charge_point_charge_on_solar",
+    ],
 )
 async def test_device_reads(
     aresponses: ResponsesMockServer,
@@ -707,6 +728,91 @@ async def test_reset_charge_point_schedule(aresponses: ResponsesMockServer, zonn
     zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
     await zonneplan_client.async_reset_charge_point_schedule("conn-1", "cp-1")
 
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_enable_charge_point_charge_on_solar(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Settings are sent the way the app sends them: whole minutes as an ISO 8601 duration, whole hours as HH:00."""
+    aresponses.add(HOST, "/api/contracts/cp-1/charge-point/control-mode/charge_on_solar/enable", "PUT", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_enable_charge_point_charge_on_solar(
+        "cp-1", solar_surplus_threshold_w=2000, min_charge_duration=timedelta(minutes=30), allowed_window_start=time(5), allowed_window_end=time(23)
+    )
+
+    assert await aresponses.history[0].request.json() == {
+        "solar_surplus_threshold_w": 2000,
+        "min_charge_duration": "PT30M",
+        "allowed_window": {"start_time": "05:00", "end_time": "23:00"},
+    }
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_enable_charge_point_charge_on_solar_keeps_current_settings(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Omitted settings keep their current value."""
+    path = "/api/contracts/cp-1/charge-point/control-mode/charge_on_solar"
+    aresponses.add(HOST, path, "GET", aresponses.Response(text=load_fixtures("get_charge_point_charge_on_solar.json")))
+    aresponses.add(HOST, f"{path}/enable", "PUT", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_enable_charge_point_charge_on_solar("cp-1", min_charge_duration=timedelta(hours=1))
+
+    assert await aresponses.history[1].request.json() == {
+        "solar_surplus_threshold_w": 1400,
+        "min_charge_duration": "PT60M",
+        "allowed_window": {"start_time": "10:00", "end_time": "16:00"},
+    }
+    aresponses.assert_plan_strictly_followed()
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"min_charge_duration": timedelta(minutes=15, seconds=30)}, "whole minutes"),
+        ({"min_charge_duration": timedelta(0)}, "whole minutes"),
+        ({"allowed_window_start": time(5, 30)}, "whole local hour"),
+        ({"allowed_window_end": time(23, tzinfo=UTC)}, "whole local hour"),
+        ({"allowed_window_start": time(16), "allowed_window_end": time(10)}, "after"),
+    ],
+    ids=["partial_minute", "zero_duration", "start_not_on_hour", "end_with_timezone", "end_before_start"],
+)
+async def test_enable_charge_point_charge_on_solar_invalid(zonneplan_client: Zonneplan, kwargs: dict[str, Any], match: str) -> None:
+    """Settings the API can't take are rejected before anything is sent."""
+    settings: dict[str, Any] = {
+        "solar_surplus_threshold_w": 2000,
+        "min_charge_duration": timedelta(minutes=15),
+        "allowed_window_start": time(5),
+        "allowed_window_end": time(23),
+    }
+    with pytest.raises(ValueError, match=match):
+        await zonneplan_client.async_enable_charge_point_charge_on_solar("cp-1", **(settings | kwargs))
+
+
+async def test_enable_charge_point_charge_on_solar_without_current_settings(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Omitted settings can't be kept when charge on solar has none yet."""
+    aresponses.add(
+        HOST,
+        "/api/contracts/cp-1/charge-point/control-mode/charge_on_solar",
+        "GET",
+        aresponses.Response(
+            text=orjson.dumps({"data": {"solar_surplus_threshold": None, "min_charge_duration": None, "allowed_window": None}}).decode()
+        ),
+    )
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    with pytest.raises(ValueError, match="no current settings"):
+        await zonneplan_client.async_enable_charge_point_charge_on_solar("cp-1", solar_surplus_threshold_w=2000)
+    aresponses.assert_plan_strictly_followed()
+
+
+async def test_disable_charge_point_charge_on_solar(aresponses: ResponsesMockServer, zonneplan_client: Zonneplan) -> None:
+    """Charge on solar is disabled with a PUT without a body."""
+    aresponses.add(HOST, "/api/contracts/cp-1/charge-point/control-mode/charge_on_solar/disable", "PUT", aresponses.Response(status=204))
+
+    zonneplan_client._token = Token(access_token="access", refresh_token="refresh", expires_at=datetime.now(UTC) + timedelta(hours=1))
+    await zonneplan_client.async_disable_charge_point_charge_on_solar("cp-1")
+
+    assert await aresponses.history[0].request.read() == b""
     aresponses.assert_plan_strictly_followed()
 
 

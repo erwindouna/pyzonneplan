@@ -1,0 +1,23 @@
+{
+  "data": {
+    "modes": {
+      "boost": {
+        "available": true,
+        "enabled": false
+      },
+      "plug_and_charge": {
+        "available": true,
+        "enabled": false
+      },
+      "dynamic_charging": {
+        "available": true,
+        "enabled": true
+      },
+      "scheduled_charging": {},
+      "charge_on_solar": {
+        "available": true,
+        "enabled": true
+      }
+    }
+  }
+}
