@@ -165,6 +165,14 @@ class MeasurementGroupType(StrEnum):
     MONTHS = "months"
 
 
+class RecentPowerDuration(StrEnum):
+    """How far back the recent power chart goes, as an ISO 8601 duration."""
+
+    HOURS_12 = "PT12H"
+    HOURS_24 = "PT24H"
+    HOURS_48 = "PT48H"
+
+
 class ConsumptionChart:
     """Supported consumption chart intervals.
 

@@ -1953,6 +1953,36 @@
     ]),
   })
 # ---
+# name: test_async_get_recent_power
+  dict({
+    'measurements': list([
+      dict({
+        'start': datetime.datetime(2026, 9, 24, 11, 40, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+        'watts': 420,
+      }),
+      dict({
+        'start': datetime.datetime(2026, 9, 24, 11, 45, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+        'watts': 385,
+      }),
+      dict({
+        'start': datetime.datetime(2026, 9, 24, 11, 50, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+        'watts': -1250,
+      }),
+      dict({
+        'start': datetime.datetime(2026, 9, 24, 11, 55, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+        'watts': -1310,
+      }),
+      dict({
+        'start': datetime.datetime(2026, 9, 24, 12, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+        'watts': None,
+      }),
+    ]),
+    'range': dict({
+      'end_date': datetime.datetime(2026, 9, 24, 12, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+      'start_date': datetime.datetime(2026, 9, 23, 12, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+    }),
+  })
+# ---
 # name: test_async_get_summary
   dict({
     'electricity': 0,
