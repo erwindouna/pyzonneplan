@@ -2686,6 +2686,21 @@
     ]),
   })
 # ---
+# name: test_device_reads[p1_installation]
+  dict({
+    'dsmr_version': '50',
+    'electricity_meter_identifier': 'E0000000000000000000000000000000',
+    'first_measured_at': datetime.datetime(2026, 1, 1, 0, 0, tzinfo=datetime.timezone.utc),
+    'gas_meter_identifier': 'G0000000000000000000000000000000',
+    'last_measured_at': datetime.datetime(2026, 10, 13, 10, 0, tzinfo=datetime.timezone.utc),
+    'load_balancing_status': 'HEALTHY',
+    'max_current_per_phase': 2500,
+    'network_name': 'Example WiFi',
+    'network_status': 'connected',
+    'number_of_phases': 3,
+    'serial_number': 'ZP-EXAMPLE1',
+  })
+# ---
 # name: test_device_reads[pv_installation]
   dict({
     'contracts': list([

@@ -53,6 +53,7 @@ from pyzonneplan.models.devices import (
     BatteryHomeOptimization,
     BatteryInstallation,
     ChargePointInstallation,
+    P1Installation,
     PvInstallation,
 )
 from pyzonneplan.models.prices import ConsumerPrices
@@ -408,6 +409,19 @@ class Zonneplan:
         """Fetch the connection summary: live usage (P1 only) and an hourly price forecast of about two days."""
         response = await self._request(f"connections/{connection_uuid}/summary")
         return _parse(Summary, response)
+
+    async def async_get_p1_installation(self, contract_uuid: str) -> P1Installation | None:
+        """Fetch a P1 reader's details: the meter it reads, its main fuse and when it last reported.
+
+        ``contract_uuid`` is the p1_installation contract's. Returns ``None``
+        when the API has no P1 installation for it (HTTP 404), which is also
+        what an unknown contract gives.
+        """
+        try:
+            response = await self._request(f"contracts/{contract_uuid}/p1-installation")
+        except ZonneplanNotFoundError:
+            return None
+        return _parse(P1Installation, response)
 
     async def async_get_pv_installation(self, connection_uuid: str) -> PvInstallation | None:
         """Fetch every solar inverter on a connection and today's combined yield.

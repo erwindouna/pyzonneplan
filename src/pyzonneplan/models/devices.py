@@ -9,7 +9,7 @@ device state in each contract's ``meta``, so most models are typed views on a
 """
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from typing import Any
 
@@ -114,6 +114,65 @@ class P1Meter:
     def gas_last_measured_at(self) -> datetime | None:
         """Return when the meter last reported gas."""
         return to_datetime(self.contract.meta.get("gas_last_measured_at"))
+
+
+# The app shows a P1 reader as offline when it hasn't reported for this long.
+P1_OFFLINE_AFTER = timedelta(minutes=15)
+
+
+@dataclass
+class P1Installation(DataClassORJSONMixin):
+    """Response of /contracts/{uuid}/p1-installation: a P1 reader and the smart meter it reads.
+
+    Modelled from the Zonneplan app's code and demo data; no populated response
+    has been captured. ``dsmr_version`` is raw (the app shows ``50`` as 5.0),
+    ``max_current_per_phase`` (the main fuse) is in 0.01 A.
+    """
+
+    serial_number: str | None = None
+    dsmr_version: str | None = None
+    electricity_meter_identifier: str | None = None
+    gas_meter_identifier: str | None = None
+    number_of_phases: int | None = None
+    max_current_per_phase: int | None = None
+    network_name: str | None = None
+    network_status: str | None = None
+    load_balancing_status: str | None = None
+    first_measured_at: datetime | None = field(default=None, metadata=DATETIME)
+    last_measured_at: datetime | None = field(default=None, metadata=DATETIME)
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Flatten ``host_device``, ``phase_information``, ``network``, ``measurement_status`` and the connection's load balancing status."""
+        host_device = d.get("host_device") or {}
+        phases = d.get("phase_information") or {}
+        network = d.get("network") or {}
+        measurement_status = d.get("measurement_status") or {}
+        dsmr_version = host_device.get("dsmr_version")
+        return {
+            "serial_number": d.get("serial_number"),
+            "dsmr_version": None if dsmr_version is None else str(dsmr_version),
+            "electricity_meter_identifier": host_device.get("electricity_meter_identifier"),
+            "gas_meter_identifier": host_device.get("gas_meter_identifier"),
+            "number_of_phases": phases.get("number_of_phases"),
+            "max_current_per_phase": phases.get("max_current_per_phase"),
+            "network_name": network.get("name"),
+            "network_status": network.get("status"),
+            "load_balancing_status": (d.get("dynamic_load_balancing_status_for_connection") or {}).get("health_status"),
+            "first_measured_at": measurement_status.get("first_measured_at"),
+            "last_measured_at": measurement_status.get("last_measured_at"),
+        }
+
+    @property
+    def max_current_per_phase_amps(self) -> Decimal | None:
+        """Return the main fuse per phase, in A."""
+        return None if self.max_current_per_phase is None else Decimal(self.max_current_per_phase) / 100
+
+    def is_offline(self, now: datetime | None = None) -> bool | None:
+        """Return whether the reader hasn't reported for 15 minutes, as the app shows it, or ``None`` before its first reading."""
+        if self.last_measured_at is None:
+            return None
+        return self.last_measured_at < (now or datetime.now(UTC)) - P1_OFFLINE_AFTER
 
 
 @dataclass(slots=True)

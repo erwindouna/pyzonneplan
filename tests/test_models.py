@@ -36,6 +36,7 @@ from pyzonneplan.models.devices import (
     ChargePoint,
     ChargePointInstallation,
     ChargeSchedule,
+    P1Installation,
     P1Meter,
     PvInstallation,
     Vehicle,
@@ -221,6 +222,35 @@ def test_device_timestamps(value: str | None, expected: datetime | None) -> None
     if expected is not None:
         assert meter.electricity_last_measured_at is not None
         assert meter.electricity_last_measured_at.tzinfo is not None
+
+
+@pytest.mark.parametrize(
+    ("now", "offline"),
+    [
+        (datetime(2026, 10, 13, 10, 14, tzinfo=UTC), False),
+        (datetime(2026, 10, 13, 10, 16, tzinfo=UTC), True),
+    ],
+    ids=["recent", "stale"],
+)
+def test_p1_installation(now: datetime, *, offline: bool) -> None:
+    """P1Installation flattens the reader's details, converts the main fuse to A and is offline after 15 minutes."""
+    installation = P1Installation.from_dict(_data("get_p1_installation.json"))
+
+    assert installation.dsmr_version == "50"
+    assert installation.number_of_phases == 3
+    assert installation.max_current_per_phase_amps == Decimal(25)
+    assert installation.load_balancing_status == "HEALTHY"
+    assert installation.is_offline(now) is offline
+
+
+def test_p1_installation_without_readings() -> None:
+    """A P1 installation without details has no main fuse and no offline state; a numeric DSMR version is kept as text."""
+    installation = P1Installation.from_dict({"host_device": {"dsmr_version": 50}})
+
+    assert installation.dsmr_version == "50"
+    assert installation.max_current_per_phase_amps is None
+    assert installation.is_offline() is None
+    assert P1Installation.from_dict({"measurement_status": {"last_measured_at": "2026-01-01T00:00:00Z"}}).is_offline() is True
 
 
 def test_pv_installation(snapshot: SnapshotAssertion) -> None:
