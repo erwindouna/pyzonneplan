@@ -2,10 +2,12 @@
 # name: test_battery_installation
   dict({
     'average_day': Decimal('0.4000000'),
+    'backup_power_ac': 0,
     'backup_power_active': False,
     'backup_power_capable': True,
     'backup_power_usable_capacity_wh': 4000,
     'battery_state': <BatteryState.DISCHARGING: 'discharging'>,
+    'calibration_active': False,
     'cycle_count': 100,
     'delivery_day_kwh': Decimal('3.000'),
     'dynamic_charging_enabled': False,

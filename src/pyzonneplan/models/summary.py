@@ -12,7 +12,9 @@ from typing import Any
 
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 
-from pyzonneplan.const import MONEY_FACTOR
+from pyzonneplan.const import MONEY_FACTOR, TariffGroup
+
+from ._parse import enum_field
 
 
 @dataclass
@@ -28,7 +30,7 @@ class SummaryUsage(DataClassORJSONMixin):
     value: int | None = None
     measured_at: datetime | None = None
     speed: int | None = None
-    type: str | None = None
+    type: TariffGroup | None = field(default=None, metadata=enum_field(TariffGroup, "tariff group"))
     sustainability_score: int | None = None
     status_message: str | None = None
     status_tip: str | None = None
@@ -47,7 +49,7 @@ class SummaryPrice(DataClassORJSONMixin):
     electricity_price_excl_tax: int
     gas_price: int | None = None
     gas_price_excl_tax: int | None = None
-    tariff_group: str | None = None
+    tariff_group: TariffGroup | None = field(default=None, metadata=enum_field(TariffGroup, "tariff group"))
     sustainability_score: int | None = None
     solar_percentage: int | None = None
     solar_yield: int | None = None

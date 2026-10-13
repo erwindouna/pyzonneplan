@@ -18,8 +18,9 @@ from typing import Any
 
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 
-from pyzonneplan.const import WH_TO_KWH
+from pyzonneplan.const import WH_TO_KWH, MeasurementGroupType, TariffGroup
 
+from ._parse import DATETIME, enum_field, euro
 from .account import Contract
 from .devices import P1Meter
 
@@ -31,7 +32,7 @@ DM3_TO_M3 = Decimal("0.001")
 class ElectricityMeasurementGroup(DataClassORJSONMixin):
     """One measurement window (today / this month / this year) of electricity-delivered."""
 
-    date: str | None = None
+    date: datetime | None = field(default=None, metadata=DATETIME)
     totals: dict[str, int] = field(default_factory=dict)
     meta: dict[str, Any] = field(default_factory=dict)
 
@@ -69,7 +70,7 @@ class ElectricityDelivered(DataClassORJSONMixin):
 class GasMeasurementGroup(DataClassORJSONMixin):
     """One measurement window (today / this month / this year) of gas consumption."""
 
-    date: str | None = None
+    date: datetime | None = field(default=None, metadata=DATETIME)
     total: int | None = None
     meta: dict[str, Any] = field(default_factory=dict)
 
@@ -99,7 +100,7 @@ class ElectricityChartMeasurement(DataClassORJSONMixin):
     start: datetime
     delivered: int
     produced: int
-    tariff_group: str | None = None
+    tariff_group: TariffGroup | None = field(default=None, metadata=enum_field(TariffGroup, "tariff group"))
 
     @classmethod
     def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
@@ -167,7 +168,7 @@ class ElectricityChartGroup(DataClassORJSONMixin):
     """The measurements of one electricity chart window, and their totals (Wh) and costs (1e-7 EUR)."""
 
     start: datetime
-    type: str
+    type: MeasurementGroupType | None = field(default=None, metadata=enum_field(MeasurementGroupType, "measurement group type"))
     totals: dict[str, int] = field(default_factory=dict)
     meta: dict[str, Any] = field(default_factory=dict)
     measurements: list[ElectricityChartMeasurement] = field(default_factory=list)
@@ -196,13 +197,23 @@ class ElectricityChartGroup(DataClassORJSONMixin):
         """Return electricity returned to the grid, in kWh, or ``None`` while pending."""
         return Decimal(self.totals.get("p", 0)) * WH_TO_KWH if self.has_data else None
 
+    @property
+    def delivery_cost(self) -> Decimal | None:
+        """Return the cost of the electricity used, including tax, in EUR, or ``None`` while pending."""
+        return euro(self.meta.get("delivery_costs_incl_tax"))
+
+    @property
+    def delivery_cost_excl_tax(self) -> Decimal | None:
+        """Return the cost of the electricity used, excluding tax, in EUR, or ``None`` while pending."""
+        return euro(self.meta.get("delivery_costs_excl_tax"))
+
 
 @dataclass
 class GasChartGroup(DataClassORJSONMixin):
     """The measurements of one gas chart window, and their total (dm³) and costs (1e-7 EUR)."""
 
     start: datetime
-    type: str
+    type: MeasurementGroupType | None = field(default=None, metadata=enum_field(MeasurementGroupType, "measurement group type"))
     total: int = 0
     meta: dict[str, Any] = field(default_factory=dict)
     measurements: list[GasChartMeasurement] = field(default_factory=list)
@@ -221,6 +232,16 @@ class GasChartGroup(DataClassORJSONMixin):
     def total_m3(self) -> Decimal | None:
         """Return gas consumed, in cubic meters, or ``None`` while pending."""
         return Decimal(self.total) * DM3_TO_M3 if self.has_data else None
+
+    @property
+    def delivery_cost(self) -> Decimal | None:
+        """Return the cost of the gas used, including tax, in EUR, or ``None`` while pending."""
+        return euro(self.meta.get("delivery_costs_incl_tax"))
+
+    @property
+    def delivery_cost_excl_tax(self) -> Decimal | None:
+        """Return the cost of the gas used, excluding tax, in EUR, or ``None`` while pending."""
+        return euro(self.meta.get("delivery_costs_excl_tax"))
 
 
 @dataclass

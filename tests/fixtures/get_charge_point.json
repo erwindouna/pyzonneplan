@@ -23,7 +23,7 @@
           "processing": false,
           "power_actual": 11000,
           "energy_delivered_session": 10000,
-          "start_mode": "Automatic",
+          "start_mode": "AlwaysFlex",
           "can_charge": true,
           "can_schedule": true,
           "charging_manually": false,
@@ -33,6 +33,9 @@
           "dynamic_load_balancing_health": "HEALTHY",
           "dynamic_charging_enabled": true,
           "charge_on_solar_enabled": false,
+          "charge_on_solar_active": false,
+          "plugged_in_at": "2026-09-29T09:55:00.000000Z",
+          "last_known_vehicle_uuid": "00000000-0000-4000-8000-000000000401",
           "dynamic_charging_flex_enabled": true,
           "dynamic_charging_flex_suppressed": false,
           "dynamic_charging_user_constraints": {

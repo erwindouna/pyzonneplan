@@ -582,7 +582,9 @@ async def test_set_battery_control_mode(
     control_mode = {
         "control_mode": "self_consumption",
         "processing": False,
-        "modes": {name: {"enabled": name in enabled, "available": True} for name in (BatteryMode.SELF_CONSUMPTION, BatteryMode.HOME_OPTIMIZATION)},
+        "modes": {
+            name.value: {"enabled": name in enabled, "available": True} for name in (BatteryMode.SELF_CONSUMPTION, BatteryMode.HOME_OPTIMIZATION)
+        },
     }
     aresponses.add(
         HOST, "/api/contracts/bat-1/home-battery/control-mode", "GET", aresponses.Response(text=orjson.dumps({"data": control_mode}).decode())

@@ -1,0 +1,34 @@
+{
+  "data": {
+    "max_desired_charge_power_watts": 3000,
+    "max_desired_charge_power_limits": {
+      "min_watts": 100,
+      "max_watts": 5000
+    },
+    "max_desired_discharge_power_watts": 3000,
+    "max_desired_discharge_power_limits": {
+      "min_watts": 100,
+      "max_watts": 5000
+    },
+    "power_preset": "medium",
+    "power_presets": {
+      "data": [
+        {
+          "name": "low",
+          "max_desired_charge_power_watts": 1500,
+          "max_desired_discharge_power_watts": 1500
+        },
+        {
+          "name": "medium",
+          "max_desired_charge_power_watts": 3000,
+          "max_desired_discharge_power_watts": 3000
+        },
+        {
+          "name": "high",
+          "max_desired_charge_power_watts": 5000,
+          "max_desired_discharge_power_watts": 5000
+        }
+      ]
+    }
+  }
+}

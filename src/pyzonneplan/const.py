@@ -32,27 +32,92 @@ class ChartInterval:
     MONTHS: Final = "months"
 
 
-class BatteryMode:
+class BatteryMode(StrEnum):
     """Home battery control modes.
 
     ``DYNAMIC_CHARGING`` (trading on prices) is what the battery does with the
-    other two modes disabled.
+    other modes disabled.
     """
 
-    SELF_CONSUMPTION: Final = "self_consumption"
-    HOME_OPTIMIZATION: Final = "home_optimization"
-    DYNAMIC_CHARGING: Final = "dynamic_charging"
+    SELF_CONSUMPTION = "self_consumption"
+    HOME_OPTIMIZATION = "home_optimization"
+    DYNAMIC_CHARGING = "dynamic_charging"
+    DAY_AHEAD_ARBITRAGE = "day_ahead_arbitrage"
+
+
+class BatteryUnavailabilityReason(StrEnum):
+    """Why a battery control mode is unavailable."""
+
+    DISALLOWED_BY_PROJECT = "disallowed_by_project"
+    NO_ACTIVE_ELECTRICITY_CONTRACT = "no_active_electricity_contract"
+
+
+class BatteryPowerPreset(StrEnum):
+    """Home optimization power presets."""
+
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
 
 
 class BatteryState(StrEnum):
     """Home battery and battery inverter states.
 
-    The API sends them capitalised (``Charging``); the models parse them case-insensitively.
+    The API sends them in PascalCase (``ShuttingDown``); the models parse them
+    case-insensitively and with or without underscores.
     """
 
+    UNKNOWN_STATE = "unknown_state"
+    OFF = "off"
+    SLEEPING = "sleeping"
+    STARTING = "starting"
+    OPERATIVE = "operative"
+    THROTTLED = "throttled"
+    SHUTTING_DOWN = "shutting_down"
+    FAULT = "fault"
+    STANDBY = "standby"
+    UPDATING = "updating"
+    COOLING = "cooling"
+    PREHEAT = "preheat"
     CHARGING = "charging"
     DISCHARGING = "discharging"
-    OPERATIVE = "operative"
+    PERMANENT_FAULT = "permanent_fault"
+    BACKUP_POWER_ACTIVE = "backup_power_active"
+
+
+class ChargePointStatus(StrEnum):
+    """Charge point states (``state.state``, sent in PascalCase)."""
+
+    STANDBY = "standby"
+    VEHICLE_DETECTED = "vehicle_detected"
+    CHARGING = "charging"
+    ERROR = "error"
+
+
+class ChargePointStartMode(StrEnum):
+    """How a charge point starts a session (``state.start_mode``, sent in PascalCase)."""
+
+    ALWAYS_FLEX = "always_flex"
+    PLUG_AND_CHARGE = "plug_and_charge"
+    START_WITH_APP = "start_with_app"
+
+
+class TariffGroup(StrEnum):
+    """Price level of an interval compared to the rest of the day."""
+
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+
+
+class MeasurementGroupType(StrEnum):
+    """The granularity of a measurement group (``measurement_groups[i].type``)."""
+
+    LIVE = "live"
+    MINUTES = "minutes"
+    HOURS = "hours"
+    DAYS = "days"
+    MONTHS = "months"
 
 
 class ConsumptionChart:

@@ -8,68 +8,38 @@ device state in each contract's ``meta``, so most models are typed views on a
 :class:`Contract`, like the ones returned by /user-accounts/me.
 """
 
-import logging
 from dataclasses import dataclass, field
 from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from mashumaro import field_options
 from mashumaro.mixins.orjson import DataClassORJSONMixin
 
-from pyzonneplan.const import API_TIMEZONE, MONEY_FACTOR, WH_TO_KWH, BatteryState
+from pyzonneplan.const import (
+    MONEY_FACTOR,
+    WH_TO_KWH,
+    BatteryMode,
+    BatteryPowerPreset,
+    BatteryState,
+    BatteryUnavailabilityReason,
+    ChargePointStartMode,
+    ChargePointStatus,
+)
 
+from ._parse import DATETIME, enum_field, euro, kwh, parse_enum, to_datetime
 from .account import Contract
-
-_LOGGER = logging.getLogger(__name__)
-
-
-def _euro(value: int | None) -> Decimal | None:
-    """Convert a 1e-7 EUR amount to euro."""
-    return None if value is None else Decimal(value) * MONEY_FACTOR
-
-
-def _kwh(value: int | None) -> Decimal | None:
-    """Convert Wh to kWh."""
-    return None if value is None else Decimal(value) * WH_TO_KWH
 
 
 def _battery_state(value: str | None) -> BatteryState | None:
-    """Parse a battery state case-insensitively, or return ``None`` when it's missing or unknown."""
-    if value is None:
-        return None
-    try:
-        return BatteryState(str(value).lower())
-    except ValueError:
-        _LOGGER.debug("Unknown battery state: %s", value)
-        return None
-
-
-def _datetime(value: str | None) -> datetime | None:
-    """Parse an API timestamp, or return ``None`` when it's missing or invalid.
-
-    Timestamps come in UTC (``...Z``). One without a timezone is read as
-    Europe/Amsterdam local time, the format the charge point actions take,
-    so callers always get a timezone-aware datetime.
-    """
-    if not value:
-        return None
-    try:
-        parsed = datetime.fromisoformat(value)
-    except (TypeError, ValueError):
-        return None
-    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=API_TIMEZONE)
-
-
-# Field metadata that parses a timestamp with _datetime instead of mashumaro's parser.
-_DATETIME = field_options(deserialize=_datetime)
+    """Parse a battery state, or return ``None`` when it's missing or unknown."""
+    return parse_enum(BatteryState, value, "battery state")
 
 
 @dataclass
 class DeviceMeasurement(DataClassORJSONMixin):
     """One data point of a device's measurement group or chart."""
 
-    measured_at: datetime | None = field(default=None, metadata=_DATETIME)
+    measured_at: datetime | None = field(default=None, metadata=DATETIME)
     value: int | None = None
     meta: dict[str, Any] = field(default_factory=dict)
 
@@ -82,7 +52,7 @@ class DeviceMeasurementGroup(DataClassORJSONMixin):
     endpoint (Wh for PV yield, 1e-7 EUR for a battery result).
     """
 
-    date: datetime | None = field(default=None, metadata=_DATETIME)
+    date: datetime | None = field(default=None, metadata=DATETIME)
     total: int | None = None
     meta: dict[str, Any] = field(default_factory=dict)
     measurements: list[DeviceMeasurement] = field(default_factory=list)
@@ -122,27 +92,27 @@ class P1Meter:
     @property
     def electricity_first_measured_at(self) -> datetime | None:
         """Return when the meter first reported electricity."""
-        return _datetime(self.contract.meta.get("electricity_first_measured_at"))
+        return to_datetime(self.contract.meta.get("electricity_first_measured_at"))
 
     @property
     def electricity_last_measured_at(self) -> datetime | None:
         """Return when the meter last reported electricity."""
-        return _datetime(self.contract.meta.get("electricity_last_measured_at"))
+        return to_datetime(self.contract.meta.get("electricity_last_measured_at"))
 
     @property
     def electricity_last_measured_production_at(self) -> datetime | None:
         """Return when the meter last reported power returned to the grid."""
-        return _datetime(self.contract.meta.get("electricity_last_measured_production_at"))
+        return to_datetime(self.contract.meta.get("electricity_last_measured_production_at"))
 
     @property
     def gas_first_measured_at(self) -> datetime | None:
         """Return when the meter first reported gas."""
-        return _datetime(self.contract.meta.get("gas_first_measured_at"))
+        return to_datetime(self.contract.meta.get("gas_first_measured_at"))
 
     @property
     def gas_last_measured_at(self) -> datetime | None:
         """Return when the meter last reported gas."""
-        return _datetime(self.contract.meta.get("gas_last_measured_at"))
+        return to_datetime(self.contract.meta.get("gas_last_measured_at"))
 
 
 @dataclass(slots=True)
@@ -199,27 +169,27 @@ class PvInverter:
     @property
     def total_power_measured_kwh(self) -> Decimal | None:
         """Return lifetime production, in kWh."""
-        return _kwh(self.total_power_measured)
+        return kwh(self.total_power_measured)
 
     @property
     def first_measured_at(self) -> datetime | None:
         """Return when the inverter first reported."""
-        return _datetime(self.contract.meta.get("first_measured_at"))
+        return to_datetime(self.contract.meta.get("first_measured_at"))
 
     @property
     def last_measured_at(self) -> datetime | None:
         """Return when the inverter last reported."""
-        return _datetime(self.contract.meta.get("last_measured_at"))
+        return to_datetime(self.contract.meta.get("last_measured_at"))
 
     @property
     def total_earned(self) -> Decimal | None:
         """Return lifetime Powerplay earnings."""
-        return _euro(self.contract.meta.get("total_earned"))
+        return euro(self.contract.meta.get("total_earned"))
 
     @property
     def total_day(self) -> Decimal | None:
         """Return today's Powerplay earnings."""
-        return _euro(self.contract.meta.get("total_day"))
+        return euro(self.contract.meta.get("total_day"))
 
     @property
     def dynamic_control_enabled(self) -> bool | None:
@@ -256,7 +226,7 @@ class PvInstallation(DataClassORJSONMixin):
     @property
     def yield_today_kwh(self) -> Decimal | None:
         """Return today's combined yield, in kWh."""
-        return _kwh(self.yield_today)
+        return kwh(self.yield_today)
 
 
 @dataclass(slots=True)
@@ -324,37 +294,37 @@ class Battery:
     @property
     def first_measured_at(self) -> datetime | None:
         """Return when the battery first reported."""
-        return _datetime(self.contract.meta.get("first_measured_at"))
+        return to_datetime(self.contract.meta.get("first_measured_at"))
 
     @property
     def last_measured_at(self) -> datetime | None:
         """Return when the battery last reported."""
-        return _datetime(self.contract.meta.get("last_measured_at"))
+        return to_datetime(self.contract.meta.get("last_measured_at"))
 
     @property
     def total_earned(self) -> Decimal | None:
         """Return the lifetime trading result, in EUR."""
-        return _euro(self.contract.meta.get("total_earned"))
+        return euro(self.contract.meta.get("total_earned"))
 
     @property
     def total_day(self) -> Decimal | None:
         """Return today's trading result, in EUR."""
-        return _euro(self.contract.meta.get("total_day"))
+        return euro(self.contract.meta.get("total_day"))
 
     @property
     def average_day(self) -> Decimal | None:
         """Return the average daily trading result, in EUR."""
-        return _euro(self.contract.meta.get("average_day"))
+        return euro(self.contract.meta.get("average_day"))
 
     @property
     def delivery_day_kwh(self) -> Decimal | None:
         """Return the energy charged today, in kWh."""
-        return _kwh(self.contract.meta.get("delivery_day"))
+        return kwh(self.contract.meta.get("delivery_day"))
 
     @property
     def production_day_kwh(self) -> Decimal | None:
         """Return the energy discharged today, in kWh."""
-        return _kwh(self.contract.meta.get("production_day"))
+        return kwh(self.contract.meta.get("production_day"))
 
     @property
     def backup_power_capable(self) -> bool | None:
@@ -365,6 +335,16 @@ class Battery:
     def backup_power_active(self) -> bool | None:
         """Return whether the battery is supplying backup power right now."""
         return self.contract.meta.get("backup_power_active")
+
+    @property
+    def backup_power_ac(self) -> int | None:
+        """Return the AC power while supplying backup power, in W."""
+        return self.contract.meta.get("backup_power_ac")
+
+    @property
+    def calibration_active(self) -> bool | None:
+        """Return whether the battery is calibrating its state of charge."""
+        return self.contract.meta.get("calibration_active")
 
     @property
     def backup_power_usable_capacity_wh(self) -> int | None:
@@ -432,28 +412,36 @@ class BatteryInstallation(DataClassORJSONMixin):
 
 @dataclass
 class BatteryControlModeOption(DataClassORJSONMixin):
-    """Whether one battery control mode is available and enabled."""
+    """Whether one battery control mode is available and enabled, and if not available, why."""
 
     enabled: bool = False
     available: bool = False
+    unavailability_reason_code: BatteryUnavailabilityReason | None = field(
+        default=None, metadata=enum_field(BatteryUnavailabilityReason, "battery mode unavailability reason")
+    )
 
 
 @dataclass
 class BatteryControlMode(DataClassORJSONMixin):
     """Response of /api/contracts/{uuid}/home-battery/control-mode.
 
-    ``control_mode`` is one of :class:`pyzonneplan.const.BatteryMode`.
+    ``modes`` keeps every mode the API sends, keyed by its raw name, also ones
+    :class:`pyzonneplan.const.BatteryMode` doesn't know yet.
     ``processing`` stays true after a change until the battery confirms it.
     """
 
-    control_mode: str | None = None
+    control_mode: BatteryMode | None = field(default=None, metadata=enum_field(BatteryMode, "battery control mode"))
     modes: dict[str, BatteryControlModeOption] = field(default_factory=dict)
     processing: bool = False
 
     @property
-    def available_modes(self) -> list[str]:
-        """Return the modes this battery supports."""
-        return [mode for mode, option in self.modes.items() if option.available]
+    def available_modes(self) -> list[BatteryMode]:
+        """Return the known modes this battery supports."""
+        return [
+            known
+            for mode, option in self.modes.items()
+            if option.available and (known := parse_enum(BatteryMode, mode, "battery control mode")) is not None
+        ]
 
     def is_enabled(self, mode: str) -> bool:
         """Return whether a mode is enabled."""
@@ -470,17 +458,37 @@ class BatteryPowerLimits(DataClassORJSONMixin):
 
 
 @dataclass
+class BatteryPowerPresetOption(DataClassORJSONMixin):
+    """A home optimization power preset: the charge and discharge power (W) it sets."""
+
+    name: BatteryPowerPreset | None = field(default=None, metadata=enum_field(BatteryPowerPreset, "battery power preset"))
+    max_desired_charge_power_watts: int | None = None
+    max_desired_discharge_power_watts: int | None = None
+
+
+@dataclass
 class BatteryHomeOptimization(DataClassORJSONMixin):
     """Response of the home_optimization control-mode endpoint.
 
     The most power (W) home optimization may charge and discharge with, and
-    the range each setting accepts.
+    the range each setting accepts. Newer responses add the selected
+    ``power_preset`` and the ``power_presets`` to choose from.
     """
 
     max_desired_charge_power_watts: int | None = None
     max_desired_charge_power_limits: BatteryPowerLimits | None = None
     max_desired_discharge_power_watts: int | None = None
     max_desired_discharge_power_limits: BatteryPowerLimits | None = None
+    power_preset: BatteryPowerPreset | None = field(default=None, metadata=enum_field(BatteryPowerPreset, "battery power preset"))
+    power_presets: list[BatteryPowerPresetOption] = field(default_factory=list)
+
+    @classmethod
+    def __pre_deserialize__(cls, d: dict[str, Any]) -> dict[str, Any]:
+        """Unwrap ``power_presets``, which the API nests in ``{"data": [...]}`` (or sends as null)."""
+        presets = d.get("power_presets")
+        if isinstance(presets, dict):
+            presets = presets.get("data")
+        return {**d, "power_presets": presets or []}
 
 
 @dataclass
@@ -536,25 +544,25 @@ class BatteryChart(DataClassORJSONMixin):
     @property
     def result_euro(self) -> Decimal | None:
         """Return the trading result over the chart, in EUR."""
-        return _euro(self.total)
+        return euro(self.total)
 
     @property
     def delivery_kwh(self) -> Decimal | None:
         """Return the energy charged over the chart, in kWh."""
-        return _kwh(self.meta.get("delivery"))
+        return kwh(self.meta.get("delivery"))
 
     @property
     def production_kwh(self) -> Decimal | None:
         """Return the energy discharged over the chart, in kWh."""
-        return _kwh(self.meta.get("production"))
+        return kwh(self.meta.get("production"))
 
 
 @dataclass
 class ChargeSchedule(DataClassORJSONMixin):
     """A single planned charging window."""
 
-    start_time: datetime | None = field(default=None, metadata=_DATETIME)
-    end_time: datetime | None = field(default=None, metadata=_DATETIME)
+    start_time: datetime | None = field(default=None, metadata=DATETIME)
+    end_time: datetime | None = field(default=None, metadata=DATETIME)
 
 
 @dataclass
@@ -566,14 +574,14 @@ class DynamicChargingConstraints(DataClassORJSONMixin):
 
     desired_distance_in_kilometers: int | None = None
     desired_additional_battery_percentage: int | None = None
-    desired_end_time: datetime | None = field(default=None, metadata=_DATETIME)
+    desired_end_time: datetime | None = field(default=None, metadata=DATETIME)
 
 
 @dataclass
 class ChargePointSession(DataClassORJSONMixin):
     """The currently running or last charging session."""
 
-    start_time: datetime | None = field(default=None, metadata=_DATETIME)
+    start_time: datetime | None = field(default=None, metadata=DATETIME)
     charged_distance_in_kilometers: int | None = None
 
 
@@ -581,16 +589,16 @@ class ChargePointSession(DataClassORJSONMixin):
 class ChargePointState(DataClassORJSONMixin):
     """The ``state`` block of a charge point.
 
-    ``state`` is ``Standby``, ``VehicleDetected``, ``Charging`` or ``Error``.
     ``processing`` stays true after an action until the charge point confirms it.
+    ``power_actual`` is in W, ``energy_delivered_session`` in Wh.
     """
 
-    state: str | None = None
+    state: ChargePointStatus | None = field(default=None, metadata=enum_field(ChargePointStatus, "charge point state"))
     processing: bool = False
     connectivity_state: bool | None = None
     power_actual: int | None = None
     energy_delivered_session: int | None = None
-    start_mode: str | None = None
+    start_mode: ChargePointStartMode | None = field(default=None, metadata=enum_field(ChargePointStartMode, "charge point start mode"))
     dynamic_load_balancing_health: str | None = None
     can_charge: bool | None = None
     can_schedule: bool | None = None
@@ -600,15 +608,18 @@ class ChargePointState(DataClassORJSONMixin):
     overload_protection_active: bool | None = None
     dynamic_charging_enabled: bool | None = None
     charge_on_solar_enabled: bool | None = None
+    charge_on_solar_active: bool | None = None
     dynamic_charging_flex_enabled: bool | None = None
     dynamic_charging_flex_suppressed: bool | None = None
     dynamic_charging_user_constraints: DynamicChargingConstraints | None = None
     charge_point_session: ChargePointSession | None = None
+    plugged_in_at: datetime | None = field(default=None, metadata=DATETIME)
+    last_known_vehicle_uuid: str | None = None
 
     @property
     def energy_delivered_session_kwh(self) -> Decimal | None:
         """Return the energy charged in the current session, in kWh."""
-        return _kwh(self.energy_delivered_session)
+        return kwh(self.energy_delivered_session)
 
 
 @dataclass
@@ -621,17 +632,17 @@ class ChargePoint(Contract):
     @property
     def session_cost(self) -> Decimal | None:
         """Return the cost of the current session, in EUR."""
-        return _euro(self.meta.get("session_charging_cost_total"))
+        return euro(self.meta.get("session_charging_cost_total"))
 
     @property
     def charging_cost_total(self) -> Decimal | None:
         """Return the lifetime charging cost, in EUR."""
-        return _euro(self.meta.get("charging_cost_total"))
+        return euro(self.meta.get("charging_cost_total"))
 
     @property
     def session_flex_result(self) -> Decimal | None:
         """Return the current session's flex result, in EUR."""
-        return _euro(self.meta.get("session_flex_result"))
+        return euro(self.meta.get("session_flex_result"))
 
     @property
     def session_average_cost(self) -> Decimal | None:
@@ -640,7 +651,7 @@ class ChargePoint(Contract):
         The API calls it ``session_average_cost_in_cents``, but it is in
         1e-7 EUR like every other amount.
         """
-        return _euro(self.meta.get("session_average_cost_in_cents"))
+        return euro(self.meta.get("session_average_cost_in_cents"))
 
     @property
     def next_schedule(self) -> ChargeSchedule | None:

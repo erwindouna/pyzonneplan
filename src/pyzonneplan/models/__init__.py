@@ -1,6 +1,6 @@
 """Typed models for the Zonneplan API."""
 
-from .account import Account, Address, AddressGroup, Connection, Contract, UserAccount
+from .account import Account, Address, AddressGroup, Connection, ConnectionFeature, Contract, UserAccount
 from .consumption import (
     ElectricityChart,
     ElectricityChartGroup,
@@ -22,6 +22,7 @@ from .devices import (
     BatteryHomeOptimization,
     BatteryInstallation,
     BatteryPowerLimits,
+    BatteryPowerPresetOption,
     ChargePoint,
     ChargePointInstallation,
     ChargePointSession,
@@ -50,12 +51,14 @@ __all__ = [
     "BatteryHomeOptimization",
     "BatteryInstallation",
     "BatteryPowerLimits",
+    "BatteryPowerPresetOption",
     "ChargePoint",
     "ChargePointInstallation",
     "ChargePointSession",
     "ChargePointState",
     "ChargeSchedule",
     "Connection",
+    "ConnectionFeature",
     "ConsumerPrices",
     "Contract",
     "DeviceMeasurement",
