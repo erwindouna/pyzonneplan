@@ -934,6 +934,132 @@
     }),
   })
 # ---
+# name: test_async_get_consumer_prices_for_connection
+  dict({
+    'chart': dict({
+      'range': dict({
+        'end_date': datetime.datetime(2026, 10, 14, 23, 59, 59, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+        'start_date': datetime.datetime(2026, 10, 12, 9, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+      }),
+      'series': dict({
+        'prices': list([
+          dict({
+            'end_date': datetime.datetime(2026, 10, 12, 7, 15, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 3400507,
+            }),
+            'price_tax_included': dict({
+              'amount': 4508988,
+            }),
+            'start_date': datetime.datetime(2026, 10, 12, 7, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 254,
+            }),
+            'tariff_group': None,
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 10, 12, 7, 30, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 3004547,
+            }),
+            'price_tax_included': dict({
+              'amount': 4113028,
+            }),
+            'start_date': datetime.datetime(2026, 10, 12, 7, 15, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 766,
+            }),
+            'tariff_group': None,
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 10, 12, 7, 45, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2611353,
+            }),
+            'price_tax_included': dict({
+              'amount': 3719834,
+            }),
+            'start_date': datetime.datetime(2026, 10, 12, 7, 30, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 174,
+            }),
+            'tariff_group': None,
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 10, 12, 8, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2588814,
+            }),
+            'price_tax_included': dict({
+              'amount': 3697295,
+            }),
+            'start_date': datetime.datetime(2026, 10, 12, 7, 45, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 196,
+            }),
+            'tariff_group': None,
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 10, 12, 8, 15, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2799544,
+            }),
+            'price_tax_included': dict({
+              'amount': 3908025,
+            }),
+            'start_date': datetime.datetime(2026, 10, 12, 8, 0, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 696,
+            }),
+            'tariff_group': None,
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 10, 12, 8, 30, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2426718,
+            }),
+            'price_tax_included': dict({
+              'amount': 3535199,
+            }),
+            'start_date': datetime.datetime(2026, 10, 12, 8, 15, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 619,
+            }),
+            'tariff_group': None,
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 10, 12, 8, 45, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2410983,
+            }),
+            'price_tax_included': dict({
+              'amount': 3519464,
+            }),
+            'start_date': datetime.datetime(2026, 10, 12, 8, 30, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 138,
+            }),
+            'tariff_group': None,
+          }),
+          dict({
+            'end_date': datetime.datetime(2026, 10, 12, 9, 0, tzinfo=datetime.timezone.utc),
+            'price_tax_excluded': dict({
+              'amount': 2215827,
+            }),
+            'price_tax_included': dict({
+              'amount': 3324308,
+            }),
+            'start_date': datetime.datetime(2026, 10, 12, 8, 45, tzinfo=datetime.timezone.utc),
+            'sustainability_score': dict({
+              'permille': 544,
+            }),
+            'tariff_group': None,
+          }),
+        ]),
+      }),
+    }),
+  })
+# ---
 # name: test_async_get_consumer_prices_gas_daily
   dict({
     'chart': dict({
@@ -958,6 +1084,69 @@
         ]),
       }),
     }),
+  })
+# ---
+# name: test_async_get_consumption_insight[electricity]
+  dict({
+    'delivery': dict({
+      'average_price': Decimal('0.2950000'),
+      'points': list([
+        dict({
+          'average_price': Decimal('0.2800000'),
+          'start': datetime.datetime(2026, 9, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+          'volume': Decimal('140.000'),
+        }),
+        dict({
+          'average_price': Decimal('0.3100000'),
+          'start': datetime.datetime(2026, 10, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+          'volume': Decimal('160.000'),
+        }),
+      ]),
+      'total': Decimal('300.000'),
+    }),
+    'end': datetime.datetime(2026, 12, 31, 23, 59, 59, tzinfo=datetime.timezone(datetime.timedelta(seconds=3600))),
+    'granularity': <MeasurementGroupType.MONTHS: 'months'>,
+    'production': dict({
+      'average_price': Decimal('-0.2400000'),
+      'points': list([
+        dict({
+          'average_price': Decimal('-0.2300000'),
+          'start': datetime.datetime(2026, 9, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+          'volume': Decimal('50.000'),
+        }),
+        dict({
+          'average_price': Decimal('-0.2600000'),
+          'start': datetime.datetime(2026, 10, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+          'volume': Decimal('30.000'),
+        }),
+      ]),
+      'total': Decimal('80.000'),
+    }),
+    'start': datetime.datetime(2026, 1, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=3600))),
+  })
+# ---
+# name: test_async_get_consumption_insight[gas]
+  dict({
+    'delivery': dict({
+      'average_price': Decimal('1.3500000'),
+      'points': list([
+        dict({
+          'average_price': Decimal('1.3000000'),
+          'start': datetime.datetime(2026, 9, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+          'volume': Decimal('35.000'),
+        }),
+        dict({
+          'average_price': Decimal('1.3800000'),
+          'start': datetime.datetime(2026, 10, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=7200))),
+          'volume': Decimal('60.000'),
+        }),
+      ]),
+      'total': Decimal('95.000'),
+    }),
+    'end': datetime.datetime(2026, 12, 31, 23, 59, 59, tzinfo=datetime.timezone(datetime.timedelta(seconds=3600))),
+    'granularity': <MeasurementGroupType.MONTHS: 'months'>,
+    'production': None,
+    'start': datetime.datetime(2026, 1, 1, 0, 0, tzinfo=datetime.timezone(datetime.timedelta(seconds=3600))),
   })
 # ---
 # name: test_async_get_electricity_chart[days-get_electricity_chart_days.json]
@@ -2490,10 +2679,12 @@
           dict({
             'end_time': datetime.datetime(2026, 9, 29, 14, 0, tzinfo=datetime.timezone.utc),
             'start_time': datetime.datetime(2026, 9, 29, 12, 0, tzinfo=datetime.timezone.utc),
+            'suppress_home_battery': None,
           }),
           dict({
             'end_time': datetime.datetime(2026, 9, 30, 4, 0, tzinfo=datetime.timezone.utc),
             'start_time': datetime.datetime(2026, 9, 30, 2, 0, tzinfo=datetime.timezone.utc),
+            'suppress_home_battery': True,
           }),
         ]),
         'end_date': None,
@@ -2592,6 +2783,21 @@
         'enabled': False,
       }),
     }),
+  })
+# ---
+# name: test_device_reads[p1_installation]
+  dict({
+    'dsmr_version': '50',
+    'electricity_meter_identifier': 'E0000000000000000000000000000000',
+    'first_measured_at': datetime.datetime(2026, 1, 1, 0, 0, tzinfo=datetime.timezone.utc),
+    'gas_meter_identifier': 'G0000000000000000000000000000000',
+    'last_measured_at': datetime.datetime(2026, 10, 13, 10, 0, tzinfo=datetime.timezone.utc),
+    'load_balancing_status': 'HEALTHY',
+    'max_current_per_phase': 2500,
+    'network_name': 'Example WiFi',
+    'network_status': 'connected',
+    'number_of_phases': 3,
+    'serial_number': 'ZP-EXAMPLE1',
   })
 # ---
 # name: test_device_reads[pv_installation]

@@ -1,0 +1,43 @@
+{
+  "data": {
+    "chart": {
+      "granularity": "months",
+      "range": {
+        "end_date": "2026-12-31T23:59:59+01:00",
+        "start_date": "2026-01-01T00:00:00+01:00"
+      },
+      "series": {
+        "delivery": {
+          "aggregate": {
+            "average_cost": {
+              "amount": 13500000
+            },
+            "sum_volume": {
+              "dm3": 95000
+            }
+          },
+          "data": [
+            {
+              "average_cost": {
+                "amount": 13000000
+              },
+              "date": "2026-09-01T00:00:00+02:00",
+              "volume": {
+                "dm3": 35000
+              }
+            },
+            {
+              "average_cost": {
+                "amount": 13800000
+              },
+              "date": "2026-10-01T00:00:00+02:00",
+              "volume": {
+                "dm3": 60000
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
